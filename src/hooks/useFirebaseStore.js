@@ -288,9 +288,23 @@ export function useFirebaseStore(navigate, resources, user, enabled = true, rout
       // ever goes to Firebase Auth — it is stripped before the profile is written.
       if (key === "users") {
         const { password, ...profile } = values;
-        const uid = await createTeamAccount(profile.email, password);
-        await createResource(key, { ...profile, uid }, actor);
-        await writeRole(uid, profile.role);
+        const uid = await createTeamAccount(profile.email, password, {
+          name: profile.name,
+          username: profile.username,
+          role: profile.role,
+        });
+        if (uid) {
+          try {
+            await updateResource("users", uid, {
+              name: profile.name,
+              username: profile.username,
+              role: profile.role,
+            }, actor);
+          } catch {
+            // Profil sudah dibuat oleh trigger handle_new_user
+          }
+          await writeRole(uid, profile.role);
+        }
         notifySuccess(`Akun ${profile.email} siap dipakai login.`);
         navigate(resources[key].path);
         return;
