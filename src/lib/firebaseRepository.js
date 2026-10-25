@@ -15,8 +15,8 @@ const TABLE_MAP = {
   reminders: "reminders",
   whitelistTopup: "whitelist_topup",
   syncRuns: "sync_runs",
-  roiReports: "daily_roi_reports",
-  roiSnapshots: "daily_roi_reports",
+  roiReports: "view_daily_roi",
+  roiSnapshots: "view_daily_roi",
   countryRoi: "country_roi",
   pluginSites: "plugin_sites",
 };
@@ -113,7 +113,7 @@ export function subscribeResource(key, callback, onError) {
     try {
       let query = supabase.from(table).select("*");
       // Urutkan berdasarkan kolom waktu jika ada
-      if (table === "daily_roi_reports" || table === "expenses" || table === "whitelist_topup") {
+      if (table === "view_daily_roi" || table === "daily_roi_reports" || table === "expenses" || table === "whitelist_topup") {
         query = query.order("date", { ascending: false });
       } else if (table === "sync_runs") {
         query = query.order("started_at", { ascending: false }).limit(50);
