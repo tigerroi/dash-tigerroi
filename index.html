@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Diisi skrip di bawah. "light dark" sebagai nilai awal supaya kanvas yang dicat browser
+         SEBELUM stylesheet sampai sudah ikut gelap; tanpa itu tiap muat halaman diawali kilatan
+         putih. -->
+    <meta name="color-scheme" content="light dark" />
+    <!-- Warna bilah alamat di browser ponsel. Nilainya diambil dari --background begitu stylesheet
+         ada (src/lib/theme.js), bukan disalin jadi hex kedua di sini. -->
+    <meta name="theme-color" content="#ffffff" />
+    <title>TigerROI Admin Dashboard</title>
+    <!--
+      Tema dipasang di sini, sebelum satu piksel pun digambar.
+
+      Ditaruh sebagai skrip inline dan bukan di dalam bundel karena bundel dimuat `type="module"`,
+      yang selalu ditunda sampai setelah dokumen selesai diurai: temanya baru terpasang setelah
+      halaman terang tergambar, dan yang dilihat orang bermode gelap adalah kilatan putih tiap
+      berpindah halaman.
+
+      Kuncinya kembar dengan THEME_STORAGE_KEY di src/lib/theme.js, dan bentuk keputusannya kembar
+      dengan resolveTheme() di sana — persis pola campaignCommandEntry, dan dijaga tes yang membaca
+      berkas seberangnya (src/lib/theme.test.mjs). Beda sedikit, tema yang tersimpan tidak terbaca
+      saat boot dan tiap muat halaman berkedip ke tema yang salah dulu.
+    -->
+    <script>
+      (function () {
+        var stored = null;
+        try {
+          stored = localStorage.getItem("rabbitroi:theme");
+        } catch (error) {
+          stored = null;
+        }
+        var system = null;
+        try {
+          system = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        } catch (error) {
+          system = null;
+        }
+        var theme = stored === "light" || stored === "dark" ? stored : system || "light";
+        document.documentElement.dataset.theme = theme;
+        document.currentScript.parentNode
+          .querySelector('meta[name="color-scheme"]')
+          .setAttribute("content", theme);
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

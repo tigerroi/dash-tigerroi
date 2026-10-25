@@ -1,0 +1,40 @@
+name: TigerROI Sync Meta Ads
+
+on:
+  # Terjadwal setiap 30 menit (catatan: cron GitHub Actions pada repositori publik/privat bisa bergeser 1-5 menit tergantung antrean runner GitHub)
+  schedule:
+    - cron: "*/30 * * * *"
+  # Tombol pemicu manual dari tab Actions di GitHub
+  workflow_dispatch:
+
+# Batasi konkurensi agar dua sinkronisasi tidak berjalan bersamaan
+concurrency:
+  group: sync-meta
+  cancel-in-progress: false
+
+jobs:
+  sync-meta:
+    name: Sinkronisasi Meta ke Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Kode Repositori
+        uses: actions/checkout@v4
+
+      - name: Siapkan Lingkungan Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Pasang Dependensi
+        run: npm ci --omit=dev || npm install --omit=dev
+
+      - name: Jalankan Sinkronisasi Meta Ads
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+        run: node jobs/sync-meta.js
+

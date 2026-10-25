@@ -1,0 +1,76 @@
+# Perintah di CLAUDE.md, dijalankan otomatis. Selama hanya dijalankan kalau ada yang
+# ingat, sebuah gerbang bukan gerbang — dan `biome check` sempat merah cukup lama tanpa ada yang
+# menyalakannya.
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+
+# Push berikutnya membatalkan run yang masih berjalan di branch yang sama; yang menarik hanya
+# hasil commit terakhir.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Sama dengan `engines.node` di functions/package.json — sync terjadwal berjalan di runtime
+      # itu, jadi tesnya tidak boleh lulus di versi lain.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+
+      - name: Install (frontend)
+        run: npm ci
+
+      - name: Install (functions)
+        run: npm ci
+        working-directory: functions
+
+      # `server/` adalah paket Bun, bukan npm — jalur cepat plugin, gating, saklar campaign, dan
+      # penerima jejak aktivitas tinggal di sana.
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install (server)
+        run: bun install --frozen-lockfile
+        working-directory: server
+
+      - name: Lint
+        run: npx biome check .
+
+      - name: Test (frontend)
+        run: npm test
+
+      # Termasuk roles.test.mjs, yang membaca database.rules.json dan menolak aturan yang kembali
+      # membandingkan role sebagai satu string utuh.
+      - name: Test (functions)
+        run: npm test
+        working-directory: functions
+
+      # Tesnya sempat tidak pernah dijalankan siapa pun di sini, dan yang dijaganya bukan hal kecil:
+      # gerbang `requireSuperAdmin` di server/plugin.js adalah SATU-SATUNYA penegak izin halaman
+      # /plugin — halaman itu tidak menulis satu pun node RTDB, jadi tidak ada aturan database di
+      # belakangnya yang bisa menangkap kalau gerbangnya jebol.
+      - name: Test (server)
+        run: bun test
+        working-directory: server
+
+      # Vite menanam nilai VITE_* saat build, jadi tanpa .env hasilnya bundel yang variabelnya
+      # undefined. Nilai contoh sudah cukup untuk memastikan build-nya sendiri tidak rusak; yang
+      # asli hanya ada di mesin deploy.
+      - name: Build
+        run: |
+          cp .env.example .env
+          npm run build

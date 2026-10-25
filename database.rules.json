@@ -1,0 +1,518 @@
+{
+  "rules": {
+    "roles": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/)",
+        ".validate": "newData.isString() && newData.val().matches(/^(superadmin|admin|user|advertiser|keuangan|guest)(,(superadmin|admin|user|advertiser|keuangan|guest))*$/)"
+      }
+    },
+    "users": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/)",
+      ".indexOn": ["email", "username", "role"],
+      "$uid": {
+        "notificationTopics": {
+          ".write": "auth != null && (root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/) || root.child('users').child($uid).child('email').val() === auth.token.email)",
+          "$topic": {
+            ".validate": "newData.isBoolean() && $topic.matches(/^(reminders|roiAlerts|syncIssues)$/)"
+          }
+        },
+        "telegramChatId": {
+          ".write": "auth != null && (root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/) || root.child('users').child($uid).child('email').val() === auth.token.email)",
+          ".validate": "!newData.exists() || (newData.isString() && newData.val().matches(/^-?[0-9]{1,20}$/))"
+        },
+        "campaignCommands": {
+          ".write": "auth != null && (root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/) || root.child('users').child($uid).child('email').val() === auth.token.email)",
+          "$campaignId": {
+            ".validate": "!newData.exists() || (newData.hasChildren(['campaignId', 'desiredStatus', 'state', 'requestedAt']) && $campaignId.matches(/^[0-9]+$/))",
+            "campaignId": { ".validate": "newData.val() === $campaignId" },
+            "desiredStatus": {
+              ".validate": "newData.val() === 'ACTIVE' || newData.val() === 'PAUSED'"
+            },
+            "state": {
+              ".validate": "newData.val() === 'pending' || (newData.val().matches(/^(applied|failed)$/) && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/))"
+            },
+            "requestedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "requestedBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+            "campaign": { ".validate": "newData.isString() && newData.val().length <= 300" },
+            "adAccount": { ".validate": "newData.isString() && newData.val().length <= 60" },
+            "appliedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "failedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "error": { ".validate": "newData.isString() && newData.val().length <= 500" },
+            "$other": { ".validate": false }
+          }
+        }
+      }
+    },
+    "userReports": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/)"
+    },
+    "domains": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/)",
+      ".indexOn": ["domainUrl", "status", "userOwner"]
+    },
+    "subDomains": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/)",
+      ".indexOn": ["name", "parentDomain", "pic", "status"],
+      "$id": {
+        "campaignCodes": {
+          ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin|advertiser)(,.*)?$/)",
+          ".validate": "newData.isString() && newData.val().length <= 500"
+        }
+      }
+    },
+    "adAccounts": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/)",
+      ".indexOn": ["name", "actId"]
+    },
+    "gamAccounts": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/)",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/)",
+      ".indexOn": ["name", "networkCode", "publisherId", "status", "googleCredential"]
+    },
+    "adsenseAccounts": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/)",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/)",
+      ".indexOn": ["name", "publisherId", "status", "googleCredential"]
+    },
+    "pluginSites": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/)",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/)",
+      ".indexOn": ["name", "enrolled"]
+    },
+    "otpSecrets": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?superadmin(,.*)?$/)",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?superadmin(,.*)?$/)",
+      ".indexOn": ["name"],
+      "$entryId": {
+        ".validate": "!newData.exists() || newData.hasChildren(['name', 'secret'])",
+        "name": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 120"
+        },
+        "secret": {
+          ".validate": "newData.isString() && newData.val().matches(/^[A-Z2-7]{16,128}$/)"
+        },
+        "digits": { ".validate": "newData.isNumber() && newData.val() >= 6 && newData.val() <= 8" },
+        "period": {
+          ".validate": "newData.isNumber() && newData.val() >= 15 && newData.val() <= 300"
+        },
+        "algorithm": { ".validate": "newData.val().matches(/^(sha1|sha256|sha512)$/)" },
+        "issuer": { ".validate": "newData.isString() && newData.val().length <= 200" },
+        "id": { ".validate": "newData.val() === $entryId" },
+        "createdAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+        "createdBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+        "updatedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+        "updatedBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+        "deletedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+        "deletedBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+        "$other": { ".validate": false }
+      }
+    },
+    "pluginKeys": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/)",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/)",
+      "$subdomainId": {
+        ".validate": "!newData.exists() || newData.hasChildren(['apiKey'])",
+        "apiKey": { ".validate": "newData.isString() && newData.val().length <= 200" },
+        "enrolledAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+        "enrolledBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+        "$other": { ".validate": false }
+      }
+    },
+    "googleApiConfigs": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/)",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/)",
+      ".indexOn": ["name", "clientId", "status"]
+    },
+    "expenses": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin|keuangan|guest)(,.*)?$/)",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin|keuangan)(,.*)?$/)",
+      ".indexOn": ["date"]
+    },
+    "invalidTraffic": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin|keuangan|guest)(,.*)?$/)",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin|keuangan)(,.*)?$/)",
+      ".indexOn": ["date", "domain"]
+    },
+    "adxCosts": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin|keuangan|guest)(,.*)?$/)",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin|keuangan)(,.*)?$/)",
+      ".indexOn": ["date", "domain"]
+    },
+    "companyPercents": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin|keuangan|guest)(,.*)?$/)",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin|keuangan)(,.*)?$/)",
+      ".indexOn": ["domain", "effectiveFrom"]
+    },
+    "bonusPercents": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin|keuangan|guest)(,.*)?$/)",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin|keuangan)(,.*)?$/)",
+      ".indexOn": ["user", "effectiveFrom"]
+    },
+    "payouts": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin|keuangan|guest)(,.*)?$/)",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin|keuangan)(,.*)?$/)",
+      ".indexOn": ["date", "domain"]
+    },
+    "accountCloses": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin|keuangan|guest)(,.*)?$/)",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin|keuangan)(,.*)?$/)",
+      ".indexOn": ["date", "domain"]
+    },
+    "whitelistTopup": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin|keuangan|guest)(,.*)?$/)",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin|keuangan)(,.*)?$/)",
+      ".indexOn": ["date"]
+    },
+    "reminders": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin|keuangan)(,.*)?$/)",
+      ".indexOn": ["dueDate"]
+    },
+    "notificationGroups": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/)",
+      ".indexOn": ["label", "chatId"],
+      "$groupId": {
+        ".validate": "!newData.exists() || newData.hasChildren(['label', 'chatId'])",
+        "label": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 120"
+        },
+        "chatId": { ".validate": "newData.isString() && newData.val().matches(/^-?[0-9]{1,20}$/)" },
+        "enabled": { ".validate": "newData.isBoolean()" },
+        "pic": { ".validate": "newData.isString() && newData.val().length <= 120" },
+        "topics": {
+          "$topic": {
+            ".validate": "newData.isBoolean() && $topic.matches(/^(reminders|roiAlerts|syncIssues)$/)"
+          }
+        },
+        "id": { ".validate": "newData.val() === $groupId" },
+        "createdAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+        "createdBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+        "updatedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+        "updatedBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+        "deletedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+        "deletedBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+        "$other": { ".validate": false }
+      }
+    },
+    "domainTargets": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin|keuangan)(,.*)?$/)"
+    },
+    "settings": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/)",
+      "roi": {
+        "adTaxPercent": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+        }
+      },
+      "telegram": {
+        "chatIds": {
+          ".validate": "newData.isString()"
+        }
+      },
+      "notifications": {
+        "$topic": {
+          ".validate": "$topic.matches(/^(reminders|roiAlerts|syncIssues)$/)",
+          "enabled": { ".validate": "newData.isBoolean()" },
+          "roles": {
+            ".validate": "newData.isString() && (newData.val() === '' || newData.val().matches(/^(admin|user|advertiser|keuangan)(,(admin|user|advertiser|keuangan))*$/))"
+          },
+          "$other": { ".validate": false }
+        },
+        "updatedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+        "updatedBy": { ".validate": "newData.isString() && newData.val().length <= 200" }
+      },
+      "alerts": {
+        "enabled": { ".validate": "newData.isBoolean()" },
+        "minSpend": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "roiThreshold": {
+          ".validate": "newData.isNumber() && newData.val() >= -100 && newData.val() <= 10000"
+        },
+        "balanceThreshold": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "spendNoEarning": { ".validate": "newData.isBoolean()" },
+        "lowRoi": { ".validate": "newData.isBoolean()" },
+        "lowBalance": { ".validate": "newData.isBoolean()" },
+        "updatedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+        "updatedBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+        "$other": { ".validate": false }
+      }
+    },
+    "dashboard": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/)",
+      "weeklyFinancials": {
+        ".indexOn": ["date", "period"]
+      },
+      "advertiserSpend": {
+        ".indexOn": ["advertiser", "status"]
+      },
+      "roiReports": {
+        ".indexOn": ["domain", "period", "status"]
+      },
+      "syncRuns": {
+        ".indexOn": ["startedAt", "ok"]
+      },
+      "gating": {
+        "commands": {
+          "$commandId": {
+            ".validate": "!newData.exists() || (newData.hasChildren(['campaignId', 'action', 'state', 'requestedAt']) && $commandId.matches(/^c[0-9]+$/))",
+            "campaignId": {
+              ".validate": "newData.isString() && 'c' + newData.val() === $commandId"
+            },
+            "action": { ".validate": "newData.val() === 'gate' || newData.val() === 'ungate'" },
+            "state": {
+              ".validate": "(newData.val() === 'pending' && root.child('roles').child(auth.uid).val().matches(/^(.*,)?superadmin(,.*)?$/)) || (newData.val().matches(/^(applied|failed)$/) && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/))"
+            },
+            "requestedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "requestedBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+            "campaign": { ".validate": "newData.isString() && newData.val().length <= 300" },
+            "finishedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "result": { ".validate": "newData.val().matches(/^(ok|aborted|problem)$/)" },
+            "runId": { ".validate": "newData.isString() && newData.val().length <= 60" },
+            "error": { ".validate": "newData.isString() && newData.val().length <= 500" },
+            "$other": { ".validate": false }
+          }
+        },
+        "refreshRequestedAt": {
+          ".validate": "newData.isString() && newData.val().length <= 40 && root.child('roles').child(auth.uid).val().matches(/^(.*,)?superadmin(,.*)?$/)"
+        }
+      },
+      "telegramInbox": {
+        "offset": { ".validate": "newData.isNumber()" },
+        "chats": {
+          "$chatKey": {
+            ".validate": "!newData.exists() || (newData.hasChildren(['chatId', 'firstSeenAt']) && $chatKey.matches(/^cn?[0-9]{1,20}$/))",
+            "chatId": {
+              ".validate": "newData.isString() && newData.val().matches(/^-?[0-9]{1,20}$/)"
+            },
+            "type": { ".validate": "newData.isString() && newData.val().length <= 20" },
+            "title": { ".validate": "newData.isString() && newData.val().length <= 200" },
+            "username": { ".validate": "newData.isString() && newData.val().length <= 64" },
+            "firstSeenAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "lastSeenAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "dismissedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "dismissedBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+            "$other": { ".validate": false }
+          }
+        }
+      },
+      "adsenseSlots": {
+        ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?(admin|superadmin)(,.*)?$/)",
+        "$subdomainId": {
+          ".validate": "!newData.exists() || newData.hasChildren(['codes'])",
+          "codes": {
+            "$index": {
+              ".validate": "$index.matches(/^[0-4]$/) && newData.isString() && newData.val().length > 0 && newData.val().length <= 6000"
+            }
+          },
+          "name": { ".validate": "newData.isString() && newData.val().length <= 200" },
+          "id": { ".validate": "newData.isString() && newData.val().length <= 64" },
+          "createdAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "createdBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+          "updatedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "updatedBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+          "$other": { ".validate": false }
+        }
+      },
+      "cloakingUrls": {
+        "$urlId": {
+          ".validate": "!newData.exists() || newData.hasChildren(['url'])",
+          "url": {
+            ".validate": "newData.isString() && newData.val().matches(/^https?:\\/\\/.+$/) && newData.val().length <= 2000"
+          },
+          "id": { ".validate": "newData.isString() && newData.val().length <= 60" },
+          "createdAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "createdBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+          "updatedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "updatedBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+          "deletedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "deletedBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+          "$other": { ".validate": false }
+        }
+      },
+      "gptSizeTemplates": {
+        ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?superadmin(,.*)?$/)",
+        "$templateId": {
+          ".validate": "!newData.exists() || newData.hasChildren(['name', 'sizes'])",
+          "name": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60"
+          },
+          "sizes": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 4000"
+          },
+          "id": { ".validate": "newData.isString() && newData.val().length <= 60" },
+          "createdAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "createdBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+          "updatedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "updatedBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+          "deletedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "deletedBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+          "$other": { ".validate": false }
+        }
+      },
+      "countryPresets": {
+        ".write": "auth != null && root.child('roles').child(auth.uid).val().matches(/^(.*,)?superadmin(,.*)?$/)",
+        "$presetId": {
+          ".validate": "!newData.exists() || newData.hasChildren(['advertiser', 'name', 'countries'])",
+          "advertiser": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 120"
+          },
+          "name": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60"
+          },
+          "countries": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 400"
+          },
+          "id": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "createdAt": {
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          "createdBy": {
+            ".validate": "newData.isString() && newData.val().length <= 200"
+          },
+          "updatedAt": {
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          "updatedBy": {
+            ".validate": "newData.isString() && newData.val().length <= 200"
+          },
+          "deletedAt": {
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          "deletedBy": {
+            ".validate": "newData.isString() && newData.val().length <= 200"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      },
+      "campaignCreateJobs": {
+        "$jobId": {
+          ".validate": "!newData.exists() || (newData.hasChildren(['accountId', 'name', 'state', 'requestedAt']) && $jobId.matches(/^j[0-9a-z]{5,20}$/))",
+          "accountId": { ".validate": "newData.isString() && newData.val().length <= 128" },
+          "actId": { ".validate": "newData.isString() && newData.val().length <= 64" },
+          "accountName": { ".validate": "newData.isString() && newData.val().length <= 200" },
+          "name": { ".validate": "newData.isString() && newData.val().length <= 420" },
+          "subDomain": { ".validate": "newData.isString() && newData.val().length <= 253" },
+          "code": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "link": { ".validate": "newData.isString() && newData.val().length <= 500" },
+          "pageId": { ".validate": "newData.isString() && newData.val().length <= 30" },
+          "pixelId": { ".validate": "newData.isString() && newData.val().length <= 30" },
+          "variants": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 10"
+          },
+          "images": {
+            ".validate": "newData.isNumber() && newData.val() >= 2 && newData.val() <= 100"
+          },
+          "plan": {
+            ".validate": "newData.isString() && newData.val().length <= 100000"
+          },
+          "campaignId": { ".validate": "newData.isString() && newData.val().length <= 30" },
+          "state": {
+            ".validate": "newData.isString() && newData.val().matches(/^(requested|running|done|partial|failed|unknown)$/)"
+          },
+          "progress": {
+            "done": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10"
+            },
+            "total": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10"
+            },
+            "$other": { ".validate": false }
+          },
+          "adSets": {
+            "$i": {
+              "name": { ".validate": "newData.isString() && newData.val().length <= 420" },
+              "adSetId": { ".validate": "newData.isString() && newData.val().length <= 30" },
+              "creativeId": { ".validate": "newData.isString() && newData.val().length <= 30" },
+              "adId": { ".validate": "newData.isString() && newData.val().length <= 30" },
+              "error": { ".validate": "newData.isString() && newData.val().length <= 1000" },
+              "$other": { ".validate": false }
+            }
+          },
+          "error": { ".validate": "newData.isString() && newData.val().length <= 1000" },
+          "requestedBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+          "requestedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "startedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "updatedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "finishedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "$other": { ".validate": false }
+        }
+      },
+      "campaignCopyJobs": {
+        "$jobId": {
+          ".validate": "!newData.exists() || (newData.hasChildren(['sourceCampaignId', 'state', 'requestedAt']) && $jobId.matches(/^j[0-9a-z]{5,20}$/))",
+          "sourceCampaignId": {
+            ".validate": "newData.isString() && newData.val().matches(/^[0-9]{1,30}$/)"
+          },
+          "sourceName": { ".validate": "newData.isString() && newData.val().length <= 400" },
+          "userId": { ".validate": "newData.isString() && newData.val().length <= 128" },
+          "accountId": { ".validate": "newData.isString() && newData.val().length <= 128" },
+          "actId": { ".validate": "newData.isString() && newData.val().length <= 64" },
+          "count": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 5"
+          },
+          "names": { "$i": { ".validate": "newData.isString() && newData.val().length <= 420" } },
+          "adSetCount": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50"
+          },
+          "adCount": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 150"
+          },
+          "state": {
+            ".validate": "newData.isString() && newData.val().matches(/^(requested|running|done|partial|failed|unknown)$/)"
+          },
+          "progress": {
+            "done": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 250"
+            },
+            "total": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 250"
+            },
+            "$other": { ".validate": false }
+          },
+          "copies": {
+            "$i": {
+              "name": { ".validate": "newData.isString() && newData.val().length <= 420" },
+              "campaignId": { ".validate": "newData.isString() && newData.val().length <= 30" },
+              "adSets": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50"
+              },
+              "adSetsExpected": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50"
+              },
+              "ads": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 150"
+              },
+              "adsExpected": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 150"
+              },
+              "error": { ".validate": "newData.isString() && newData.val().length <= 1000" },
+              "renameError": { ".validate": "newData.isString() && newData.val().length <= 1000" },
+              "uncertain": { ".validate": "newData.isBoolean()" },
+              "$other": { ".validate": false }
+            }
+          },
+          "error": { ".validate": "newData.isString() && newData.val().length <= 1000" },
+          "requestedBy": { ".validate": "newData.isString() && newData.val().length <= 200" },
+          "requestedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "startedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "updatedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "finishedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "$other": { ".validate": false }
+        }
+      }
+    }
+  }
+}

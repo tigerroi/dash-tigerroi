@@ -1,0 +1,125 @@
+import { cellText } from "./cellText.js";
+
+// Pemilik sebuah baris ROI: advertiser (PIC) dan domain induknya. Baris ROI membawa nama subdomain
+// dan PIC-nya sendiri, tapi TIDAK membawa domain induk — yang tahu itu `subDomains.parentDomain`.
+//
+// Dipakai dua grafik per subdomain di Overview untuk menyaring; aturan pencocokannya sengaja sama
+// dengan `splitByOwner` di src/lib/profitLoss.js, termasuk jatuh ke pencocokan akhiran untuk
+// subdomain yang belum terdaftar — kalau tidak, situs yang baru dipasang menghilang dari filter
+// domain tanpa satu pun tanda di layar.
+
+const normalize = (value) => cellText(value).toLowerCase();
+
+const clean = (value) => cellText(value);
+
+export function subDomainOwnerIndex(subDomains, domains) {
+  const byName = new Map();
+  for (const sub of subDomains || []) {
+    const key = normalize(sub?.name);
+    if (!key) continue;
+    byName.set(key, { domain: clean(sub?.parentDomain), pic: clean(sub?.pic) });
+  }
+
+  const knownDomains = (domains || []).map((item) => clean(item?.domainUrl)).filter(Boolean);
+
+  return {
+    /** Domain induk sebuah subdomain, "" kalau tidak ada yang tahu. */
+    domainOf(name) {
+      const key = normalize(name);
+      if (!key) return "";
+
+      const registered = byName.get(key)?.domain;
+      if (registered) return registered;
+
+      return (
+        knownDomains.find((domain) => {
+          const suffix = domain.toLowerCase();
+          return key === suffix || key.endsWith(`.${suffix}`);
+        }) || ""
+      );
+    },
+    /**
+     * PIC sebuah baris. Yang di BARIS lebih dulu: itu yang dipakai sisi sync saat menulis baris
+     * dan yang tampil di kolom tabel; `subDomains.pic` cuma menambal baris yang tidak membawanya.
+     */
+    picOf(name, rowPic) {
+      return clean(rowPic) || byName.get(normalize(name))?.pic || "";
+    },
+  };
+}
+
+/** Pilihan yang tersedia untuk dua dropdown, dari baris yang sedang berada dalam periode. */
+export function ownerFilterOptions(rows, owners) {
+  const advertisers = new Set();
+  const domains = new Set();
+
+  for (const row of rows || []) {
+    const name = cellText(row?.subDomain);
+    if (!name) continue;
+
+    const pic = owners.picOf(name, row?.pic);
+    if (pic) advertisers.add(pic);
+
+    const domain = owners.domainOf(name);
+    if (domain) domains.add(domain);
+  }
+
+  return {
+    advertisers: [...advertisers].sort((a, b) => a.localeCompare(b)),
+    domains: [...domains].sort((a, b) => a.localeCompare(b)),
+  };
+}
+
+/**
+ * Baris yang lolos ketiga filter. Yang kosong berarti "semua" — bukan "yang pemiliknya tidak
+ * diketahui": baris tanpa PIC tetap ikut selama advertisernya tidak dipilih, dan menghilang begitu
+ * satu nama dipilih, karena ia bukan milik nama itu.
+ */
+export function filterRowsByOwner(
+  rows,
+  owners,
+  { advertiser = "", domain = "", subDomain = "" } = {},
+) {
+  if (!advertiser && !domain && !subDomain) return rows || [];
+
+  return (rows || []).filter((row) => {
+    const name = cellText(row?.subDomain);
+    if (subDomain && name !== subDomain) return false;
+    if (advertiser && owners.picOf(name, row?.pic) !== advertiser) return false;
+    if (domain && owners.domainOf(name) !== domain) return false;
+
+    return true;
+  });
+}
+
+// Nama subdomain yang ada di sekumpulan baris, urut dan tanpa kembar. Lewat `cellText`, bukan
+// `firstValue`: yang terakhir menjatuhkan baris tanpa subdomain ke "-", dan "-" di dropdown adalah
+// pilihan yang tidak menyaring apa pun kecuali dirinya sendiri.
+export function subDomainNames(rows) {
+  const names = new Set();
+  for (const row of rows || []) {
+    const name = cellText(row?.subDomain);
+    if (name) names.add(name);
+  }
+  return [...names].sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Isi ketiga dropdown kepemilikan, dengan ATURAN yang dulu cuma tinggal di Overview:
+ * - advertiser dari SELURUH baris (memilih satu tidak boleh menghapus nama lain dari daftarnya);
+ * - domain milik advertiser yang dipilih saja (domain tanpa satu baris milik orang itu = pilihan
+ *   yang hasilnya pasti kosong);
+ * - subdomain milik advertiser DAN domain yang dipilih.
+ * Semuanya lewat `filterRowsByOwner` — fungsi yang sama dengan yang menyaring isi grafik.
+ */
+export function ownerChoices(rows, owners, { advertiser = "", domain = "" } = {}) {
+  const all = ownerFilterOptions(rows, owners);
+  const domains = advertiser
+    ? ownerFilterOptions(filterRowsByOwner(rows, owners, { advertiser }), owners).domains
+    : all.domains;
+  return {
+    advertisers: all.advertisers,
+    domains,
+    subDomains: subDomainNames(filterRowsByOwner(rows, owners, { advertiser, domain })),
+  };
+}

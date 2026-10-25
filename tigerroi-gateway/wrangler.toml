@@ -1,0 +1,19 @@
+name = "tigerroi-gateway"
+main = "src/index.js"
+compatibility_date = "2026-10-25"
+workers_dev = false
+
+# Rute Domain Worker di Cloudflare
+# Pastikan subdomain go.tigerroi.com telah diarahkan ke Cloudflare Worker
+routes = [
+  { pattern = "go.tigerroi.com/*", zone_name = "tigerroi.com" }
+]
+
+[vars]
+KEITARO_BASE_URL = "https://appscity.tech"
+FALLBACK_URL = "https://tigerroi.com"
+
+# Lingkungan Staging / Preview (Opsional)
+[env.preview]
+name = "tigerroi-gateway-preview"
+workers_dev = true

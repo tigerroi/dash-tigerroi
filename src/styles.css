@@ -1,0 +1,7551 @@
+/* Satu palet, dua wajah.
+
+   Tiap warna di berkas ini disebut lewat `var()` atas salah satu token di bawah; tidak ada satu
+   pun hex yang berdiri sendiri di luar dua blok itu. Itu bukan kerapian. Tema gelap yang ditempel sebagai `@media` per
+   selektor akan selalu melewatkan satu selektor, dan yang terlewat baru ketahuan sebagai teks
+   putih di atas putih oleh orang yang sedang memakainya — bukan oleh yang menuliskannya. Dengan
+   satu lapis token, blok gelap cuma menyebut ulang NILAI, dan tidak ada selektor yang bisa
+   tertinggal.
+
+   Yang memilih adalah PERANGKAT, sampai ada orang yang memilih lain lewat tombol di topbar.
+   Pilihannya dipasang sebagai `data-theme` di elemen akar, dan blok gelap di bawah menyebut
+   atribut itu — bukan `@media (prefers-color-scheme: dark)`. Kalau lewat media query, pilihan
+   orang harus ditulis sebagai blok gelap KEDUA supaya bisa mengalahkannya, dan dua daftar nilai
+   gelap adalah persis hal yang seluruh berkas ini dibangun untuk menghindarinya.
+
+   Yang membaca setelan perangkat karena itu jadi skrip boot di `index.html` (dan
+   `src/lib/theme.js` sesudahnya), bukan CSS. Ia jalan sebelum halaman dicat, jadi tidak ada
+   kedipan; dan halaman ini React yang tidak menggambar apa pun tanpa JS, jadi tema yang bersandar
+   pada JS tidak menambah satu pun cara baru untuk gagal. Yang tidak menyatakan apa-apa —
+   perangkat tanpa setelan tema, penyimpanan yang tidak bisa dibaca — jatuh ke `:root` ini.
+   Terang adalah BAWAAN, bukan hasil tebakan.
+
+   `color-scheme` ikut diumumkan supaya scrollbar, kotak centang, dan pemilih tanggal bawaan
+   browser ikut gelap. Tanpa itu, satu-satunya yang tetap putih menyilaukan justru bagian yang
+   tidak bisa kita gaya sendiri. */
+:root {
+  color-scheme: light;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  /* Permukaan dan teks netral. */
+  --background: #ffffff;
+  --foreground: #18181b;
+  --foreground-soft: #52525b;
+  --foreground-faint: #a1a1aa;
+  --card: #ffffff;
+  --surface-subtle: #fafafa;
+  --surface-sunken: #f6f7f9;
+  --surface-gradient: linear-gradient(180deg, #ffffff, #fafafa);
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --border: #e4e4e7;
+  --border-subtle: #f1f1f4;
+  --border-strong: #a1a1aa;
+  --input: #d4d4d8;
+  --accent: #f4f4f5;
+  --primary: #18181b;
+  --primary-hover: #27272a;
+  --primary-foreground: #fafafa;
+  --destructive: #dc2626;
+  --ring: rgba(24, 24, 27, 0.16);
+  /* Isian pekat yang DITULISI, dipisah dari `--info-solid`/`--indigo-solid` yang dipakai sebagai
+     teks di atas permukaan. Di tema gelap keduanya bergerak berlawanan: yang jadi teks harus makin
+     terang untuk terbaca di atas hitam, sementara yang jadi isian justru berbalik jadi terang
+     dengan tulisan GELAP di atasnya. Satu token untuk dua peran berarti salah satunya selalu tipis
+     — tanggal terpilih yang nyaris tidak terbaca, atau angka filter yang lenyap. */
+  --info-fill: #2563eb;
+  --info-fill-fg: #ffffff;
+  --indigo-fill: #4f46e5;
+  --indigo-fill-fg: #ffffff;
+  /* Bundaran saklar campaign. Putih di kedua tema: yang memisahkannya dari rel di belakangnya
+     adalah bayangan dan geraknya, bukan warnanya. */
+  --switch-knob: #ffffff;
+
+  /* Bayangan, tirai, dan latar tembus pandang. Nilai penuh, bukan sekadar warnanya: di tema gelap
+     yang berubah bukan cuma warna bayangan melainkan seberapa jauh ia boleh terlihat. */
+  --shadow-panel: 0 1px 2px rgba(24, 24, 27, 0.04);
+  --shadow-tab: 0 1px 2px rgba(24, 24, 27, 0.08);
+  --shadow-button: 0 1px 2px rgba(24, 24, 27, 0.12);
+  --shadow-knob: 0 1px 2px rgba(9, 9, 11, 0.25);
+  --shadow-card: 0 18px 54px rgba(24, 24, 27, 0.08);
+  --shadow-dialog: 0 24px 70px rgba(24, 24, 27, 0.18);
+  --shadow-popover: 0 12px 26px rgba(24, 24, 27, 0.18);
+  --shadow-tooltip: 0 12px 26px rgba(24, 24, 27, 0.22);
+  --shadow-avatar: 0 12px 30px rgba(24, 24, 27, 0.14);
+  --shadow-filter-bar: 0 6px 16px -12px rgba(24, 24, 27, 0.35);
+  --shadow-point: 0 4px 8px rgba(24, 24, 27, 0.18);
+  --highlight-inset: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  --backdrop: rgba(24, 24, 27, 0.42);
+  --backdrop-soft: rgba(24, 24, 27, 0.36);
+  --topbar-bg: rgba(255, 255, 255, 0.86);
+  --login-backdrop:
+    linear-gradient(135deg, rgba(244, 244, 245, 0.92), rgba(255, 255, 255, 0.96)),
+    radial-gradient(circle at top left, rgba(24, 24, 27, 0.08), transparent 34%);
+  --profile-cover:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.88), rgba(109, 40, 217, 0.82)), #18181b;
+
+  /* Tooltip grafik: latarnya SUDAH gelap di tema terang, dan tetap gelap di tema gelap — yang
+     berubah cuma seberapa jauh ia terangkat dari kanvas di belakangnya. */
+  --tooltip-bg: rgba(24, 24, 27, 0.94);
+  --tooltip-border: rgba(255, 255, 255, 0.14);
+  --tooltip-foreground: #ffffff;
+
+  /* Hijau: untung, berhasil, campaign menyala. */
+  --success-solid: #16a34a;
+  --success-solid-strong: #22c55e;
+  --success-fg: #15803d;
+  --success-fg-strong: #166534;
+  --success-bg: #f0fdf4;
+  --success-bg-strong: #dcfce7;
+  --success-border: #bbf7d0;
+  --success-border-translucent: rgba(34, 197, 94, 0.5);
+  --success-ring: rgba(34, 197, 94, 0.12);
+  /* Dipakai di ATAS tooltip yang latarnya gelap, jadi nilainya sama di kedua tema. */
+  --success-on-dark: #86efac;
+
+  /* Merah: rugi, gagal, tindakan yang menghapus. */
+  --danger-fg: #b91c1c;
+  --danger-soft-fg: #f87171;
+  --danger-bg: #fef2f2;
+  --danger-bg-strong: #fee2e2;
+  --danger-bg-faint: #fffbfb;
+  --danger-border: #fecaca;
+  --danger-on-dark: #fca5a5;
+
+  /* Kuning: hari berjalan, jatuh tempo, perintah yang belum sampai. */
+  --warning-solid: #f59e0b;
+  --warning-solid-strong: #facc15;
+  --warning-mid: #d97706;
+  --warning-fg: #b45309;
+  --warning-fg-strong: #92400e;
+  --warning-fg-alt: #a16207;
+  --warning-bg: #fffbeb;
+  --warning-bg-strong: #fef3c7;
+  --warning-bg-yellow: #fefce8;
+  --warning-bg-yellow-strong: #fef9c3;
+  --warning-border: #fde68a;
+  --warning-ring: rgba(245, 158, 11, 0.14);
+  --warning-pulse: rgba(245, 158, 11, 0.45);
+  --warning-pulse-fade: rgba(245, 158, 11, 0);
+
+  /* Oranye: kolom GAM, peringatan yang belum jadi kegagalan. */
+  --orange-solid: #f97316;
+  --orange-fg: #c2410c;
+  --orange-fg-strong: #92400e;
+  --orange-bg: #fff7ed;
+  --orange-border: #fed7aa;
+  --orange-bg-translucent: rgba(249, 115, 22, 0.08);
+  --orange-border-translucent: rgba(249, 115, 22, 0.35);
+
+  /* Biru: tautan, ROI, keterangan. */
+  --info-solid: #2563eb;
+  --info-fg: #1d4ed8;
+  --info-bg: #eff6ff;
+  --info-bg-strong: #dbeafe;
+  --info-bg-translucent: rgba(37, 99, 235, 0.12);
+  --info-border: #bfdbfe;
+  --info-border-strong: #60a5fa;
+  --info-on-dark: #93c5fd;
+  --info-ring: rgba(37, 99, 235, 0.12);
+
+  /* Air progres sync di badge topbar: badan air, dan riak yang berjalan di atasnya. Keduanya
+     translusen supaya `--info-bg` badge-nya tetap terbaca di belakang — air yang pekat berarti
+     dua warna berbeda untuk satu badge yang sama, tergantung tahap ke berapa run-nya. */
+  --sync-water: rgba(37, 99, 235, 0.18);
+  --sync-water-crest: rgba(37, 99, 235, 0.3);
+
+  /* Indigo dan ungu: filter aktif, stempel waktu, lencana. */
+  --indigo-solid: #4f46e5;
+  --indigo-accent: #6366f1;
+  --indigo-fg: #4338ca;
+  --indigo-bg: #eef2ff;
+  --indigo-border: #c7d2fe;
+  --violet-fg: #6d28d9;
+  --violet-bg: #ede9fe;
+  --violet-border: #ddd6fe;
+  --violet-on-dark: #c4b5fd;
+
+  /* Netral yang bukan teks: cincin di sekeliling titik status. */
+  --neutral-ring: rgba(113, 113, 122, 0.12);
+
+  /* Peringkat ROI harian di kalender: emas, perak, perunggu. Warna logam, bukan hijau berjenjang —
+     hijau sudah berarti "untung" di seluruh dashboard ini, dan tiga hijau berbeda di petak yang
+     bersebelahan akan terbaca sebagai tiga tingkat keuntungan, bukan sebagai juara satu-dua-tiga. */
+  --rank-gold: #c99a2e;
+  --rank-silver: #8c94a1;
+  --rank-bronze: #a9682f;
+
+  /* Grafik. Recharts menerima warna sebagai prop JS, bukan lewat CSS, jadi token-token inilah yang
+     dibaca `readChartPalette` di src/lib/chartTheme.js — satu sumber untuk kanvas dan untuk
+     legenda HTML di bawahnya, supaya keduanya tidak pernah bercerita beda. */
+  --chart-grid: #e4e4e7;
+  --chart-axis: #71717a;
+  --chart-zero-line: #a1a1aa;
+  --chart-dot-stroke: #ffffff;
+  /* Isian titik kurva. Tanpa ini Recharts memakai isian bawaannya, putih — tak terlihat di atas
+     latar terang. Terang hitam, gelap putih. */
+  --chart-dot-fill: #000000;
+  --chart-bar-cursor: rgba(113, 113, 122, 0.08);
+  --chart-revenue: #16a34a;
+  --chart-spend: #dc2626;
+  --chart-profit: #7c3aed;
+  --chart-roi: #2563eb;
+
+  /* Enam belas warna deret per subdomain, dipakai per POSISI (lihat SubDomainRoiCharts). */
+  --chart-series-1: #2563eb;
+  --chart-series-2: #ea580c;
+  --chart-series-3: #10b981;
+  --chart-series-4: #eab308;
+  --chart-series-5: #ec4899;
+  --chart-series-6: #7c3aed;
+  --chart-series-7: #ef4444;
+  --chart-series-8: #16a34a;
+  --chart-series-9: #0891b2;
+  --chart-series-10: #f97316;
+  --chart-series-11: #4f46e5;
+  --chart-series-12: #84cc16;
+  --chart-series-13: #db2777;
+  --chart-series-14: #0d9488;
+  --chart-series-15: #a16207;
+  --chart-series-16: #64748b;
+
+  /* Toast. Di tema terang ia sengaja gelap — pemberitahuan yang melayang di atas halaman putih
+     harus terbaca sebagai lapisan lain, bukan sebagai panel yang lepas. Di tema gelap alasan itu
+     berbalik: gelap di atas gelap justru hilang, jadi ia naik jadi permukaan yang terangkat. */
+  --toast-bg: #111827;
+  --toast-foreground: #e5e7eb;
+  --toast-border: rgba(148, 163, 184, 0.22);
+  --toast-success: #22c55e;
+  --toast-error: #ef4444;
+
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Wajah kedua, dan SATU-SATUNYA daftar nilai gelap di seluruh repo ini. Yang disebut di sini
+   hanya nilai token — tidak ada satu pun selektor komponen, dan itulah yang membuat halaman baru
+   ikut gelap tanpa disentuh.
+
+   Permukaannya berjenjang naik, bukan turun: `--background` paling gelap, dan tiap lapis yang
+   lebih dekat ke mata jadi lebih terang (`--card`, lalu `--surface-subtle`). Di tema terang
+   jenjangnya kebalikan itu, dan bayangan yang di sana memisahkan panel dari halaman nyaris tidak
+   terlihat di atas hitam — yang memisahkan lapisan di sini adalah selisih terangnya sendiri.
+
+   Latar berwarna (peringatan, lencana, baris gagal) tidak diganti pastel yang lebih gelap
+   melainkan warna yang SAMA pada opasitas rendah. Pastel gelap yang dipilih satu per satu akan
+   bergeser dari halaman ke halaman; yang ditumpuk di atas `--background` selalu ikut permukaan di
+   belakangnya, dan satu lencana di dalam dialog tetap sewarna dengan kembarannya di tabel. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --background: #09090b;
+  --foreground: #f4f4f5;
+  --foreground-soft: #d4d4d8;
+  --foreground-faint: #71717a;
+  --card: #131317;
+  --surface-subtle: #17171c;
+  --surface-sunken: #0f0f12;
+  --surface-gradient: linear-gradient(180deg, #17171c, #131317);
+  --muted: #1d1d22;
+  --muted-foreground: #a1a1aa;
+  --border: #27272d;
+  --border-subtle: #1f1f24;
+  --border-strong: #52525b;
+  --input: #3f3f46;
+  --accent: #1d1d22;
+  --primary: #f4f4f5;
+  --primary-hover: #e4e4e7;
+  --primary-foreground: #18181b;
+  --destructive: #f87171;
+  --ring: rgba(244, 244, 245, 0.2);
+  --info-fill: #60a5fa;
+  --info-fill-fg: #09090b;
+  --indigo-fill: #818cf8;
+  --indigo-fill-fg: #09090b;
+  --switch-knob: #ffffff;
+
+  /* Bayangan hitam di atas hitam tidak memisahkan apa pun; yang mengangkat panel di sini adalah
+     batasnya. Yang tersisa cuma bayangan lapisan yang benar-benar melayang (dialog, popover,
+     tooltip), dan itu justru dipekatkan supaya terbaca berada DI ATAS halaman. */
+  --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-tab: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-button: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-knob: 0 1px 2px rgba(0, 0, 0, 0.55);
+  --shadow-card: 0 18px 54px rgba(0, 0, 0, 0.6);
+  --shadow-dialog: 0 24px 70px rgba(0, 0, 0, 0.7);
+  --shadow-popover: 0 12px 26px rgba(0, 0, 0, 0.62);
+  --shadow-tooltip: 0 12px 26px rgba(0, 0, 0, 0.66);
+  --shadow-avatar: 0 12px 30px rgba(0, 0, 0, 0.6);
+  --shadow-filter-bar: 0 6px 16px -12px rgba(0, 0, 0, 0.8);
+  --shadow-point: 0 4px 8px rgba(0, 0, 0, 0.6);
+  --highlight-inset: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --backdrop: rgba(0, 0, 0, 0.68);
+  --backdrop-soft: rgba(0, 0, 0, 0.6);
+  --topbar-bg: rgba(9, 9, 11, 0.82);
+  --login-backdrop:
+    linear-gradient(135deg, rgba(24, 24, 27, 0.94), rgba(9, 9, 11, 0.96)),
+    radial-gradient(circle at top left, rgba(99, 102, 241, 0.18), transparent 38%);
+  --profile-cover:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.72), rgba(109, 40, 217, 0.66)), #09090b;
+
+  --tooltip-bg: rgba(24, 24, 27, 0.96);
+  --tooltip-border: rgba(255, 255, 255, 0.16);
+  --tooltip-foreground: #ffffff;
+
+  --success-solid: #22c55e;
+  --success-solid-strong: #4ade80;
+  --success-fg: #4ade80;
+  --success-fg-strong: #86efac;
+  --success-bg: rgba(34, 197, 94, 0.12);
+  --success-bg-strong: rgba(34, 197, 94, 0.2);
+  --success-border: rgba(34, 197, 94, 0.36);
+  --success-border-translucent: rgba(34, 197, 94, 0.6);
+  --success-ring: rgba(34, 197, 94, 0.22);
+  --success-on-dark: #86efac;
+
+  --danger-fg: #fca5a5;
+  --danger-soft-fg: #fca5a5;
+  --danger-bg: rgba(239, 68, 68, 0.14);
+  --danger-bg-strong: rgba(239, 68, 68, 0.24);
+  --danger-bg-faint: rgba(239, 68, 68, 0.08);
+  --danger-border: rgba(248, 113, 113, 0.38);
+  --danger-on-dark: #fca5a5;
+
+  --warning-solid: #f59e0b;
+  --warning-solid-strong: #fde047;
+  --warning-mid: #fbbf24;
+  --warning-fg: #fbbf24;
+  --warning-fg-strong: #fcd34d;
+  --warning-fg-alt: #facc15;
+  --warning-bg: rgba(245, 158, 11, 0.12);
+  --warning-bg-strong: rgba(245, 158, 11, 0.2);
+  --warning-bg-yellow: rgba(250, 204, 21, 0.1);
+  --warning-bg-yellow-strong: rgba(250, 204, 21, 0.2);
+  --warning-border: rgba(245, 158, 11, 0.38);
+  --warning-ring: rgba(245, 158, 11, 0.24);
+  /* Kedip perintah yang belum sampai ke Meta: kuning yang sama, karena ia dilihat di atas
+     lingkaran saklarnya sendiri dan bukan di atas halaman. Ditulis ulang supaya aturannya tetap
+     satu kalimat — blok gelap menyebut SETIAP token (dijaga styles.theme.test.mjs). */
+  --warning-pulse: rgba(245, 158, 11, 0.45);
+  --warning-pulse-fade: rgba(245, 158, 11, 0);
+
+  --orange-solid: #fb923c;
+  --orange-fg: #fdba74;
+  --orange-fg-strong: #fdba74;
+  --orange-bg: rgba(249, 115, 22, 0.12);
+  --orange-border: rgba(249, 115, 22, 0.36);
+  --orange-bg-translucent: rgba(249, 115, 22, 0.14);
+  --orange-border-translucent: rgba(249, 115, 22, 0.45);
+
+  --info-solid: #3b82f6;
+  --info-fg: #93c5fd;
+  --info-bg: rgba(59, 130, 246, 0.12);
+  --info-bg-strong: rgba(59, 130, 246, 0.22);
+  --info-bg-translucent: rgba(59, 130, 246, 0.22);
+  --info-border: rgba(59, 130, 246, 0.36);
+  --info-border-strong: #60a5fa;
+  --info-on-dark: #93c5fd;
+  --info-ring: rgba(59, 130, 246, 0.2);
+
+  --sync-water: rgba(59, 130, 246, 0.26);
+  --sync-water-crest: rgba(96, 165, 250, 0.34);
+
+  --indigo-solid: #818cf8;
+  --indigo-accent: #a5b4fc;
+  --indigo-fg: #a5b4fc;
+  --indigo-bg: rgba(99, 102, 241, 0.14);
+  --indigo-border: rgba(99, 102, 241, 0.38);
+  --violet-fg: #c4b5fd;
+  --violet-bg: rgba(139, 92, 246, 0.16);
+  --violet-border: rgba(139, 92, 246, 0.38);
+  --violet-on-dark: #c4b5fd;
+
+  --neutral-ring: rgba(161, 161, 170, 0.18);
+
+  /* Naik terangnya, sepola dengan warna lain yang dipakai sebagai garis di atas hitam: logam gelap
+     di atas latar gelap berhenti terbaca sebagai logam. */
+  --rank-gold: #e3bb55;
+  --rank-silver: #b9c0cb;
+  --rank-bronze: #cd8b52;
+
+  --chart-grid: #27272d;
+  --chart-axis: #a1a1aa;
+  --chart-zero-line: #52525b;
+  --chart-dot-stroke: #131317;
+  --chart-dot-fill: #ffffff;
+  --chart-bar-cursor: rgba(161, 161, 170, 0.12);
+  --chart-revenue: #4ade80;
+  --chart-spend: #f87171;
+  --chart-profit: #a78bfa;
+  --chart-roi: #60a5fa;
+
+  --chart-series-1: #60a5fa;
+  --chart-series-2: #fb923c;
+  --chart-series-3: #34d399;
+  --chart-series-4: #facc15;
+  --chart-series-5: #f472b6;
+  --chart-series-6: #a78bfa;
+  --chart-series-7: #f87171;
+  --chart-series-8: #4ade80;
+  --chart-series-9: #22d3ee;
+  --chart-series-10: #fdba74;
+  --chart-series-11: #818cf8;
+  --chart-series-12: #a3e635;
+  --chart-series-13: #fb7185;
+  --chart-series-14: #2dd4bf;
+  --chart-series-15: #eab308;
+  --chart-series-16: #94a3b8;
+
+  --toast-bg: #1d1d22;
+  --toast-foreground: #f4f4f5;
+  --toast-border: rgba(148, 163, 184, 0.28);
+  --toast-success: #4ade80;
+  --toast-error: #f87171;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--background);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Spinner for buttons that wait on the sync backend. */
+.icon-spin {
+  animation: icon-spin 1s linear infinite;
+}
+
+@keyframes icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-spin {
+    animation: none;
+  }
+
+  /* Airnya tetap digambar setinggi tahap yang selesai — yang dimatikan cuma geraknya. Progres
+     adalah keterangan, bukan hiasan; menghapusnya berarti badge ini berhenti menyebut tahap
+     keberapa justru bagi yang memilih layar yang tenang. */
+  .sync-water {
+    transition: none;
+  }
+
+  .sync-water::before,
+  .sync-water::after {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+.boot-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  color: var(--muted-foreground);
+  background: var(--background);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 700;
+}
+
+.login-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--login-backdrop);
+}
+
+.login-card {
+  width: min(100%, 390px);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
+
+.login-content {
+  padding: 28px;
+  display: grid;
+  gap: 18px;
+}
+
+.login-mark,
+.brand-mark {
+  width: 32px;
+  height: 32px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.login-content h1 {
+  margin: 0;
+  text-align: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 22px;
+  letter-spacing: 0;
+}
+
+.login-content p {
+  margin: -10px 0 2px;
+  text-align: center;
+  color: var(--muted-foreground);
+  font-size: 14px;
+}
+
+.login-content .login-mark {
+  margin: 0 auto;
+}
+
+.glow {
+  display: none;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 192px minmax(0, 1fr);
+  background: var(--background);
+  transition: grid-template-columns 180ms ease;
+}
+
+.app-shell.sidebar-collapsed {
+  grid-template-columns: 48px minmax(0, 1fr);
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+  background: var(--background);
+}
+
+.brand {
+  height: 48px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 10px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted-foreground);
+}
+
+.brand:hover,
+.nav-item:hover,
+.collapse-button:hover,
+.logout-button:hover,
+.ghost-button:hover,
+.menu-button:hover {
+  background: var(--accent);
+  color: var(--foreground);
+}
+
+.brand-mark {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 7px;
+}
+
+.brand-text {
+  overflow: hidden;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 800;
+  transition:
+    opacity 180ms ease,
+    max-width 180ms ease;
+}
+
+.sidebar-collapsed .brand-text,
+.sidebar-collapsed .nav-item span,
+.sidebar-collapsed .collapse-button span,
+.sidebar-collapsed .logout-button span {
+  max-width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* `overflow-y: auto`, dan itu bukan kerapian. `.sidebar` sendiri `overflow: hidden`; tanpa baris
+   ini, daftar menu yang lebih tinggi dari layar TERPOTONG tanpa cara apa pun mencapai sisanya —
+   superadmin di laptop 900px kehilangan Settings dan Activity Logs sama sekali. Penggabungan menu
+   memperpendek daftarnya, tapi yang menjamin tidak ada baris yang hilang adalah gulirannya:
+   jumlah menu akan bertambah lagi, dan tinggi layar orang tidak.
+
+   `scrollbar-gutter` supaya munculnya batang gulir tidak menggeser ikon beberapa piksel ke kiri. */
+.sidebar nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 8px;
+}
+
+/* Rail 48px tidak punya ruang untuk batang gulir yang memakan lebar; di sana ia disembunyikan dan
+   yang menggulir adalah roda tetikus. */
+.sidebar-collapsed nav {
+  scrollbar-width: none;
+}
+
+.sidebar-collapsed nav::-webkit-scrollbar {
+  display: none;
+}
+
+.nav-item,
+.logout-button,
+.collapse-button {
+  width: 100%;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 10px;
+  background: transparent;
+  color: var(--muted-foreground);
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.nav-item svg,
+.logout-button svg,
+.collapse-button svg {
+  min-width: 18px;
+}
+
+.nav-item.active {
+  background: var(--muted);
+  color: var(--foreground);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.nav-group {
+  padding: 10px 10px 2px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  opacity: 0.65;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Saat rail menyempit, label grup jadi garis pemisah tipis alih-alih teks yang terpotong. */
+.sidebar-collapsed .nav-group {
+  padding: 4px 6px 0;
+  color: transparent;
+  border-top: 1px solid var(--border);
+}
+
+.sidebar-footer {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.logout-button {
+  color: var(--destructive);
+}
+
+.main-area {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  min-height: 48px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--topbar-bg);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.topbar div {
+  display: grid;
+  gap: 1px;
+}
+
+.topbar strong {
+  font-size: 14px;
+}
+
+.topbar span,
+.page-header p,
+.panel-header p {
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
+/* Beats the `.topbar div { display: grid }` above, which would stack these instead. */
+.topbar .topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menu-button {
+  display: none;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.topbar .topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.theme-toggle {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.theme-toggle:hover {
+  border-color: var(--border-strong);
+  color: var(--foreground);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--indigo-accent);
+  outline-offset: 2px;
+}
+
+.user-pill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.content {
+  min-width: 0;
+  padding: 20px;
+}
+
+/* Tab halaman untuk menu yang digabung ke satu baris sidebar (lihat src/config/navigation.js).
+   Tiap tab adalah route sungguhan, jadi ia dirender di kepala `.content` dan bukan menggantikan
+   `.page-header` milik halamannya. */
+.page-tabs {
+  margin: -4px 0 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.page-tab {
+  position: relative;
+  bottom: -1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 8px 8px 0 0;
+  padding: 8px 12px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.page-tab:hover {
+  background: var(--accent);
+  color: var(--foreground);
+}
+
+.page-tab.active {
+  border-bottom-color: var(--foreground);
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+/* Angka yang menuntut tindakan di kepala sebuah tab. Warnanya danger dan bukan muted: yang
+   dihitungnya adalah orang yang sudah menekan Start dan sedang menunggu diaktifkan, dan lencana
+   yang warnanya sama dengan tulisan di sebelahnya tidak menarik mata siapa pun. Digambar hanya saat
+   angkanya di atas nol (PageTabs), jadi tab yang bersih benar-benar berarti tidak ada antrean. */
+.page-tab-badge {
+  display: inline-flex;
+  min-width: 18px;
+  justify-content: center;
+  margin-left: 6px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  border: 1px solid var(--danger-border);
+  background: var(--danger-bg-strong);
+  color: var(--danger-fg);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+}
+
+.page-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.page-header {
+  min-height: 40px;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.country-roi-header-actions {
+  flex-wrap: nowrap;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.page-header p {
+  margin: 5px 0 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.stat-card,
+.panel {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--shadow-panel);
+}
+
+.stat-card {
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.stat-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
+.stat-card strong {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.stat-card.blue svg {
+  color: var(--info-solid);
+}
+
+.stat-card.green svg {
+  color: var(--success-solid);
+}
+
+.stat-card.orange svg {
+  color: var(--warning-mid);
+}
+
+/* Tiga kelompok arus kas di kepala halaman Cash Flow, LEBAR DAN TINGGINYA SAMA.
+   Tanpa `align-items: start`, jadi ketiganya meregang setinggi yang tertinggi (Cash Out Flow,
+   tujuh item) — dan itu bukan kerapian: baris Total ketiganya berdiri sejajar di garis yang sama,
+   dan tiga angka yang sejajar bisa diadu tanpa mata berpindah tinggi. */
+/* Baris kepala kartu Cash Flow: Cash Inflow, Cash Outflow, dan selisihnya. Kolomnya SAMA PERSIS
+   dengan .cashflow-groups di bawahnya, jadi tiap angka kepala berdiri tepat di atas kelompok yang
+   menjumlahkannya — itu yang membuat pembacanya bisa memeriksanya dengan mata. */
+.cashflow-headline {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.cashflow-headline-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-sunken);
+  box-shadow: var(--shadow-panel);
+  padding: 14px 16px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cashflow-headline-card > span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cashflow-headline-card > strong {
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cashflow-groups {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.cash-group {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--shadow-panel);
+  padding: 16px;
+  min-width: 0;
+  /* Kolom flex supaya sisa tinggi jatuh ke daftar itemnya, bukan ke bawah baris Total —
+     lihat `.cash-group-items`. */
+  display: flex;
+  flex-direction: column;
+}
+
+.cash-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.cash-group-header h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.cash-group.green svg {
+  color: var(--success-solid);
+}
+
+.cash-group.orange svg {
+  color: var(--warning-mid);
+}
+
+.cash-group.purple svg {
+  color: var(--indigo-solid);
+}
+
+.cash-group-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  /* Menyerap sisa tinggi kartu supaya ketiganya tetap setinggi satu sama lain. `align-content:
+     start` yang menahan item-itemnya tetap rapat di atas: tanpa itu, grid meregangkan BARISNYA dan
+     dua item Cash Inflow berdiri berjauhan di tengah kartu setinggi delapan item. */
+  flex: 1;
+  align-content: start;
+}
+
+.cash-group-items li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.cash-group-label {
+  display: grid;
+  min-width: 0;
+}
+
+.cash-group-label span {
+  font-size: 13px;
+}
+
+/* Sumber tiap item. Semuanya datang dari beberapa tempat berbeda, dan yang menentukan ke mana
+   orang pergi saat sebuah angka terasa aneh adalah baris ini — bukan nama itemnya. */
+.cash-group-label small {
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.cash-group-items strong {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cash-group-note {
+  margin: 8px 0 0;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+
+.panel {
+  padding: 16px;
+  min-width: 0;
+}
+
+.panel-header,
+.toolbar,
+.form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.panel-header p {
+  margin: 4px 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Panel yang judulnya sudah tertulis di PageHeader tidak mengulanginya di sini, jadi keterangannya
+   berdiri sendiri — dan 4px yang tadinya memberi jarak dari <h2> berubah jadi geseran yang membuat
+   baris ini tidak sejajar dengan penyaring di sebelahnya. */
+.panel-header p:first-child {
+  margin-top: 0;
+}
+
+/* --- Filter di balik ikon ---------------------------------------------------------------------
+   Lima kontrol berjejer mendesak judul panelnya dan membungkus jadi dua baris di layar sempit.
+   Harganya: filter yang aktif jadi tak terlihat — karena itu tombolnya membawa lencana angka, dan
+   panelnya tetap menuliskan keadaannya sebagai kalimat di bawah judul. */
+.filter-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.filter-trigger:hover {
+  border-color: var(--border-strong);
+  color: var(--foreground);
+}
+
+/* Ada yang sedang menyaring. Warnanya sama dengan aksi utama, bukan merah: menyaring bukan
+   kesalahan — yang berbahaya hanya menyaring tanpa sadar. */
+.filter-trigger.is-active {
+  border-color: var(--indigo-accent);
+  color: var(--indigo-solid);
+}
+
+.filter-trigger-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--indigo-fill);
+  color: var(--indigo-fill-fg);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.filter-dialog {
+  width: min(100%, 460px);
+  max-height: min(85vh, 640px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: var(--shadow-dialog);
+}
+
+.filter-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.filter-dialog-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.filter-dialog-head p {
+  margin: 4px 0 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Satu kontrol per baris, bukan berjejer: di dalam dialog ruangnya cukup, dan label yang berdiri
+   penuh jauh lebih mudah dipindai daripada lima kolom sempit. */
+.filter-dialog-body {
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px;
+  overflow-y: auto;
+}
+
+.filter-dialog-body label,
+.filter-dialog-field {
+  display: grid;
+  gap: 6px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Keterangan di bawah sebuah kontrol filter: kenapa pilihan ini mengubah angka yang dibaca, bukan
+   cuma apa namanya. Bobotnya lebih ringan dari labelnya — yang dicari mata saat dialog dibuka
+   adalah nama kontrolnya, dan kalimat sepanjang ini dibaca sekali lalu tidak lagi. */
+.filter-dialog-body label small,
+.filter-dialog-field small {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+
+.filter-dialog-body .control {
+  width: 100%;
+}
+
+.filter-dialog-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px 18px;
+  border-top: 1px solid var(--border);
+}
+
+/* --- Pemilih rentang tanggal (DateRangePicker) ------------------------------------------------- */
+
+.daterange-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.daterange-trigger:hover {
+  background: var(--accent);
+}
+
+.daterange-trigger-caret {
+  transform: rotate(90deg);
+  color: var(--muted-foreground);
+}
+
+.daterange-scrim {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: transparent;
+  cursor: default;
+}
+
+.daterange-pop {
+  position: relative;
+  width: min(100%, 720px);
+  max-height: min(88vh, 640px);
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: var(--shadow-dialog);
+}
+
+.daterange-body {
+  display: grid;
+  grid-template-columns: 210px 1fr;
+}
+
+.daterange-presets {
+  list-style: none;
+  margin: 0;
+  padding: 10px;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.daterange-preset {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.daterange-preset:hover {
+  background: var(--accent);
+}
+
+.daterange-radio {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1.5px solid var(--input);
+}
+
+.daterange-preset.is-active .daterange-radio {
+  border-color: var(--info-solid);
+  box-shadow: inset 0 0 0 3px var(--info-solid);
+}
+
+.daterange-preset.is-active {
+  font-weight: 600;
+}
+
+.daterange-cal-area {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px;
+}
+
+.daterange-cals {
+  display: flex;
+  gap: 24px;
+}
+
+.daterange-cal {
+  flex: 1;
+  min-width: 0;
+}
+
+.daterange-cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.daterange-cal-head strong {
+  font-size: 14px;
+}
+
+.daterange-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--foreground);
+  cursor: pointer;
+}
+
+.daterange-nav:hover {
+  background: var(--accent);
+}
+
+.daterange-nav-spacer {
+  width: 28px;
+  height: 28px;
+}
+
+.daterange-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.daterange-weekday {
+  text-align: center;
+  padding: 4px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.daterange-day {
+  aspect-ratio: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.daterange-day:hover:not(.empty) {
+  background: var(--accent);
+}
+
+.daterange-day.empty {
+  cursor: default;
+}
+
+.daterange-day.in-range {
+  background: var(--info-bg-translucent);
+  border-radius: 0;
+}
+
+.daterange-day.is-today:not(.is-start):not(.is-end) {
+  box-shadow: inset 0 0 0 1px var(--input);
+}
+
+.daterange-day.is-start,
+.daterange-day.is-end {
+  background: var(--info-fill);
+  color: var(--info-fill-fg);
+  font-weight: 600;
+}
+
+.daterange-day.is-start {
+  border-radius: 8px 0 0 8px;
+}
+
+.daterange-day.is-end {
+  border-radius: 0 8px 8px 0;
+}
+
+/* Pemilih periode BULANAN (halaman Accounting). Menumpang seluruh kerangka .daterange-* —
+   trigger, scrim, popover, kaki, tombol — dan yang berbeda cuma isi kanannya: 12 petak bulan
+   menggantikan dua kalender hari. Kelas kedua, bukan salinan kedua: dua daftar nilai yang harus
+   sepakat akan berselisih pada hari salah satu temanya digeser. */
+.monthrange-pop {
+  max-width: 560px;
+}
+
+.monthrange-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  min-width: 260px;
+}
+
+.monthrange-cell {
+  padding: 10px 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.monthrange-cell:hover {
+  background: var(--accent);
+}
+
+.monthrange-cell.is-today:not(.is-selected) {
+  box-shadow: inset 0 0 0 1px var(--input);
+}
+
+/* Yang dipilih SATU petak, jadi tidak ada .in-range/.is-start/.is-end seperti pemilih harian:
+   sudut yang dibuka sebelah cuma masuk akal untuk petak yang bersambung dengan tetangganya. */
+.monthrange-cell.is-selected {
+  background: var(--info-fill);
+  color: var(--info-fill-fg);
+  font-weight: 600;
+}
+
+/* Kakinya tidak memuat keterangan apa pun, jadi `space-between` milik .daterange-foot akan
+   menempelkan tombolnya ke kiri — sisi yang berlawanan dengan tiap dialog lain di dashboard ini.
+   Paddingnya sendiri karena di sini kaki itu anak langsung .daterange-pop (yang tidak punya
+   padding), bukan penghuni .daterange-cal-area seperti di pemilih harian: tanpanya kedua tombol
+   menempel persis di tepi dialog. */
+.monthrange-pop .daterange-foot {
+  justify-content: flex-end;
+  margin-top: 0;
+  padding: 14px 16px 16px;
+}
+
+.daterange-readout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.daterange-field {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.daterange-dash {
+  color: var(--muted-foreground);
+}
+
+.daterange-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.daterange-tz {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.daterange-actions {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .daterange-body {
+    grid-template-columns: 1fr;
+  }
+
+  .daterange-presets {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .daterange-presets li {
+    flex: 1 1 45%;
+  }
+
+  .daterange-cals {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
+.line-chart-card {
+  margin-top: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+/* Judul tiap grafik saat sebuah kartu memuat lebih dari satu (tab Rasio Penayangan). Tanpa ini,
+   margin bawaan <h3> menumpuk di atas `gap` grid-nya sendiri, dan jarak antar grafik jadi dua kali
+   jarak yang sama di kartu lain. */
+.line-chart-card h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.chart-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.chart-metric {
+  padding: 12px;
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-gradient);
+  box-shadow: var(--highlight-inset);
+}
+
+.chart-metric.positive {
+  border-color: var(--success-border);
+}
+
+.chart-metric.negative {
+  border-color: var(--danger-border);
+}
+
+.chart-metric span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.chart-metric strong {
+  font-size: 18px;
+}
+
+.line-chart-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-subtle);
+}
+
+.recharts-tooltip-card {
+  min-width: 178px;
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--tooltip-border);
+  border-radius: 10px;
+  background: var(--tooltip-bg);
+  box-shadow: var(--shadow-tooltip);
+}
+
+.recharts-tooltip-card strong {
+  color: var(--tooltip-foreground);
+  font-size: 13px;
+}
+
+.chart-grid-line {
+  stroke: var(--chart-grid);
+  stroke-width: 1;
+}
+
+.chart-axis-label {
+  fill: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.chart-area {
+  stroke: none;
+}
+
+.chart-area.revenue {
+  fill: url(#revenueGlow);
+}
+
+.chart-area.spend {
+  fill: url(#spendGlow);
+}
+
+.chart-line {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart-line.revenue {
+  stroke: var(--chart-revenue);
+}
+
+.chart-line.spend {
+  stroke: var(--chart-spend);
+}
+
+.chart-point {
+  stroke: var(--chart-dot-stroke);
+  stroke-width: 3;
+  transition:
+    r 160ms ease,
+    filter 160ms ease;
+}
+
+.chart-point.revenue {
+  fill: var(--chart-revenue);
+}
+
+.chart-point.spend {
+  fill: var(--chart-spend);
+}
+
+.chart-hit-area,
+.chart-column-hit-area {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.line-chart g:hover .chart-point,
+.chart-point:hover {
+  filter: drop-shadow(var(--shadow-point));
+}
+
+.chart-hover-guide {
+  stroke: var(--chart-axis);
+  stroke-dasharray: 4 5;
+  stroke-width: 1;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.chart-point-group:hover .chart-hover-guide {
+  opacity: 0.55;
+}
+
+.chart-tooltip {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease;
+}
+
+.chart-point-group:hover .chart-tooltip {
+  opacity: 1;
+}
+
+.chart-tooltip-box {
+  fill: var(--tooltip-bg);
+  stroke: var(--tooltip-border);
+  stroke-width: 1;
+  filter: drop-shadow(var(--shadow-tooltip));
+}
+
+.chart-tooltip-title {
+  fill: var(--tooltip-foreground);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.chart-tooltip-revenue,
+.chart-tooltip-spend,
+.chart-tooltip-profit,
+.chart-tooltip-roi {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Tiap baris tooltip berwarna sama dengan garis yang menghasilkannya — versi terangnya, karena
+   latar kartunya gelap dan #16a34a/#2563eb di atasnya nyaris tidak terbaca. Yang dicari orang saat
+   hover adalah angka milik garis yang sedang ditunjuknya; mewarnainya menurut untung/rugi membuat
+   baris Profit hijau terbaca sebagai baris Pendapatan.
+   Tandanya tidak hilang: angka negatif dibawakan "−" oleh formatSignedRupiah/formatPercent. */
+.chart-tooltip-revenue {
+  fill: var(--success-on-dark);
+  color: var(--success-on-dark);
+}
+
+.chart-tooltip-spend {
+  fill: var(--danger-on-dark);
+  color: var(--danger-on-dark);
+}
+
+.chart-tooltip-profit {
+  fill: var(--violet-on-dark);
+  color: var(--violet-on-dark);
+}
+
+.chart-tooltip-roi {
+  fill: var(--info-on-dark);
+  color: var(--info-on-dark);
+}
+
+/* Bar filter tab Grafik: satu panel yang isinya cuma header — ringkasan filter di kiri, ikonnya di
+   kanan. Tanpa jarak bawah, karena tidak ada apa pun di bawahnya di dalam panel yang sama.
+
+   Menempel di bawah topbar saat digulir: filternya berlaku untuk KEEMPAT grafik di tab ini, dan
+   grafik keempat ada jauh di bawah lipatan. Tanpa ini, mengubah periode setelah membaca grafik
+   terbawah berarti menggulir balik ke atas, mengubahnya, lalu menggulir turun lagi untuk melihat
+   hasilnya. Ringkasan filter di kiri panel juga ikut terbawa — grafik satu advertiser yang
+   advertiser-nya cuma disebut di atas layar terbaca sebagai grafik seluruh bisnis.
+   `top` = tinggi `.topbar` (48px), dan z-index-nya DI BAWAH topbar (5) supaya lewat di belakangnya,
+   bukan menimpanya. Latar panel (`var(--card)`) memang sudah pekat — sticky di atas latar tembus
+   pandang berarti grafik yang lewat di belakangnya ikut terbaca. */
+.panel.chart-filter-bar {
+  position: sticky;
+  top: 48px;
+  z-index: 4;
+  box-shadow: var(--shadow-filter-bar);
+}
+
+.panel.chart-filter-bar .panel-header {
+  margin-bottom: 0;
+}
+
+/* Chip pemilih subdomain untuk dua grafik detail di Overview. Warnanya diambil dari deretnya
+   (inline style), bukan dari kelas: satu warna per subdomain dipakai chip, kurva, dan batangnya
+   sekaligus — kelas per warna berarti daftar warna ditulis dua kali dan yang satu akan bergeser. */
+.subdomain-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.subdomain-chips-label {
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
+.subdomain-chip {
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.subdomain-chip:hover {
+  background: var(--surface-subtle);
+}
+
+.subdomain-chip.active {
+  font-weight: 600;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
+.chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+}
+
+.legend-dot.revenue {
+  background: var(--chart-revenue);
+}
+
+.legend-dot.spend {
+  background: var(--chart-spend);
+}
+
+.legend-dot.roi {
+  background: var(--chart-roi);
+}
+
+/* Ungu, bukan hijau/merah: profit adalah selisih dua garis itu, dan mewarnainya seperti salah satu
+   dari keduanya membuat garis ketiga terbaca sebagai varian salah satunya. Biru sudah dipakai kurva
+   ROI di panel bawah. */
+.legend-dot.profit {
+  background: var(--chart-profit);
+}
+
+/* Ruas hari berjalan pada grafik: bentuknya sama dengan garisnya sendiri, jadi keterangan ini bisa
+   dicocokkan dengan yang di grafik tanpa membaca teksnya. */
+.legend-dash {
+  width: 18px;
+  height: 0;
+  border-top: 3px dashed var(--muted-foreground);
+}
+
+.legend-running {
+  color: var(--warning-fg-strong);
+}
+
+.chart-tooltip-running {
+  color: var(--warning-fg);
+  font-weight: 700;
+}
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.data-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font-size: 14px;
+}
+
+.data-table.dense {
+  min-width: 1900px;
+  font-size: 13px;
+}
+
+.data-table th {
+  padding: 10px 12px;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--muted-foreground);
+  background: var(--surface-subtle);
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+
+.table-sort-button {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  text-align: left;
+}
+
+/* Kepala kolom yang bisa diurutkan DAN punya ikon rumus (tabel ROI Founder). */
+.sort-with-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sort-with-hint .table-sort-button {
+  width: auto;
+}
+
+th.right .sort-with-hint {
+  justify-content: flex-end;
+}
+
+.table-sort-button:hover {
+  color: var(--foreground);
+}
+
+.sort-indicator {
+  min-width: 14px;
+  color: var(--foreground-faint);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.sort-indicator.active {
+  color: var(--info-solid);
+}
+
+.data-table td {
+  padding: 11px 12px;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.data-table tr:hover td {
+  background: var(--surface-subtle);
+}
+
+/* Kepala berkelompok (DataTable dengan `columns` bersarang): judul kelompok di tengah rentangnya,
+   dan garis bawahnya yang memisahkan kelompok dari judul kolom di bawahnya. */
+.data-table th[colspan] {
+  text-align: center;
+}
+
+/* Baris Total dari `footer` kolom. Garisnya di ATAS, karena `tbody tr:last-child` sudah membuang
+   garis bawah baris terakhir badan tabel. */
+.data-table tfoot td {
+  padding: 11px 12px;
+  white-space: nowrap;
+  border-top: 1px solid var(--border);
+  font-weight: 600;
+  background: var(--surface-subtle);
+}
+
+.data-table tr.is-expanded td,
+.data-table tr.is-selected td {
+  background: var(--surface-subtle);
+}
+
+/* Isi baris yang dibuka membentang selebar tabel dan tidak ikut `nowrap` sel biasa. */
+.data-table tr.data-table-expanded > td {
+  padding: 12px 16px;
+  white-space: normal;
+  background: var(--background);
+}
+
+.data-table tr.data-table-expanded:hover > td {
+  background: var(--background);
+}
+
+.table-link-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--info-solid);
+  font: inherit;
+  font-weight: 800;
+  text-align: left;
+}
+
+.table-link-button:hover {
+  text-decoration: underline;
+}
+
+.secret-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.secret-toggle-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.secret-toggle-button:hover {
+  border-color: var(--info-solid);
+  color: var(--info-solid);
+}
+
+.right {
+  text-align: right !important;
+}
+
+.center {
+  text-align: center !important;
+}
+
+.muted-line {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.toolbar {
+  /* Kotak pencarian dan rentang tanggal punya lebar minimum masing-masing, jadi di lebar layar
+     antara ~980px dan ~1200px keduanya tidak lagi muat sebaris dengan page-size di kanan. Yang
+     turun ke baris berikutnya adalah .table-tools — bukan salah satu kotak tanggal. */
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.table-tools,
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
+.pagination {
+  margin-top: 12px;
+}
+
+/* Pencarian dan rentang tanggal adalah satu kelompok "apa yang ditampilkan", jadi mereka menempel
+   di kiri; page-size dan hitungan baris tetap di kanan lewat space-between milik .toolbar. */
+.toolbar-filters {
+  display: flex;
+  align-items: center;
+  /* Sengaja tidak wrap: "Dari" dan "Sampai" adalah satu rentang, dan begitu salah satunya turun
+     ke baris berikutnya keduanya berhenti terbaca sebagai sepasang. Di bawah 980px seluruh
+     toolbar memang ditumpuk jadi satu kolom. */
+  flex-wrap: nowrap;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* Hint terpanjang di antara semua resource ("Cari subdomain, domain, atau PIC...") butuh sekitar
+   265px sebelum dipotong elipsis. Kotaknya tidak boleh menyusut di bawah itu: petunjuk yang
+   terpenggal justru menyembunyikan kolom mana saja yang sebenarnya bisa dicari. */
+.toolbar-filters .search {
+  flex: 1 1 auto;
+  min-width: 280px;
+}
+
+/* Lebarnya ditentukan isinya sendiri dan tidak ikut menyusut: kotak tanggal yang terpotong tidak
+   bisa dibaca sama sekali. */
+.date-filter {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 6px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* .control melebar 100% agar pas di form dua kolom; di toolbar itu membuat kotak tanggal memakan
+   seluruh sisa baris. */
+.date-filter .control {
+  width: auto;
+}
+
+.table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.table-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 12px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
+.summary-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.summary-item strong {
+  color: var(--foreground);
+  font-size: 14px;
+}
+
+.search {
+  max-width: 420px;
+}
+
+.form-stack,
+.form-panel,
+.form-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Form yang dibaca sebagai urutan, bukan sebagai daftar: tiap field satu baris sendiri.
+
+   Ini juga yang membereskan tinggi kotak yang tidak sama — sebab yang sama persis dengan
+   `align-items: start` di `.plugin-fieldset .form-grid` di bawah. Di grid dua kolom, field yang
+   punya baris bantuan meregangkan SELURUH barisnya, dan kotak isian di sebelahnya (yang tidak punya
+   bantuan) memanjang untuk mengisi sisanya. Satu kolom membuat tiap baris setinggi isinya sendiri,
+   jadi tidak ada lagi yang bisa diregangkan tetangganya.
+
+   `max-width` karena satu kolom di panel selebar layar berarti kotak password sepanjang 1400px —
+   satu kolom yang diminta adalah susunannya, bukan lebarnya. */
+.form-grid.single-column {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 420px;
+}
+
+/* Menggantikan tombol "Sync ROI" di topbar: sync jalan sendiri, jadi yang berguna di sini adalah
+   kabar kapan ia jalan lagi — dan peringatan kalau run terakhir gagal. */
+.sync-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sync-status.running {
+  border-color: var(--info-border);
+  background: var(--info-bg);
+  color: var(--info-fg);
+  /* Air progres dipotong oleh pil-nya sendiri: tanpa `overflow`, riaknya keluar dari lengkungan
+     kanan-kiri dan badge-nya berhenti terbaca sebagai satu bentuk. */
+  position: relative;
+  overflow: hidden;
+}
+
+/* Tahap yang sudah selesai, digambar sebagai air yang naik dari kiri. Lebarnya dipasang inline
+   (turunan data, bukan nilai tema); yang di sini cuma warnanya dan cara ia bergerak. */
+.sync-water {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  background: var(--sync-water);
+  /* Riaknya dipotong oleh permukaan airnya sendiri. Yang memotong badge cuma pil di luar sana:
+     tanpa baris ini, riak selebar 60px berjalan melintasi SELURUH badge sementara airnya baru
+     10% — dan yang terbaca justru progres yang sudah penuh. */
+  overflow: hidden;
+  /* Setahap = seperdelapan badge, dan lompatan sekejap tidak terbaca sebagai kemajuan; yang
+     terbaca adalah air yang benar-benar naik ke garis berikutnya. */
+  transition: width 700ms ease-out;
+}
+
+/* Dua riak berbeda lebar dan kecepatan, keduanya kiri->kanan. Satu riak berjalan seperti garis
+   pemindai; yang saling menyusul terbaca sebagai permukaan air — dan itu satu-satunya bagian
+   badge ini yang bergerak saat sebuah tahap memakan menit tanpa mengubah angka apa pun. */
+.sync-water::before,
+.sync-water::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(90deg, transparent, var(--sync-water-crest), transparent);
+}
+
+.sync-water::before {
+  width: 70%;
+  min-width: 60px;
+  animation: sync-water-flow 2.6s linear infinite;
+}
+
+.sync-water::after {
+  width: 45%;
+  min-width: 36px;
+  opacity: 0.7;
+  animation: sync-water-flow 1.7s linear infinite 0.4s;
+}
+
+/* Sampai jauh melewati tepi kanan: riak paling sempit pun harus keluar seluruhnya dari petak
+   air yang paling lebar, kalau tidak ia terlihat menggantung di ujung sebelum menghilang. */
+@keyframes sync-water-flow {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(320%);
+  }
+}
+
+/* Isi badge berdiri DI ATAS airnya. Teks telanjang milik flex container digambar sebelum anak
+   yang berposisi absolut, jadi tanpa lapis ini "Syncing..." justru tertutup riaknya. */
+.sync-status.running > svg,
+.sync-status.running > .sync-label,
+.sync-status.running > em {
+  position: relative;
+  z-index: 1;
+}
+
+/* Jadwal terlewat bukan kegagalan run — run-nya tidak terjadi sama sekali. Kuning, bukan merah:
+   paling sering ia pulih sendiri pada jadwal berikutnya. */
+.sync-status.late {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+  color: var(--warning-fg);
+}
+
+.sync-status.failed {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+}
+
+.sync-status em {
+  font-style: normal;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+/* Ikon peringatan di topbar. Merah dan berdampingan dengan hitung mundur sync: keduanya bercerita
+   tentang hal yang sama, dan yang satu tanpa yang lain menyesatkan. */
+.sync-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 11px;
+  border: 1px solid var(--danger-border);
+  border-radius: 999px;
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.sync-alert:hover {
+  background: var(--danger-bg-strong);
+}
+
+.sync-issues-dialog {
+  width: min(100%, 620px);
+  max-height: min(80vh, 720px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: var(--shadow-dialog);
+}
+
+.sync-issues-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sync-issues-head h2 {
+  margin: 0 0 6px;
+  font-size: 17px;
+}
+
+.sync-issues-head p {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
+.sync-issues-body {
+  display: grid;
+  gap: 16px;
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.sync-issues-group {
+  display: grid;
+  gap: 8px;
+}
+
+.sync-issues-group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.sync-issues-group-head small {
+  margin-left: auto;
+  color: var(--muted-foreground);
+}
+
+/* Satu golongan isu di dalam sebuah cabang — bentuk yang sama dengan kelompok di pesan Telegram:
+   judul, keterangan sekali, lalu barisnya. */
+.sync-issue-cause {
+  display: grid;
+  gap: 6px;
+}
+
+.sync-issue-cause-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+}
+
+/* Warnanya menyebut TINDAKAN, bukan keparahan: merah yang menuntut orang, kuning yang akan pulih
+   sendiri, kelabu yang belum bisa dipastikan. Golongan yang semuanya merah membuat yang benar-benar
+   perlu dikerjakan sekarang tenggelam di antara yang sedang menunggu dirinya sendiri. */
+.sync-issue-cause-head.action {
+  color: var(--danger-fg);
+}
+
+.sync-issue-cause-head.provider {
+  color: var(--warning-fg);
+}
+
+.sync-issue-cause-head small {
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--muted-foreground);
+}
+
+.sync-issue-cause-note {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.sync-issue {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--danger-border);
+  border-left-width: 3px;
+  border-radius: 8px;
+  background: var(--danger-bg-faint);
+}
+
+.sync-issue-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sync-issue-head strong {
+  font-size: 14px;
+}
+
+.sync-issue-head span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+/* Pesan asli API — sering panjang dan tanpa spasi. Dibiarkan membungkus di mana pun supaya tidak
+   melebarkan dialognya. */
+.sync-issue-message {
+  margin: 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+/* Kalimat manusianya — yang paling besar di dalam kartu, karena itu yang menjawab "perlu
+   dikerjakan sekarang atau tidak". */
+.sync-issue-say {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* Nama akun yang diwakili satu kartu gabungan. Sengaja sekecil "Akibat": yang menentukan tindakan
+   adalah kalimat di atasnya, dan daftar sembilan nama yang setebal itu justru mengubur kalimatnya. */
+.sync-issue-targets {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+
+/* Akibat yang berbeda-beda dari satu sebab yang sama — satu baris per tempat yang angkanya
+   sedang tidak benar. Sengaja tetap daftar: yang digabung kartu kredensial adalah perintahnya,
+   bukan keterangan tentang apa yang rusak di layar. */
+.sync-issue-impacts {
+  margin: 0;
+  padding-left: 16px;
+  color: var(--muted-foreground);
+  font-size: 12.5px;
+}
+
+.sync-issue-impacts li {
+  margin-top: 2px;
+}
+
+/* Satu tombol ke tempat perbaikannya. Rata kiri di barisnya sendiri, bukan di sudut kartu: yang
+   membacanya sudah sampai di baris terakhir kalimat, dan tombol yang melompat ke kanan menuntut
+   mata kembali ke atas. */
+.sync-issue-action {
+  margin: 2px 0 0;
+}
+
+.sync-issue-action .ghost-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 12.5px;
+}
+
+.sync-issue-impact {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 12.5px;
+}
+
+/* Pesan API-nya tetap ada, tertutup. Yang membaca panel ini kebanyakan bukan yang menulis kodenya;
+   yang memperbaikinya nanti tetap butuh kalimat persisnya. */
+.sync-issue-detail summary {
+  cursor: pointer;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  user-select: none;
+}
+
+.sync-issue-detail .sync-issue-message {
+  margin-top: 6px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.sync-issues-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.sync-issues-foot small {
+  color: var(--muted-foreground);
+  font-size: 12.5px;
+}
+
+.icon-button {
+  padding: 6px;
+}
+
+/* Catatan kecil di dalam sel: kenapa angkanya kosong. Tanpa ini, "-" dari laporan yang gagal
+   tidak bisa dibedakan dari "-" yang berarti subdomain ini memang belum punya angka. */
+.cell-note {
+  display: block;
+  margin-top: 2px;
+  color: var(--danger-fg);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Sel kosong yang BUKAN kegagalan: subdomain tanpa campaign Meta. Merah di sini akan mengirim
+   orang mencari sync yang rusak, padahal tidak ada yang perlu diperbaiki. */
+.cell-note.muted {
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+
+.sync-log-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.sync-log-run {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  overflow: hidden;
+}
+
+.sync-log-run.failed {
+  border-color: var(--danger-border);
+}
+
+.sync-log-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.sync-log-head strong {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.sync-log-head small {
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+.sync-log-summary {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sync-log-toggle {
+  color: var(--muted-foreground);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.sync-log-stages {
+  display: grid;
+  gap: 6px;
+  padding: 0 12px 12px;
+}
+
+.sync-log-stage {
+  display: grid;
+  grid-template-columns: auto minmax(0, 140px) minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  font-size: 12px;
+}
+
+/* Alasan kegagalan boleh membungkus: pesan Meta/GAM panjang, dan memotongnya membuang justru
+   bagian yang dicari orang. */
+.sync-log-stage span:last-of-type {
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+
+.sync-log-stage.failed span:last-of-type {
+  color: var(--danger-fg);
+}
+
+/* Kolom keempat untuk tombol "Jalankan ulang" — hanya untuk admin, jadi hanya kalau tombolnya ada. */
+.sync-log-stage:has(> button) {
+  grid-template-columns: auto minmax(0, 140px) minmax(0, 1fr) auto;
+}
+
+@media (max-width: 720px) {
+  .sync-log-stage,
+  .sync-log-stage:has(> button) {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .sync-log-summary {
+    display: none;
+  }
+}
+
+/* Keluhan form ganti password. Berdiri di antara kotak isian dan tombolnya — di bawah tombol ia
+   terlewat justru oleh orang yang baru saja menekannya. */
+.form-complaint {
+  margin: 0;
+  color: var(--destructive);
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.control {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid var(--input);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--background);
+  color: var(--foreground);
+  outline: none;
+}
+
+/* Kotak password + ikon mata di ujung kanannya. Tombolnya di DALAM kotak (bukan di sebelahnya),
+   supaya lebar kotak password sama persis dengan kotak email di atasnya. */
+.password-control {
+  position: relative;
+}
+
+.password-control .control {
+  padding-right: 38px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted-foreground);
+  transform: translateY(-50%);
+}
+
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  color: var(--foreground);
+  background: var(--muted);
+}
+
+.control:focus {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  min-height: 36px;
+}
+
+.checkbox-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--foreground);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.checkbox-option input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--foreground);
+}
+
+/* Form Notification Center: kotak isian tidak ikut melar mengikuti tetangganya yang keterangannya
+   lebih panjang. `.field` adalah grid, jadi anaknya meregang memenuhi tinggi baris — dan kotak Nama
+   yang lebih tinggi daripada kotak Chat ID di sebelahnya terbaca sebagai dua jenis isian yang
+   berbeda, padahal keduanya satu baris teks. Dipagari ke form ini, bukan ke `.field` di mana-mana:
+   yang di halaman lain sudah berdiri dengan tinggi yang disengaja. */
+.notification-form .field > .control {
+  align-self: start;
+}
+
+/* Satu baris penuh di grid dua kolom — sepola dengan `.plugin-field-wide`. */
+.notification-field-wide {
+  grid-column: 1 / -1;
+}
+
+/* Satu topik di form Notification Center: kotak centangnya, dan keterangan apa yang akan diterima
+   orang kalau ia menyala. Keterangannya sejajar dengan LABEL, bukan dengan kotaknya — dibiarkan
+   rata kiri, ia terbaca sebagai keterangan untuk seluruh daftar alih-alih untuk satu barisnya. */
+.notification-topic-choice {
+  display: grid;
+  gap: 3px;
+  margin-top: 6px;
+}
+
+.notification-topic-choice small {
+  margin-left: 21px;
+}
+
+/* Harus di BAWAH .control: kespesifikannya sama (0,1,0), jadi yang menang adalah yang terakhir.
+   Di atas .control, `width: auto` di sini kalah dari `width: 100%` dan tidak pernah berlaku —
+   itu sebabnya kedua select tetap melar memenuhi barisnya. */
+.compact-control {
+  width: auto;
+  min-width: 138px;
+}
+
+/* Isinya cuma dua digit dan satu kata, jadi min-width .compact-control (dibuat untuk pilihan
+   sepanjang "Last 30 Days") hanya menyisakan ruang kosong di kanan angka. */
+.page-size-control {
+  width: auto;
+  min-width: 0;
+  padding-right: 8px;
+}
+
+/* `.menu-button` sengaja tidak ikut di sini: `display: inline-flex` di blok ini akan menimpa
+   `display: none` miliknya dan membuat hamburger muncul di tablet & desktop. */
+.primary-button,
+.ghost-button,
+.danger-button {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.primary-button {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: var(--shadow-button);
+}
+
+.primary-button:hover {
+  background: var(--primary-hover);
+}
+
+.full {
+  width: 100%;
+}
+
+.ghost-button,
+.menu-button {
+  background: var(--background);
+  border-color: var(--border);
+  color: var(--foreground);
+}
+
+.ghost-button.warning {
+  color: var(--orange-fg-strong);
+  border-color: var(--orange-border);
+  background: var(--orange-bg);
+}
+
+.ghost-button.success {
+  color: var(--success-fg-strong);
+  border-color: var(--success-border);
+  background: var(--success-bg);
+}
+
+.danger-button {
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+  color: var(--danger-fg);
+}
+
+.danger-button:hover {
+  background: var(--danger-bg-strong);
+}
+
+.action-group {
+  display: inline-flex;
+  justify-content: end;
+  gap: 6px;
+}
+
+.badge {
+  display: inline-flex;
+  min-width: 64px;
+  justify-content: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.badge.success {
+  color: var(--success-fg-strong);
+  background: var(--success-bg-strong);
+  border: 1px solid var(--success-border);
+}
+
+.badge.info {
+  color: var(--info-fg);
+  background: var(--info-bg-strong);
+  border: 1px solid var(--info-border);
+}
+
+.badge.warning {
+  color: var(--warning-fg-strong);
+  background: var(--warning-bg-strong);
+  border: 1px solid var(--warning-border);
+}
+
+.badge.danger {
+  color: var(--danger-fg);
+  background: var(--danger-bg-strong);
+  border: 1px solid var(--danger-border);
+}
+
+.badge.purple {
+  color: var(--violet-fg);
+  background: var(--violet-bg);
+  border: 1px solid var(--violet-border);
+}
+
+.badge.muted,
+.badge.neutral {
+  color: var(--foreground-soft);
+  background: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.secret {
+  color: var(--muted-foreground);
+  letter-spacing: 0;
+}
+
+.danger {
+  color: var(--destructive);
+}
+
+.hidden-input {
+  display: none;
+}
+
+/* Sel yang seluruh isinya tautan (kolom Campaign URL di /sub-domains). Ditumpuk, bukan berderet:
+   satu subdomain bisa menaungi beberapa campaign, dan dua URL panjang berdampingan mendorong
+   seluruh kolom di kanannya keluar layar. Lebarnya dibatasi dan ekornya dipotong — yang
+   membedakan satu link dari link lainnya ada di DEPAN (alias campaign-nya), dan judul lengkapnya
+   tetap terbaca lewat tooltip bawaan href saat di-hover. */
+.cell-links {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Negara sebuah domain: bendera lalu namanya. Benderanya diberi batas tipis karena beberapa
+   bendera berujung putih (Indonesia, Jepang) dan tanpa batas ia luruh ke dalam latar terang —
+   yang hilang bukan hiasannya melainkan bentuknya, dan yang tersisa cuma separuh bendera. */
+.country-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.country-cell img {
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+
+.cell-links a {
+  display: block;
+  max-width: 280px;
+  overflow: hidden;
+  color: var(--info-solid);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Campaign URL berikut tombol salinnya. Tombolnya `flex: none` supaya yang menyusut saat linknya
+   panjang adalah teksnya (yang memang sudah ber-ellipsis), bukan tombolnya — tombol yang tergencet
+   jadi selebar beberapa piksel tidak bisa ditekan siapa pun. */
+.cell-link-copy {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cell-copy-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.cell-copy-button:hover {
+  border-color: var(--info-solid);
+  color: var(--info-solid);
+}
+
+.money-positive {
+  color: var(--success-fg);
+  font-weight: 700;
+}
+
+/* Angka IDR yang sebenarnya hasil konversi dari mata uang asing (network GAM yang menagih USD).
+   Sengaja lebih hijau/terang dari .money-positive biasa: itu penanda "ini bukan IDR asli, ini
+   konversi" — dan nilai USD aslinya muncul di tooltip saat di-hover. cursor:help supaya ada
+   isyarat bahwa selnya bisa di-hover. */
+.money-converted {
+  color: var(--success-solid);
+  font-weight: 700;
+  cursor: help;
+}
+
+/* --- Laba Rugi ---------------------------------------------------------- */
+
+/* Keterangan yang mengubah arti angka di atasnya (bulan yang belum utuh, nominal top-up yang
+   sengaja tidak dikurangkan). Bukan .empty: ini bukan keadaan kosong, dan ia harus terbaca
+   bersama tabelnya, bukan menggantikannya. */
+.notice-line {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.delta {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hijau/merah di sini berarti "baik/buruk", bukan "naik/turun" — biaya yang naik merah meski
+   angkanya bertambah. Lihat komponen Delta di ProfitLoss.jsx. */
+.delta-good {
+  color: var(--success-fg);
+}
+
+.delta-bad {
+  color: var(--destructive);
+}
+
+.delta-flat {
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+
+.data-table td .delta {
+  display: inline;
+  margin-top: 0;
+}
+
+.pl-table td:first-child {
+  color: var(--muted-foreground);
+}
+
+/* Subtotal dan total dipisahkan garis, bukan hanya ditebalkan: kolomnya dibaca menurun, dan garis
+   itu yang menandai di mana penjumlahan berhenti. */
+.pl-subtotal td {
+  border-top: 1px solid var(--border);
+  font-weight: 600;
+}
+
+.pl-total td {
+  border-top: 2px solid var(--foreground);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.pl-total td:first-child {
+  color: var(--foreground);
+}
+
+/* Tabel dua kolom di dalam kolom grid yang sempit. `min-width: 760px` milik .data-table dibuat
+   untuk tabel belasan kolom; di sini ia memaksa tabel lebih lebar dari panelnya, dan yang
+   terdorong keluar layar justru kolom Total — satu-satunya angka yang dicari orang di tabel ini.
+
+   Nama dibiarkan membungkus (nama item bisa sepanjang "Bayar Domain designingaround.com
+   domainesia"), dan kolom Total memakai `width: 1%` + nowrap: pada tata letak tabel otomatis itu
+   berarti "sesempit isinya", jadi sisanya jatuh ke kolom Nama tanpa perlu menebak lebarnya. */
+.breakdown-table {
+  min-width: 0;
+}
+
+.breakdown-table th:first-child,
+.breakdown-table td:first-child {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.breakdown-table th:last-child,
+.breakdown-table td:last-child {
+  width: 1%;
+  white-space: nowrap;
+}
+
+/* Tinggi tiap panel disamakan — `grid-auto-rows: 1fr` untuk barisnya, dan `align-items` dibiarkan
+   di nilai bawaannya (stretch) supaya panelnya benar-benar mengisi barisnya.
+
+   Sebelumnya `align-items: start`, dan panel yang bulan itu tidak punya satu baris pun menyusut
+   jadi setengah tinggi tetangganya. Yang tampak di layar adalah kartu yang seperti terpotong —
+   bentuk yang biasanya berarti ada yang gagal dimuat, padahal jawabannya cuma "tidak ada baris
+   pada bulan ini". Konsekuensinya diketahui: yang paling panjang (biasanya Pengeluaran
+   Operasional) menentukan tinggi semuanya, jadi bulan dengan banyak item menyisakan ruang kosong
+   di panel-panel pendek. */
+.pl-breakdowns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 16px;
+}
+
+/* `auto-fit` dulu memberi 3, 4, atau 5 kolom tergantung lebar layar, jadi panel yang sama berdiri
+   di baris yang berbeda dari satu monitor ke monitor lain — dan urutan panel di sini MENGIKUTI
+   rantai laba (Pendapatan dulu, potongan sesudahnya), yang cuma terbaca kalau jumlah kolomnya
+   tetap. `minmax(0, 1fr)` dan bukan `1fr`: tabel di dalamnya punya lebar minimum sendiri, dan tanpa
+   itu satu panel berkolom lebar mendorong tetangganya keluar layar. */
+@media (max-width: 1180px) {
+  .pl-breakdowns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .pl-breakdowns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Tinggi panel dibatasi, dan yang menggulir adalah TABELNYA — bukan halamannya.
+
+   `grid-auto-rows: 1fr` di atas membuat ketiga panel dalam satu baris setinggi yang TERTINGGI. Satu
+   Pengeluaran Operasional berisi dua puluh baris karena itu menarik dua tetangganya ikut setinggi
+   itu, dan yang tergambar adalah dua kotak yang sebagian besar isinya ruang kosong — sementara
+   panel di baris berikutnya terdorong sejauh satu layar penuh. Batas ini menyamakan keduanya dari
+   arah yang berlawanan: yang isinya sedikit tetap sependek isinya, yang isinya banyak berhenti di
+   380px dan menggulir di dalam dirinya sendiri.
+
+   Panelnya jadi flex kolom supaya kepala panel tetap di tempatnya dan sisa tingginya jatuh utuh ke
+   tabel; `max-height` pada `.panel` saja cuma memotong tabelnya. */
+.pl-breakdowns .panel {
+  display: flex;
+  flex-direction: column;
+  max-height: 380px;
+}
+
+.pl-breakdowns .panel-header {
+  flex: none;
+}
+
+/* `min-height: 0` bukan hiasan: anak flex bawaannya tidak boleh menyusut di bawah tinggi isinya,
+   jadi tanpa itu `overflow-y` tidak pernah punya apa pun untuk digulir dan panelnya tetap tumbuh. */
+.pl-breakdowns .table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Kepala tabel dan baris Total adalah dua alasan panel ini dibaca sama sekali, jadi keduanya tidak
+   ikut tergulir: tanpa itu, angka yang paling dicari orang justru satu-satunya yang harus dikejar
+   sampai dasar. Sepola dengan `.master-roi-table thead`. */
+.pl-breakdowns .breakdown-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface-subtle);
+  box-shadow: 0 1px 0 var(--border);
+}
+
+/* Latarnya PEKAT (`--card`, latar panelnya sendiri), bukan diwarisi: baris yang lewat di belakang
+   baris Total yang tembus pandang terbaca menumpuk di atas angkanya. Garis atasnya sudah dibawa
+   `tfoot td` DataTable sendiri, jadi ia ikut melekat sebagai batas saat barisnya menggantung. */
+.pl-breakdowns .breakdown-table tfoot td {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--card);
+}
+
+.money-negative {
+  color: var(--destructive);
+  font-weight: 700;
+}
+
+/* Kolom ROI di tabel Cash Flow, Laba per Domain, dan Proyeksi Budget. Hijau tebal, warna yang sama
+   dengan kolom uang di sebelahnya (.money-positive) — sepola dengan `.master-roi-cell` di tabel
+   Overview, yang sudah lebih dulu menonjolkan ROI dari deretan angka di kirinya.
+
+   `.roi-cell.money-negative` dua kelas supaya menang atas hijau di atasnya: ROI minus adalah rugi,
+   dan merah adalah artinya di seluruh dashboard ini. Kelasnya dipasang `roiCellClass`
+   (src/lib/adTax.js), yang tidak memasang apa-apa untuk ROI yang KOSONG. */
+.roi-cell {
+  color: var(--success-fg);
+  font-weight: 700;
+}
+
+.roi-cell.money-negative {
+  color: var(--destructive);
+}
+
+.empty,
+.empty-page {
+  text-align: center;
+  color: var(--muted-foreground);
+}
+
+/* Penangkap error render (ErrorBoundary). Sengaja rata kiri, bukan di tengah seperti .empty-page:
+   yang di sini bukan keadaan kosong yang wajar melainkan kegagalan, dan pesan teknisnya dibaca
+   baris per baris. */
+.error-boundary {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  padding: 24px;
+}
+
+.error-boundary h2 {
+  font-size: 18px;
+}
+
+.error-boundary p {
+  color: var(--muted-foreground);
+  font-size: 14px;
+  max-width: 62ch;
+}
+
+.error-boundary-message {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--muted);
+  color: var(--destructive);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  /* Pesan error sering satu baris panjang tanpa spasi; ia harus menggulir di dalam kotaknya
+     sendiri, bukan melebarkan halaman. */
+  overflow-x: auto;
+}
+
+/* Kegagalan di luar DashboardShell — tidak ada sidebar yang tersisa untuk dipakai berpindah. */
+.error-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--background);
+}
+
+.error-screen .error-boundary {
+  max-width: 560px;
+}
+
+.empty-panel-message {
+  margin-top: 14px;
+  padding: 24px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--muted-foreground);
+  text-align: center;
+  background: var(--surface-subtle);
+}
+
+.user-detail-page {
+  width: 100%;
+  min-width: 0;
+}
+
+.profile-panel {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: var(--shadow-panel);
+}
+
+.profile-cover {
+  height: 120px;
+  background: var(--profile-cover);
+}
+
+.profile-content {
+  display: grid;
+  gap: 18px;
+  padding: 0 24px 24px;
+}
+
+.profile-identity {
+  margin-top: -48px;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-avatar {
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  border: 4px solid var(--card);
+  border-radius: 999px;
+  background: var(--foreground);
+  color: var(--primary-foreground);
+  font-size: 34px;
+  font-weight: 800;
+  box-shadow: var(--shadow-avatar);
+}
+
+.profile-title h2 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.profile-title p {
+  margin: 4px 0 0;
+  color: var(--indigo-solid);
+  font-weight: 700;
+}
+
+.profile-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-metric {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-subtle);
+}
+
+.profile-metric.success {
+  border-color: var(--success-border);
+  background: var(--success-bg);
+}
+
+.profile-metric div {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.profile-metric strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+}
+
+.profile-metric.success strong {
+  color: var(--success-fg);
+  font-size: 24px;
+}
+
+.subdomain-summary-grid,
+.campaign-grid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.subdomain-summary-card,
+.campaign-card {
+  min-width: 0;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-gradient);
+}
+
+.subdomain-summary-card.single {
+  margin-top: 14px;
+  grid-template-columns: minmax(180px, 1.25fr) repeat(3, minmax(0, 1fr));
+  align-items: center;
+}
+
+.subdomain-summary-card > span {
+  overflow-wrap: anywhere;
+  color: var(--foreground);
+  font-weight: 800;
+}
+
+.subdomain-summary-card div,
+.campaign-metrics div {
+  display: grid;
+  gap: 4px;
+}
+
+.subdomain-summary-card strong,
+.campaign-metrics strong {
+  font-size: 16px;
+}
+
+.subdomain-summary-card small,
+.campaign-metrics span,
+.country-roi-group small,
+.campaign-card-header span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.campaign-card-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.campaign-card-header div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.campaign-card-header strong {
+  overflow-wrap: anywhere;
+  font-size: 15px;
+}
+
+.campaign-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.campaign-metrics div {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--muted);
+}
+
+.campaign-table-wrap {
+  background: var(--surface-sunken);
+}
+
+.campaign-table {
+  /* Empat kolom (Kampanye, Sub Domain, Status, Anggaran), bukan tujuh seperti dulu — 1220px lama
+     memaksa tabel melebar dan mendorong Anggaran ke luar layar. Segini cukup untuk keempatnya
+     terlihat tanpa scroll di panel biasa. */
+  min-width: 760px;
+  background: var(--card);
+}
+
+.campaign-table th,
+.campaign-table td {
+  border-right: 1px solid var(--border-subtle);
+}
+
+.campaign-table th:last-child,
+.campaign-table td:last-child {
+  border-right: 0;
+}
+
+.master-roi-table-wrap {
+  max-height: 600px;
+  background: var(--card);
+}
+
+.master-roi-table {
+  width: 100%;
+  min-width: 2100px;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font-size: 13px;
+}
+
+.master-roi-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface-subtle);
+  box-shadow: 0 1px 0 var(--border);
+}
+
+.master-roi-table th {
+  padding: 10px 12px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.master-roi-table td {
+  padding: 10px 12px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  white-space: nowrap;
+}
+
+.master-roi-table th:last-child,
+.master-roi-table td:last-child {
+  border-right: 0;
+}
+
+.master-sticky-head {
+  width: 64px;
+}
+
+.master-time-head {
+  color: var(--destructive) !important;
+}
+
+.master-domain-head,
+.master-domain-cell {
+  color: var(--info-solid) !important;
+}
+
+.master-meta-group,
+.master-sub-head.meta {
+  background: var(--danger-bg);
+  color: var(--danger-fg) !important;
+  text-align: center !important;
+}
+
+.master-gam-group,
+.master-sub-head.gam {
+  background: var(--orange-bg);
+  color: var(--orange-fg) !important;
+  text-align: center !important;
+}
+
+.master-meta-metrics-group {
+  background: var(--danger-bg);
+  color: var(--danger-fg) !important;
+  text-align: center !important;
+}
+
+.master-roi-group,
+.master-sub-head.roi {
+  background: var(--info-bg);
+  color: var(--info-fg) !important;
+  text-align: center !important;
+}
+
+.master-sub-head.positive {
+  background: var(--success-bg);
+  color: var(--success-fg) !important;
+  text-align: center !important;
+}
+
+.master-profit-head {
+  color: var(--success-solid) !important;
+}
+
+.master-time-cell {
+  text-align: center;
+}
+
+.master-time-cell strong {
+  display: block;
+  color: var(--indigo-solid);
+  font-weight: 900;
+}
+
+.master-time-cell span {
+  color: var(--indigo-accent);
+  font-size: 10px;
+}
+
+/* Baris hari berjalan. Amber, bukan merah: angkanya bukan kegagalan (itu `.cell-note`), hanya
+   belum selesai — dan dua keadaan yang berbeda tidak boleh memakai warna yang sama. */
+.master-time-cell span.cell-running {
+  color: var(--warning-fg);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.running-day-note {
+  margin-top: 4px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--warning-solid);
+  border-radius: 4px;
+  background: var(--warning-bg);
+  color: var(--warning-fg-strong);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.master-campaign-cell strong {
+  display: block;
+  color: var(--foreground);
+}
+
+.cell-popover {
+  display: inline-block;
+}
+
+.cell-popover-badge {
+  display: inline-block;
+  margin-top: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-family: inherit;
+  /* Selalu berupa tombol — kursor "help" menjanjikan rincian yang benar-benar bisa dibuka. */
+  cursor: help;
+}
+
+.merged-campaigns-badge {
+  border: 1px solid var(--warning-border);
+  background: var(--warning-bg-yellow);
+  color: var(--warning-fg-alt);
+}
+
+button.merged-campaigns-badge:hover,
+button.merged-campaigns-badge:focus-visible {
+  border-color: var(--warning-solid-strong);
+  background: var(--warning-bg-yellow-strong);
+}
+
+/* Biru, bukan kuning: "Campaign digabung" adalah pengakuan bahwa satu angka menggabungkan
+   beberapa campaign, sedangkan ini rincian biasa. Dua badge sewarna di satu baris terbaca
+   sebagai peringatan yang sama. */
+.country-breakdown-badge {
+  border: 1px solid var(--info-border);
+  background: var(--info-bg);
+  color: var(--info-fg);
+}
+
+button.country-breakdown-badge:hover,
+button.country-breakdown-badge:focus-visible {
+  border-color: var(--info-border-strong);
+  background: var(--info-bg-strong);
+}
+
+/* position: fixed — tabel ROI punya scroll sendiri, dan panel yang absolute akan terpotong
+   tepinya persis pada baris terbawah yang paling sering dibuka. Lebarnya dari komponennya
+   (style inline), karena panel rincian negara memuat empat kolom angka. */
+.cell-popover-panel {
+  position: fixed;
+  z-index: 40;
+  display: grid;
+  gap: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: var(--shadow-popover);
+  color: var(--foreground);
+  font-size: 11px;
+  text-align: left;
+  white-space: normal;
+}
+
+.cell-popover-panel strong {
+  color: var(--muted-foreground);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cell-popover-panel em {
+  color: var(--muted-foreground);
+  font-style: normal;
+  line-height: 1.5;
+}
+
+.cell-popover-row {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+/* Nama campaign Meta panjang ("nPJL-06 Pros Turki Carrou LKM 85 10 Adset") — dipotong supaya
+   angka spend di kanan tidak terdorong keluar panel. Nama penuhnya ada di title. */
+.cell-popover-row > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cell-popover-row.total {
+  margin-top: 2px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+  font-weight: 700;
+}
+
+/* Empat kolom sekaligus, jadi grid-nya di wadahnya — baris demi baris yang masing-masing mengatur
+   lebarnya sendiri tidak akan pernah lurus satu sama lain. */
+.country-breakdown-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  gap: 3px 10px;
+  align-items: baseline;
+}
+
+.country-breakdown-grid .head {
+  color: var(--muted-foreground);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.country-breakdown-grid .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.country-breakdown-grid .num {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.country-breakdown-grid .total {
+  margin-top: 2px;
+  padding-top: 5px;
+  border-top: 1px solid var(--border);
+  font-weight: 700;
+}
+
+.master-country-head,
+.master-country-cell {
+  color: var(--info-fg) !important;
+}
+
+.master-country-cell {
+  min-width: 132px;
+}
+
+.master-country-cell strong {
+  display: block;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.master-money-cell {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  text-align: right;
+}
+
+.master-money-cell.meta {
+  color: var(--destructive);
+}
+
+.master-money-cell.gam {
+  color: var(--orange-fg);
+}
+
+.master-money-cell.positive,
+.master-roi-fluk-cell {
+  color: var(--success-solid);
+  font-weight: 800;
+}
+
+/* Fluktuasi minus = ROI turun. Dua kelas supaya menang atas warna hijau default di atasnya. */
+.master-roi-fluk-cell.money-negative {
+  color: var(--destructive);
+}
+
+.master-roi-cell {
+  color: var(--success-solid);
+  font-size: 15px;
+  font-weight: 900;
+  text-align: center;
+}
+
+/* ROI minus = rugi. Dua kelas supaya menang atas warna hijau default di atasnya (satu kelas). */
+.master-roi-cell.money-negative {
+  color: var(--destructive);
+}
+
+.muted-cell {
+  color: var(--foreground-faint);
+}
+
+.campaign-name-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.campaign-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--success-solid-strong);
+  box-shadow: 0 0 0 4px var(--success-ring);
+}
+
+.campaign-status-dot.inactive {
+  background: var(--muted-foreground);
+  box-shadow: 0 0 0 4px var(--neutral-ring);
+}
+
+
+/* Terjadwal: campaign-nya menyala, tayangnya belum mulai. Biru dan bukan kuning — tidak ada yang
+   tertahan dan tidak ada yang perlu dikerjakan, cuma tanggal yang belum sampai. */
+.campaign-status-dot.scheduled {
+  background: var(--info-solid);
+  box-shadow: 0 0 0 4px var(--info-ring);
+}
+
+.campaign-name-cell {
+  /* Dibatasi supaya kolom Kampanye tidak menghabiskan lebar tabel dan menutupi Anggaran. Nama yang
+     lebih panjang dipotong dengan elipsis (judul lengkapnya tetap di atribut title baris). */
+  min-width: 180px;
+  max-width: 300px;
+}
+
+.campaign-name-cell div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.campaign-name-cell strong {
+  color: var(--info-fg);
+  font-size: 13px;
+}
+
+.campaign-name-cell strong,
+.campaign-name-cell span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.campaign-name-cell span {
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+
+.campaign-pill-select {
+  max-width: 190px;
+  border: 1px solid;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.campaign-pill-select.indigo {
+  border-color: var(--indigo-border);
+  background: var(--indigo-bg);
+  color: var(--indigo-fg);
+}
+
+.campaign-pill-select.orange {
+  border-color: var(--orange-border);
+  background: var(--orange-bg);
+  color: var(--orange-fg);
+}
+
+.campaign-delivery-badge {
+  color: var(--success-fg);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.campaign-delivery-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--success-bg-strong);
+}
+
+.campaign-delivery-badge.inactive {
+  /* Latarnya ikut diganti, bukan warna hurufnya saja: pil hijau bertuliskan "Nonaktif" adalah
+     dua tanda yang saling membantah, dan yang dibaca orang lebih dulu adalah warnanya. */
+  background: var(--muted);
+  color: var(--foreground-soft);
+}
+
+
+.campaign-delivery-badge.scheduled {
+  background: var(--info-bg-strong);
+  color: var(--info-fg);
+}
+
+/* Saklar on/off campaign (kolom Status di tabel Kampanye).
+   Posisinya = `configuredStatus` milik Meta, dan pil di sebelahnya menamai posisi yang sama:
+   "Aktif"/"Terjadwal" untuk On, "Tidak aktif" untuk Off. Yang membedakan kedua nama pertama cuma
+   `start_time` — jadwal yang belum sampai. */
+.campaign-status-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Rupanya DIBAGI dengan `<Switch>` (src/components/ui/Switch.jsx), bukan disalin: dua saklar yang
+   berbeda beberapa piksel di satu dashboard terbaca sebagai dua kontrol yang berbeda artinya.
+   Yang di sini tetap `<button>` karena ia membawa keadaan yang tidak dimiliki saklar biasa —
+   "perintah sudah ditulis, belum sampai ke Meta" yang berkedip di bawah. */
+.campaign-switch,
+.switch-track {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  width: 38px;
+  height: 22px;
+  padding: 3px;
+  border: 1px solid var(--input);
+  border-radius: 999px;
+  background: var(--border);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.campaign-switch-knob,
+.switch-knob {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--switch-knob);
+  box-shadow: var(--shadow-knob);
+  transition: transform 0.15s ease;
+}
+
+.campaign-switch.on,
+.switch-input:checked + .switch-track {
+  border-color: var(--success-solid);
+  background: var(--success-solid);
+}
+
+.campaign-switch.on .campaign-switch-knob,
+.switch-input:checked + .switch-track .switch-knob {
+  transform: translateX(16px);
+}
+
+/* --- Saklar bersama ----------------------------------------------------------------------------
+   Kotak centang aslinya TIDAK dibuang melainkan ditumpuk tepat di atas relnya, tembus pandang:
+   yang menerima klik, spasi, dan fokus keyboard tetap `<input>` sungguhan. Digambar sebagai div
+   ber-onClick, ketiganya harus ditulis ulang satu per satu — dan yang terlewat cuma ketahuan oleh
+   orang yang memakai keyboard. */
+.switch-field {
+  display: inline-flex;
+  /* Jarak saklar ke teksnya. Menempel, keduanya terbaca sebagai satu blok dan tidak jelas mana
+     yang sedang dinyalakan — dan relnya yang berujung bundar membuat jarak yang sama terlihat
+     lebih rapat daripada di kotak centang persegi yang digantikannya. */
+  gap: 12px;
+  align-items: center;
+  color: var(--foreground);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.switch {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+}
+
+.switch-input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Cincin fokus digantung pada rel, bukan pada input yang tembus pandang: yang terlihat orang saat
+   ia sampai ke sini lewat Tab adalah relnya. */
+.switch-input:focus-visible + .switch-track {
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.switch-input:disabled + .switch-track {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.switch-input:disabled {
+  cursor: not-allowed;
+}
+
+/* Nama saklar dan ikon keterangannya sebaris — keterangannya tinggal di dalam ikon itu, bukan di
+   baris teks di bawahnya. */
+.switch-text {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch-track,
+  .switch-knob {
+    transition: none;
+  }
+}
+
+/* Perintah yang sudah ditulis tapi belum sampai ke Meta. Berkedip pelan supaya "sudah kutekan,
+   kok belum berubah" terjawab tanpa perlu membaca keterangan di bawahnya. */
+.campaign-switch.pending {
+  border-color: var(--warning-solid);
+  animation: campaign-switch-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes campaign-switch-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--warning-pulse);
+  }
+  50% {
+    box-shadow: 0 0 0 4px var(--warning-pulse-fade);
+  }
+}
+
+.campaign-switch:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.campaign-switch:focus-visible {
+  outline: 2px solid var(--indigo-accent);
+  outline-offset: 2px;
+}
+
+.campaign-status-text {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.campaign-status-text .muted-line {
+  margin-top: 0;
+}
+
+/* Animasi dimatikan untuk yang memintanya; kedipannya hiasan, bukan informasi — keterangannya
+   tetap tertulis. */
+@media (prefers-reduced-motion: reduce) {
+  .campaign-switch,
+  .campaign-switch-knob {
+    transition: none;
+  }
+
+  .campaign-switch.pending {
+    animation: none;
+  }
+}
+
+.country-roi-stack {
+  display: grid;
+  gap: 12px;
+}
+
+.country-roi-group {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  overflow: hidden;
+}
+
+.country-roi-group summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  background: var(--surface-subtle);
+  font-weight: 800;
+}
+
+.country-roi-group summary span {
+  overflow-wrap: anywhere;
+}
+
+/* Ringkasannya memuat empat angka (spend, ad tax, total, ROI), jadi ia perlu boleh membungkus
+   sendiri alih-alih mendesak nama subdomain di sebelahnya sampai terpotong. */
+.country-roi-group summary small {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: right;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: var(--backdrop);
+}
+
+.confirm-dialog {
+  width: min(100%, 430px);
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: var(--shadow-dialog);
+}
+
+.confirm-dialog h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.confirm-dialog p {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 14px;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.backdrop {
+  display: none;
+}
+
+@media (max-width: 980px) {
+  .form-grid,
+  .profile-metrics,
+  .subdomain-summary-grid,
+  .campaign-grid,
+  .campaign-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .subdomain-summary-card.single {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Empat kartu ringkasan tetap berpasangan, tidak menumpuk satu per baris: angkanya pendek dan
+     satu kolom mendorong grafik di bawahnya keluar layar sebelum ada yang terbaca. */
+  .stats-grid,
+  .chart-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Menumpuk satu per baris, TIDAK berpasangan seperti kartu ringkasan di atasnya: ketiganya
+     ganjil, jadi dua kolom meninggalkan satu kartu selebar setengah layar di baris kedua — dan
+     yang tertinggal itu Cash Available, yaitu yang paling dicari orang. */
+  .cashflow-groups,
+  .cashflow-headline {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-content {
+    padding-inline: 16px;
+  }
+
+  .content {
+    padding: 16px;
+  }
+
+  .page-header,
+  .panel-header,
+  .toolbar,
+  .toolbar-filters,
+  .table-footer,
+  .table-tools {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  /* Paging sengaja tidak ikut ditumpuk: empat kontrol pendek yang masing-masing mengambil satu
+     baris memperpanjang halaman persis di tempat yang paling sering discroll. */
+  .pagination {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .search {
+    max-width: none;
+  }
+
+  .topbar {
+    padding: 0 12px;
+  }
+
+  /* `.topbar div { display: grid }` menang spesifisitas dari `.user-pill` polos, jadi
+     penyembunyian ini harus ikut menyebut `.topbar`. Tombol temanya tinggal — lihat
+     DashboardShell. */
+  .topbar .topbar-right .user-pill {
+    display: none;
+  }
+}
+
+/* Sidebar off-canvas + hamburger hanya di HP asli. Di lebar tablet (721–980px) sidebar tetap
+   tampil normal, jadi menu-button tidak dibutuhkan di sana. */
+@media (max-width: 720px) {
+  .app-shell,
+  .app-shell.sidebar-collapsed {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: fixed;
+    z-index: 20;
+    inset: 0 auto 0 0;
+    width: min(86vw, 300px);
+    transform: translateX(-105%);
+    transition: transform 180ms ease;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-collapsed .brand-text,
+  .sidebar-collapsed .nav-item span,
+  .sidebar-collapsed .collapse-button span,
+  .sidebar-collapsed .logout-button span {
+    max-width: none;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sidebar-collapsed .nav-group {
+    padding: 10px 10px 2px;
+    color: var(--muted-foreground);
+    border-top: 0;
+  }
+
+  .backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    border: 0;
+    background: var(--backdrop-soft);
+  }
+
+  .menu-button {
+    display: inline-grid;
+  }
+
+  /* Judul topbar berbagi baris dengan hamburger, status sync, dan ikon peringatan — dan yang
+     terakhir itu yang harus terlihat. Nama aplikasinya sudah tertulis di sidebar. */
+  .topbar .topbar-title {
+    display: none;
+  }
+
+  /* Sidebar di HP sudah off-canvas: melipatnya jadi rel ikon tidak menghemat apa pun karena
+     lebarnya bukan lebar yang dibagi dengan konten. */
+  .sidebar-footer .collapse-button {
+    display: none;
+  }
+
+  /* Paging dalam satu baris. Yang dikorbankan pemilih baris-per-halaman — kontrol terlebar,
+     dan yang paling jarang dipakai di layar sepanjang ini — sementara teks tombol digantikan
+     panahnya sendiri. */
+  .pagination {
+    flex-wrap: nowrap;
+    gap: 6px;
+    font-size: 12px;
+  }
+
+  .pagination .page-size-control,
+  .pagination .pagination-step-label {
+    display: none;
+  }
+
+  .pagination .pagination-range,
+  .pagination .pagination-page {
+    white-space: nowrap;
+  }
+
+  /* Kisaran baris yang menyusut duluan: "Halaman 2 dari 7" tidak boleh terpotong, karena itu
+     satu-satunya penunjuk posisi setelah teks tombol hilang. */
+  .pagination .pagination-range {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .pagination .pagination-step {
+    min-height: 32px;
+    padding: 6px 8px;
+  }
+}
+
+.reminder-due-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.reminder-due-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.reminder-due-item:first-child {
+  border-top: none;
+}
+
+.reminder-due-title {
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+}
+
+.reminder-due-date {
+  color: var(--muted-foreground);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.reminder-due-amount {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Kotak "Catat ke Expenses" di tiap baris jatuh tempo. Menempel pada tombol centangnya (gap kecil)
+   supaya terbaca sebagai pilihan UNTUK tombol itu, bukan sebagai kolom keempat baris ini. */
+/* Rupa relnya dari `.switch-field`; yang tersisa di sini cuma yang khas baris ini — teksnya
+   meredup dan tidak boleh membungkus, karena ia berdiri di sebelah tombol "tandai selesai" pada
+   baris yang lebarnya sudah habis. */
+.reminder-due-expense {
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+/* Badge pengingat: kuning, bukan merah — isu sync di sebelahnya merah untuk kegagalan; pengingat
+   jatuh tempo adalah peringatan lunak, warna berbeda supaya keduanya tidak tertukar sekilas. */
+.reminder-alert {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+  color: var(--warning-fg);
+}
+
+/* --- Gating campaign Keitaro ------------------------------------------------------------------ */
+
+/* Satu baris, selalu. `flex-wrap: wrap` dulu membuat kotak cari melompat ke baris sendiri begitu
+   deret tab di sebelahnya melebar — dan toolbar yang tingginya berubah-ubah menggeser seluruh
+   tabel di bawahnya tiap kali tab diganti. Yang mengalah adalah lebar kotak carinya. */
+.gating-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  align-items: center;
+  /* Tumbuh mengisi ruang sisa di baris panel-header, bukan selebar isinya. Tanpa ini toolbar hanya
+     sebesar kontennya dan separuh baris dibiarkan kosong di sebelah deret tab. */
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  /* Dibatasi supaya deret tab di sebelah kiri tetap punya ruangnya sendiri: tanpa batas ini, di
+     layar lebar kotak cari melebar sampai judul tab-nya terhimpit. */
+  max-width: 620px;
+}
+
+.gating-toolbar .control {
+  min-width: 0;
+}
+
+/* Nama campaign Keitaro panjang ("ALDI T2 TBZ 1221 D4kR Prospek (play.masseffectstore)"), jadi
+   kotak yang cuma memuat satu-dua kata membuat pencarian jadi menebak. Ia mengambil seluruh sisa
+   ruang toolbar; yang berukuran tetap hanya pemilih filter di sebelahnya. */
+.gating-toolbar input[type="search"] {
+  flex: 1 1 auto;
+  min-width: 200px;
+}
+
+/* Pemilih saringan di sebelah kotak cari. `0 1 190px` (bukan `0 0 auto`) supaya ia boleh menyusut
+   dan tidak pernah mengambil ruang kotak cari di sebelahnya, yang justru yang diketik orang. Teks
+   yang terpotong hanya di keadaan tertutup; menu yang terbuka tetap menampilkannya penuh. */
+.gating-toolbar .rs-container {
+  flex: 0 1 190px;
+  min-width: 128px;
+}
+
+.gating-name {
+  display: grid;
+  gap: 2px;
+}
+
+/* Nama campaign Keitaro panjang ("ALDI T2 TBZ 1221 D4kR Prospek (play.masseffectstore)") dan
+   membawa keterangan di bawahnya. Dibiarkan melebar, ia mendorong kolom Aksi keluar layar — dan
+   kolom itu justru satu-satunya alasan halaman ini ada. */
+.gating-table td:nth-child(2) {
+  max-width: 320px;
+}
+
+.gating-table td:nth-child(4),
+.gating-table td:nth-child(5) {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gating-dialog {
+  width: min(100%, 680px);
+  gap: 14px;
+}
+
+.gating-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--orange-border);
+  border-radius: 8px;
+  background: var(--orange-bg);
+  color: var(--orange-fg-strong);
+  font-size: 13px;
+}
+
+.gating-warning svg {
+  flex: none;
+}
+
+.gating-diff {
+  display: grid;
+  gap: 10px;
+}
+
+.gating-diff-row {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--muted);
+}
+
+.gating-diff-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+/* URL-nya panjang dan penuh placeholder Keitaro. Dipotong dengan ellipsis, operator tidak bisa
+   melihat justru bagian yang membedakan keduanya — jadi ia membungkus, sepanjang apa pun. */
+.gating-diff-from,
+.gating-diff-to {
+  font-size: 12px;
+  word-break: break-all;
+  line-height: 1.5;
+}
+
+.gating-diff-from {
+  color: var(--muted-foreground);
+  text-decoration: line-through;
+}
+
+.gating-diff-to {
+  color: var(--foreground);
+}
+
+/* --- Tab (TabStrip) --------------------------------------------------------------------------- */
+
+.tab-strip {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--muted);
+  overflow-x: auto;
+}
+
+.tab-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tab-button:hover {
+  color: var(--foreground);
+}
+
+.tab-button.active {
+  background: var(--card);
+  border-color: var(--border);
+  color: var(--foreground);
+  box-shadow: var(--shadow-tab);
+}
+
+.tab-button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.tab-count {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--border);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.tab-button.active .tab-count {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+/* Keterangan yang dulu duduk di bawah judul panel. Tetap ada karena umur cermin dan zona waktu
+   riwayat adalah dua hal yang tidak boleh ditebak sendiri oleh yang membacanya. */
+.tab-note {
+  margin: 0 0 14px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
+@media (max-width: 720px) {
+  /* Deret tab tetap utuh; toolbar yang turun ke baris sendiri dan melebar penuh. Dipaksa sebaris
+     di layar selebar ini, kotak carinya menyusut sampai tidak muat satu kata pun. */
+  .panel-header.tabbed {
+    flex-wrap: wrap;
+  }
+
+  .panel-header.tabbed .gating-toolbar {
+    width: 100%;
+  }
+}
+
+/* --- Halaman Activity Logs ---------------------------------------------------------------------
+   Empat penyaring dalam SATU baris, di sebelah judul panel. Yang membuatnya muat adalah tiga hal
+   yang masing-masing sudah punya alasan sendiri di atas: `toolbar-filters` (nowrap), select yang
+   `compact-control` (bukan `width: 100%`), dan kotak cari yang boleh menyusut.
+
+   Kotak carinya diizinkan lebih sempit dari `.toolbar-filters .search` bawaan (280px): di sana
+   petunjuknya menyebut kolom mana saja yang bisa dicari dan tidak boleh terpenggal, sementara di
+   sini pilihan pengguna dan kategori di sebelahnya sudah menyebutkan sendiri apa yang bisa
+   disaring. Tanpa penyempitan itu, keempatnya menuntut ~800px dan barisnya pecah justru di lebar
+   layar laptop yang paling sering dipakai membuka halaman ini. */
+.activity-filters .search {
+  min-width: 150px;
+}
+
+/* Email di dropdown pengguna bisa sepanjang "advertiser.senior@rabbitracing.live". Dibiarkan
+   menentukan lebarnya sendiri, satu select memakan setengah baris — dan yang terpotong justru
+   pemilih tanggal di ujung kanan. Nama yang terpenggal di dropdown masih bisa dikenali; pemilih
+   tanggal yang terpenggal tidak bisa dibaca sama sekali. */
+.activity-filters .compact-control {
+  min-width: 0;
+  max-width: 190px;
+}
+
+/* --- Halaman Plugin ---------------------------------------------------------------------------
+   Satu peringatan yang berdiri sendiri di atas halaman, dipakai untuk tiga keadaan yang semuanya
+   berarti "sesuatu di luar dashboard ini yang harus dibetulkan": server kontrol belum
+   dikonfigurasi, skema gagal diambil, dan situs yang menolak dibaca.
+
+   `.notice-alert` adalah nama yang sama untuk halaman lain (/activity-logs) — satu blok untuk dua
+   nama kelas, bukan salinan kedua: keduanya menandai hal yang persis sama, dan dua salinan berarti
+   yang satu diperbarui sementara yang lain diam-diam tertinggal. */
+.plugin-alert,
+.notice-alert,
+.notice-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--orange-border-translucent);
+  border-radius: 10px;
+  background: var(--orange-bg-translucent);
+  color: var(--foreground);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.plugin-alert svg,
+.notice-alert svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--orange-solid);
+}
+
+/* Keterangan yang BUKAN peringatan — batas sebuah angka, bukan sesuatu yang harus dibetulkan.
+   Menumpang tata letak `.notice-alert` di atas (satu blok, tiga nama) dan cuma menukar nadanya:
+   dua kotak oranye bertumpuk membuat yang kedua berhenti dibaca, dan yang berhenti dibaca di
+   /activity-logs justru yang menerangkan kenapa estimasinya adalah batas bawah. */
+.notice-note {
+  border-color: var(--border);
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.notice-note svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--muted-foreground);
+}
+
+.notice-note strong {
+  color: var(--foreground);
+}
+
+/* Rincian yang ditutup — sepola `.sync-issue-detail`: yang membukanya adalah yang bertanya kenapa
+   angkanya sebesar itu, dan tiga puluh baris ukuran node di antara tabel dan kesimpulannya cuma
+   mendorong keduanya berjauhan. */
+.detail-block summary {
+  cursor: pointer;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  user-select: none;
+}
+
+.detail-block[open] summary {
+  margin-bottom: 8px;
+}
+
+.plugin-alert code,
+.notice-alert code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--muted);
+  font-size: 12px;
+}
+
+/* Kolom centang dipersempit sendiri: dibiarkan ikut lebar kolom lain, ia mengambil ruang yang
+   dibutuhkan nama subdomain — yang panjangnya justru yang menentukan lebar tabel ini. */
+.plugin-table .plugin-check {
+  width: 34px;
+  padding-right: 0;
+}
+
+.plugin-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.plugin-row-actions {
+  display: inline-flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+/* Bilah yang muncul begitu ada yang dicentang. Menempel di atas tabel dan bukan melayang: yang
+   dipilih orang ada di tabel di bawahnya, dan bilah yang menutupinya membuat pilihan tidak bisa
+   diperiksa sebelum ditekan. */
+.plugin-bulkbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--muted);
+  font-size: 13px;
+}
+
+.plugin-bulkbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Bawahnya 18px, bukan 4px. Dengan 4px, kotak isian di baris terakhir hampir menyentuh garis
+   kartunya — dan di grup yang barisnya ganjil, sel kosong di sebelahnya membuat himpitan itu makin
+   terlihat. Jaraknya disamakan dengan jarak antar-kartu supaya kartu terbaca sebagai kotak yang
+   benar-benar membungkus isinya. */
+.plugin-fieldset {
+  margin: 0 0 18px;
+  padding: 16px 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+/* Kartu terakhir tidak menempel ke bilah tombol di bawahnya. */
+.plugin-fieldset:last-of-type {
+  margin-bottom: 22px;
+}
+
+.plugin-fieldset legend {
+  padding: 0 6px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Grid form plugin: dua kolom, dan yang menentukan kerapiannya dua aturan di bawah ini.
+
+   `align-items: start` — tanpa ini, field yang punya baris bantuan meregangkan SELURUH barisnya,
+   dan kotak isian di sebelahnya ikut memanjang tanpa alasan. Itu yang membuat tab Behaviour
+   terbaca berantakan: "URL redirect" punya bantuan, tetangganya tidak.
+
+   Dibatasi ke `.plugin-fieldset` dan tidak diubah di `.form-grid` global, karena grid yang sama
+   dipakai ResourceForm di seluruh dashboard — bentuknya sudah benar di sana. */
+.plugin-fieldset .form-grid {
+  align-items: start;
+  gap: 16px 16px;
+}
+
+/* Tinggi kontrol disamakan mati-matian. Input, select, dan kotak saklar harus setinggi persis
+   sama: di grid dua kolom, selisih beberapa piksel antara input dan select membuat tiap barisnya
+   tidak sejajar, dan itu terbaca sebagai "ukuran fieldnya tidak konsisten" jauh sebelum ada yang
+   bisa menunjuk sebabnya. */
+.plugin-fieldset .control,
+.plugin-fieldset .plugin-switch {
+  box-sizing: border-box;
+  width: 100%;
+  height: 38px;
+}
+
+/* Textarea satu-satunya yang boleh lebih tinggi — dan tingginya diatur `rows`, bukan dipatok di
+   sini, supaya kode iklan dan daftar negara tidak dipaksa setinggi sama. */
+.plugin-fieldset textarea.control {
+  height: auto;
+  min-height: 38px;
+}
+
+/* Saklar digambar sebagai kotak, bukan checkbox telanjang, supaya baris [saklar | angka] sejajar.
+   Lihat catatan di FieldInput (src/components/Plugin.jsx). */
+/* TANPA kotak — tidak ada batas, tidak ada latar. Saklar sudah menggambarkan dirinya sendiri
+   sebagai kontrol; dibungkus kotak setinggi 38px seperti kotak isian di sebelahnya, ia terbaca
+   sebagai isian yang kebetulan berisi saklar, dan enam saklar berturut-turut di grup "Perilaku
+   slot" jadi enam kotak kosong yang bagian dalamnya hampir seluruhnya udara.
+
+   Pembungkusnya tetap ada — dan tingginya tetap 38px — semata supaya saklar sejajar dengan kotak
+   isian yang berdampingan dengannya di grid dua kolom. Tanpa itu, tiap baris yang memuat keduanya
+   terlihat jomplang. */
+.plugin-switch {
+  display: flex;
+  align-items: center;
+  color: var(--foreground);
+  font-size: 13px;
+}
+
+/* Label satu baris, dipotong kalau kepanjangan. Dibiarkan membungkus, label dua baris menggeser
+   kotak isiannya ke bawah dan merusak kesejajaran seluruh barisnya. */
+.plugin-fieldset .field > label {
+  display: flex;
+  overflow: hidden;
+  gap: 2px;
+  align-items: center;
+  min-height: 18px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Baris bantuan tidak boleh mendorong apa pun: ia menempel di bawah kotaknya sendiri, dan berkat
+   `align-items: start` di atas ia tidak lagi meninggikan tetangganya. */
+.plugin-field-help {
+  display: block;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+/* Kode iklan, HTML kustom, saklar induk, dan URL panjang melebar penuh: dipaksa ikut kolom form,
+   satu tag `<ins>` sudah menghabiskan seluruh lebar kotaknya, dan URL yang bagian pembedanya ada
+   di ekor akan terpotong justru di bagian itu. Yang mana saja ditentukan `wide` di skema. */
+.plugin-field-wide {
+  grid-column: 1 / -1;
+}
+
+.plugin-textarea {
+  min-height: 78px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+/* Yang diubah ditandai. Form ini bisa memuat tiga puluh kotak, dan yang menentukan apa yang akan
+   dikirim ke situs adalah selisihnya — bukan isinya. */
+.plugin-changed-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--success-solid-strong);
+  vertical-align: middle;
+}
+
+.plugin-changed .control,
+.plugin-changed .rs__control {
+  border-color: var(--success-border-translucent);
+}
+
+.plugin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.plugin-actions-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.plugin-load-error {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.plugin-dialog {
+  width: min(680px, 94vw);
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+.dialog-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.dialog-head p {
+  margin: 4px 0 0;
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
+/* Apa yang akan dikirim, per field. Ini satu-satunya layar antara satu tombol dan seluruh armada,
+   jadi isinya disebut — bukan cuma jumlahnya. */
+.plugin-diff-list {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--muted);
+  list-style: none;
+}
+
+.plugin-diff-list li {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+.plugin-diff-list code {
+  overflow: hidden;
+  max-width: 60%;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Daftar tujuan bisa memuat ratusan situs, jadi ia menggulir di dalam dialognya sendiri — kalau
+   tidak, tombol Terapkan terdorong ke luar layar dan tidak ada yang bisa membatalkannya. */
+.plugin-target-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  max-height: 240px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.plugin-target-list .badge {
+  margin-left: 8px;
+}
+
+@media (max-width: 720px) {
+  .plugin-bulkbar,
+  .plugin-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* Halaman OTP. Kodenya monospace dan lebih besar dari teks tabel di sekitarnya: yang membacanya
+   sedang mengetiknya ke jendela lain, sering dari ponsel yang dipegang sebelah tangan, dan enam
+   angka berukuran teks biasa adalah angka yang salah diketik. */
+.otp-secret-input {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.otp-secret-input .control {
+  flex: 1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+}
+
+.otp-table td {
+  vertical-align: middle;
+}
+
+.otp-name {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.otp-secret-text {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.otp-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Merah hanya di lima detik terakhir. Selalu berwarna, warnanya berhenti berarti apa pun. */
+.otp-code-expiring {
+  color: var(--destructive);
+}
+
+.otp-countdown {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.otp-countdown-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--muted);
+  overflow: hidden;
+}
+
+.otp-countdown-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--primary);
+  /* Selebar sisa detiknya, dan transisinya linear supaya jalannya sama rata dengan waktu yang
+     diwakilinya — easing membuat detik terakhir terlihat lebih panjang dari detik pertama. */
+  transition: width 0.5s linear;
+}
+
+.otp-countdown-fill.expiring {
+  background: var(--destructive);
+}
+
+.otp-countdown-seconds {
+  min-width: 30px;
+  text-align: right;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Behaviour: meniru layar pengaturan plugin ---------------------------------------------------
+   Satu kolom, keterangan di bawah tiap field, dan pilihan aksi sebagai radio. Bentuknya mengikuti
+   plugin dengan sengaja: orang yang sama membuka dua layar untuk pengaturan yang sama, dan dua
+   susunan berbeda membuatnya harus mencari dua kali. */
+.plugin-form-single {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 760px;
+}
+
+/* Kalimat pembuka satu bagian, tepat di bawah judulnya. */
+/* Ikon keterangan di kepala kartu ikut ukuran LEGENDANYA (12px), bukan ukuran label field (13px).
+   Menggantikan `.plugin-section-desc`, paragraf pembuka yang dulu berdiri di bawah tiap legenda:
+   empat seksi berarti empat blok teks yang memisahkan tiap kelompok isian sejauh dua baris.
+
+   Di teks yang di-uppercase dan berjarak huruf, ikon yang lebih besar daripada hurufnya sendiri
+   terbaca sebagai tombol yang menempel pada judul, bukan sebagai keterangan judul itu. */
+.plugin-fieldset legend .column-hint-button svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Peringatan yang tinggal DI DALAM kartunya, bukan di atas halaman: yang disebutnya adalah syarat
+   bagi bagian itu saja. Jaraknya lebih rapat dari peringatan tingkat halaman. */
+.plugin-alert-inline {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+}
+
+/* Satuan di samping nama field ("(kali)", "(detik)") — bagian dari namanya, bukan kalimat bantuan
+   yang bisa dilewati mata, jadi ia meredup tapi tetap sebaris dengan labelnya. */
+.plugin-field-unit {
+  margin-left: 6px;
+  color: var(--muted-foreground);
+  font-weight: 400;
+}
+
+/* Angka + satuannya dalam satu baris (Durasi Blokir Redirect). Angkanya sempit dan tetap, satuannya
+   mengambil sisanya — dibalik, dropdown "Bulan" melebar sampai kotak angkanya tinggal dua digit. */
+.plugin-pair {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 120px minmax(0, 1fr);
+}
+
+/* Radio, bukan dropdown: ketiga pilihan Aksi berakibat sangat berbeda, dan keterangan tiap pilihan
+   justru bagian yang menentukan pilihannya. Di dropdown hanya satu yang terbaca pada satu waktu. */
+.plugin-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.plugin-radio {
+  display: grid;
+  gap: 10px;
+  align-items: start;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.plugin-radio:hover {
+  border-color: var(--muted-foreground);
+}
+
+.plugin-radio input {
+  margin: 2px 0 0;
+  cursor: pointer;
+}
+
+.plugin-radio strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Keterangan pilihan turun ke barisnya sendiri: disambung di belakang namanya, pilihan yang
+   kalimatnya panjang membuat nama pilihan berikutnya sulit dipindai. */
+.plugin-radio small {
+  display: block;
+  margin-top: 3px;
+  line-height: 1.5;
+}
+
+/* Radio dan saklar tidak ikut aturan tinggi 38px milik kontrol lain — keduanya setinggi isinya. */
+.plugin-fieldset .plugin-radio-group,
+.plugin-fieldset .plugin-pair {
+  height: auto;
+}
+
+/* --- AutoPost -------------------------------------------------------------------------------------
+   Tab ini tidak menampilkan keadaan situs melainkan MENGIRIM pekerjaan, dan bentuknya mengikuti itu:
+   satu form panjang lalu daftar job di bawahnya, bukan tabel yang berubah sendiri. */
+
+/* DUA kolom: yang sedang disusun di kiri, yang sudah terkirim di kanan.
+
+   Bertumpuk, daftar job berdiri di bawah form setinggi dua layar — dan yang paling perlu dilihat
+   setelah menekan Kirim justru ada di luar layar. Kolom kanan mengambil sisanya dan bukan lebar
+   tetap seperti panel Kalender: isinya TABEL berkolom lima, dan lebar tetap 320px menjadikannya
+   gulungan mendatar yang tidak menampilkan satu kolom pun secara utuh. */
+.autopost-layout {
+  display: grid;
+  gap: 24px;
+  align-items: start;
+  grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
+}
+
+/* `min-width: 0` supaya textarea dan tabel di dalamnya tidak melebarkan kolomnya sendiri —
+   `minmax(0, ...)` di atas cuma mengatur trek, bukan isi yang punya lebar minimum sendiri. */
+.autopost-form,
+.plugin-jobs {
+  min-width: 0;
+}
+
+/* Di kolom selebar 440px, dua kolom field menyisakan kotak selebar 200px untuk "Kedalaman artikel".
+   Fieldset di tab ini digambar satu kolom selama layoutnya masih dua kolom. */
+.autopost-layout .plugin-fieldset .form-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Kotak "ingat kunci di browser ini", tepat di bawah kotak isiannya. Diberi jarak atas karena ia
+   BUKAN field berikutnya melainkan keterangan tentang kotak di atasnya — menempel, keduanya
+   terbaca sebagai satu blok isian. */
+.plugin-remember {
+  margin-top: 10px;
+  font-size: 12.5px;
+}
+
+/* Daftar job dipisahkan dari formnya oleh garis, bukan cuma jarak: yang di kiri adalah sesuatu yang
+   sedang disusun, yang di kanan sesuatu yang sudah terkirim dan tidak bisa ditarik kembali. */
+.plugin-jobs {
+  padding-left: 24px;
+  border-left: 1px solid var(--border);
+}
+
+.plugin-jobs .panel-header {
+  margin-bottom: 14px;
+}
+
+.plugin-jobs h3 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Tombol pembuka baris. Tanpa gaya tombol sama sekali — ia harus terbaca sebagai kata kuncinya
+   sendiri, yaitu kolom pertama tabel, bukan sebagai aksi yang berdiri di sebelahnya. */
+.plugin-job-open {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.plugin-job-open:hover {
+  color: var(--info-solid);
+}
+
+.plugin-job-open svg {
+  flex: none;
+  color: var(--muted-foreground);
+}
+
+/* Tahap dan persentasenya bertumpuk, bukan bersebelahan: kolomnya sempit, dan label tahap dari
+   plugin bisa sepanjang "Meminta artikel ke AI (gemini)". */
+.plugin-job-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Lebar tiap kolom DIBATASI, dan itu bukan kerapian: keterangan di bawah pil "Berhenti"
+   ("Prosesnya berhenti tanpa kabar di sisi situs — kirim ulang kata kuncinya") tidak punya satu pun
+   titik potong, jadi tanpa batas ini ia melebarkan kolom Status sampai 400px dan mendorong kolom
+   Hasil — satu-satunya yang memuat tautan ke artikelnya — keluar layar. Yang terdorong keluar bukan
+   kolom yang bisa diabaikan melainkan yang jadi alasan tabel ini ada.
+
+   `table-layout: fixed` supaya persennya benar-benar berlaku; tanpa itu browser tetap melebarkan
+   kolom mengikuti isi terpanjangnya. */
+.plugin-job-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.plugin-job-table th:nth-child(1),
+.plugin-job-table td:nth-child(1) {
+  width: 28%;
+}
+
+.plugin-job-table th:nth-child(2),
+.plugin-job-table td:nth-child(2) {
+  width: 20%;
+}
+
+.plugin-job-table th:nth-child(3),
+.plugin-job-table td:nth-child(3) {
+  width: 20%;
+}
+
+.plugin-job-table th:nth-child(4),
+.plugin-job-table td:nth-child(4) {
+  width: 14%;
+}
+
+/* Kata kunci dan keterangan status boleh membungkus — dipotong ellipsis, dua kata kunci yang
+   berbeda di ekornya tampak identik, dan itu justru yang membedakan satu job dari job berikutnya. */
+.plugin-job-table td {
+  overflow-wrap: anywhere;
+  vertical-align: top;
+  white-space: normal;
+}
+
+/* Log job. Monospace karena isinya kalimat mesin yang memuat nama fungsi dan potongan JSON, dan
+   tinggi maksimumnya dibatasi — satu job yang mencoba ulang tiga kali menulis ratusan baris, dan
+   tanpa batas ini satu baris tabel yang dibuka mendorong seluruh daftar keluar layar. */
+.plugin-job-logs {
+  max-height: 320px;
+  padding: 12px 14px;
+  overflow-y: auto;
+  border-radius: 8px;
+  background: var(--muted);
+}
+
+.plugin-job-logs ol {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted-foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.plugin-job-logs li {
+  /* Baris log panjang tanpa spasi (URL, potongan JSON) melebarkan tabelnya sendiri kalau dibiarkan
+     tidak boleh membungkus. */
+  overflow-wrap: anywhere;
+}
+
+/* Titik putus yang sama dengan Kalender, dan alasan yang sama: dua kolom di layar sempit menyisakan
+   tabel selebar empat kata. Garis pemisahnya ikut pindah dari kiri ke atas — garis kiri pada kolom
+   yang sudah berdiri sendiri tidak memisahkan apa pun. */
+@media (max-width: 1180px) {
+  .autopost-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .autopost-layout .plugin-fieldset .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .plugin-jobs {
+    margin-top: 4px;
+    padding-top: 20px;
+    padding-left: 0;
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .autopost-layout .plugin-fieldset .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- Tab AdX & AdSense di /plugin --------------------------------------------------------------- */
+
+/* Dua kolom, sepola AutoPost: yang disusun di kiri, pratinjau kodenya di kanan. Bertumpuk, pratinjau
+   berdiri di bawah dua fieldset setinggi satu layar — dan yang perlu diadu orang sesudah menekan
+   Generate adalah kode itu dengan isian yang baru saja ia ubah. */
+.gpt-inject-layout {
+  display: grid;
+  gap: 24px;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.gpt-inject-form,
+.gpt-inject-output {
+  min-width: 0;
+}
+
+.gpt-inject-output {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Kode AdSense ditempel apa adanya dan diadu dengan layar AdSense — huruf rata lebar, tanpa koreksi
+   ejaan yang menggaris merah tiap atribut. */
+.adsense-code-box {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.gpt-inject-step-actions {
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.gpt-template-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.gpt-template-row .control,
+.gpt-template-row .rs-container {
+  flex: 1;
+  min-width: 0;
+}
+
+.rs__single-value {
+  overflow: hidden;
+  color: var(--foreground);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rs__option--is-selected {
+  font-weight: 600;
+}
+
+.rs__option--is-disabled {
+  color: var(--muted-foreground);
+  cursor: default;
+}
+
+/* Kode digambar apa adanya, menggulir mendatar di dalam kotaknya sendiri: satu baris defineSlot
+   memuat 35 ukuran, dan kode yang dibungkus paksa tidak bisa lagi diadu dengan layar Ad Manager. */
+.gpt-code {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.gpt-code-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px 6px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--muted);
+  font-size: 13px;
+}
+
+.gpt-code pre {
+  overflow-x: auto;
+  max-height: 260px;
+  margin: 0;
+  padding: 10px 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+/* Pratinjau per subdomain: satu baris ringkas tiap situs, kodenya di balik collapse. Barisnya memuat
+   PEMBEDA antar situs (nama, div id berstempel, unit) supaya bisa diadu tanpa membuka satu pun. */
+.gpt-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gpt-preview-summary {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.gpt-preview-all {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.gpt-preview-item {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.gpt-preview-item.is-error {
+  border: 0;
+}
+
+.gpt-preview-toggle {
+  display: grid;
+  width: 100%;
+  gap: 2px 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.gpt-preview-toggle:hover,
+.gpt-preview-item.is-open .gpt-preview-toggle {
+  background: var(--muted);
+}
+
+.gpt-preview-chevron {
+  color: var(--muted-foreground);
+  transform: rotate(-90deg);
+  transition: transform 0.15s ease;
+}
+
+.gpt-preview-item.is-open .gpt-preview-chevron {
+  transform: none;
+}
+
+.gpt-preview-name {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gpt-preview-div {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.gpt-preview-unit {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  grid-column: 2 / 4;
+}
+
+.gpt-preview-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px 10px;
+  border-top: 1px solid var(--border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gpt-preview-chevron {
+    transition: none;
+  }
+}
+
+/* --- react-select (dipakai `unstyled`, jadi SELURUH rupanya di sini) ----------------------------
+
+   Kelasnya `rs__*` dari `classNamePrefix="rs"`. Gaya bawaan react-select ber-hex dan tidak ikut tema
+   gelap; dengan `unstyled` tidak ada satu pun gaya inline yang tersisa untuk berselisih dengan token. */
+.rs-container {
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 400;
+  text-align: left;
+}
+
+/* Lebar kotak di toolbar: seukuran isinya, dengan lantai supaya "Semua advertiser" tidak terpotong.
+   `.compact-control`/`.page-size-control` di atas dibuat untuk <select> bawaan yang lebarnya dari
+   option terpanjang; di sini lebarnya dari nilai yang sedang terpilih. */
+.rs-container.compact-control {
+  min-width: 160px;
+  max-width: 260px;
+}
+
+.rs-container.page-size-control {
+  min-width: 112px;
+  padding-right: 0;
+}
+
+/* Menu diportal ke <body> (lihat SelectField): tidak mewarisi ukuran huruf dari kontainer mana pun.
+   z-index-nya di prop `styles` SelectField, bukan di sini — react-select menyuntik zIndex sebagai
+   kelas emotion yang menang atas selektor kelas ini. */
+.rs__menu-portal {
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* Pil pemetaan sub-domain di tabel campaign: pembungkusnya yang berwarna (`.campaign-pill-select`),
+   jadi kotak react-select di dalamnya kehilangan batas, latar, dan tingginya sendiri. */
+.rs-container.campaign-pill-select {
+  min-width: 150px;
+  padding: 0;
+  font-size: 11px;
+}
+
+.campaign-pill-select .rs__control {
+  min-height: 0;
+  padding: 2px 4px 2px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.campaign-pill-select .rs__single-value,
+.campaign-pill-select .rs__placeholder {
+  color: inherit;
+}
+
+.campaign-pill-select .rs__indicator {
+  padding: 0 2px;
+  color: inherit;
+}
+
+.campaign-pill-select .rs__indicator-separator {
+  display: none;
+}
+
+.rs__control {
+  min-height: 38px;
+  padding: 3px 6px 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.rs__control:hover {
+  border-color: var(--muted-foreground);
+}
+
+/* Fokus sama persis dengan `.control:focus`: kotak ini berdiri di antara select dan input biasa. */
+.rs__control--is-focused {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.rs__control--is-disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.rs__value-container {
+  gap: 4px;
+  padding: 2px 0;
+}
+
+.rs__placeholder {
+  color: var(--muted-foreground);
+}
+
+.rs__input-container {
+  color: var(--foreground);
+}
+
+.rs__multi-value {
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--muted);
+}
+
+.rs__multi-value__label {
+  padding: 1px 2px 1px 8px;
+  font-size: 12px;
+}
+
+.rs__multi-value__remove {
+  display: flex;
+  padding: 3px 5px;
+  color: var(--muted-foreground);
+}
+
+.rs__multi-value__remove:hover {
+  color: var(--foreground);
+}
+
+.rs__indicators {
+  gap: 2px;
+  color: var(--muted-foreground);
+}
+
+.rs__indicator {
+  padding: 4px;
+}
+
+.rs__indicator:hover {
+  color: var(--foreground);
+}
+
+.rs__indicator-separator {
+  width: 1px;
+  margin: 6px 2px;
+  background: var(--border);
+}
+
+.rs__menu {
+  z-index: 30;
+  margin-top: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: var(--shadow-popover);
+}
+
+.rs__menu-list {
+  max-height: 300px;
+  padding: 4px;
+}
+
+.rs__option {
+  padding: 7px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.rs__option--is-focused {
+  background: var(--muted);
+}
+
+.rs__menu-notice {
+  padding: 10px;
+  color: var(--muted-foreground);
+}
+
+.gpt-loading {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
+.gpt-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: opacity 0.15s;
+}
+
+/* Kode lama dipudarkan selama yang baru disusun — bukan dikosongkan: yang dibandingkan orang sesudah
+   mengubah pilihan justru kode sebelumnya dengan yang baru. */
+.gpt-preview.is-busy {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.gpt-inject-footer {
+  margin-top: 4px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* Tab Cek Situs di /plugin. Pemilih mode (Domain/Subdomain) di atas, lalu kotak pilihan + tombol
+   Cek sebaris; kotaknya yang melebar, tombolnya tidak. */
+.site-audit-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.site-audit-target {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.site-audit-target .rs-container {
+  flex: 1;
+  min-width: 0;
+}
+
+.site-audit-target .primary-button {
+  flex-shrink: 0;
+}
+
+.site-audit-summary {
+  margin: 0 0 10px;
+}
+
+/* Lencana di atas, keterangan di bawahnya. Keterangan dibatasi lebarnya: nama landing page dan
+   daftar kotak kode iklan tidak punya titik potong, dan tanpa batas satu sel mendorong kolom lain
+   keluar layar. */
+.site-audit-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  max-width: 240px;
+}
+
+.site-audit-cell small {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .site-audit-target {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.gpt-networks {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Satu kartu per network: identitasnya (network code, properti) di atas, slot iklannya di bawah —
+   subdomain dari dua network dipasangi dua unit berbeda, dan yang dipilih harus terbaca per kartu. */
+.gpt-network {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.gpt-network-meta {
+  display: grid;
+  gap: 8px 16px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  margin: 0 0 10px;
+}
+
+.gpt-network-meta dt {
+  color: var(--muted-foreground);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.gpt-network-meta dd {
+  margin: 2px 0 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  word-break: break-all;
+}
+
+.gpt-results-dialog {
+  width: min(960px, 96vw);
+}
+
+.gpt-result-note {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 460px;
+  word-break: break-word;
+}
+
+@media (max-width: 1180px) {
+  .gpt-inject-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- Dialog ganti versi ------------------------------------------------------------------------ */
+
+/* Kotak nomor versi tinggal DI DALAM pilihan "Versi tertentu", bukan berdiri sendiri di bawahnya:
+   ia hanya berarti kalau pilihan itu yang aktif, dan kotak yang berdiri terpisah terbaca seolah
+   berlaku untuk kedua pilihan. */
+.plugin-version-input {
+  width: 160px;
+  margin-top: 8px;
+}
+
+.plugin-version-error {
+  display: block;
+  margin-top: 6px;
+  color: var(--danger-soft-fg);
+  font-size: 12px;
+}
+
+/* Daftar situs tujuan berikut versi yang terpasang SEKARANG. Versinya ikut ditampilkan karena itu
+   satu-satunya cara melihat armada yang versinya sudah beragam sebelum menekan tombolnya. */
+.plugin-target-row {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 3px 0;
+  font-size: 13px;
+}
+
+/* Baris "sedang dicoba lagi" di dalam dialog isu sync. Warnanya BUKAN merah: yang sedang ditangani
+   sendiri tidak meminta tindakan siapa pun, dan kalimat merah di antara kartu-kartu merah akan
+   terbaca sebagai kegagalan kedua. */
+.sync-retry-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 12.5px;
+}
+
+.sync-retry-note.running {
+  border-color: var(--info-border);
+  background: var(--info-bg);
+  color: var(--info-fg);
+}
+
+/* Nama situs yang sedang diulang: didorong ke kanan dan dipotong, bukan membungkus — kalimat
+   statusnya yang harus tetap terbaca utuh saat targetnya sepuluh. */
+.sync-retry-note small {
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 45%;
+  opacity: 0.85;
+}
+
+
+/* ═══ Kalender laporan (Overview → tab Kalender) ═══
+
+   Petaknya harus memuat empat baris — tanggal, ROI, uang, chip — jadi tingginya dikunci lewat
+   `min-height` dan bukan `aspect-ratio` seperti kalender pemilih tanggal: petak persegi di layar
+   lebar jadi tinggi sekali, dan yang dilihat orang cuma ruang kosong di antara angka.
+
+   Warnanya lewat token seperti sisa berkas ini. Kalender adalah kandidat pelanggaran terbesar yang
+   ada — puluhan petak berwarna — dan satu hex yang lolos ke sini tidak akan berbunyi sebagai
+   kesalahan apa pun sampai ada orang bermode gelap yang membukanya. */
+/* Kalender di kiri, rincian hari terpilih di kanan. Lebar panelnya TETAP (320px) dan kalendernya
+   yang mengalah: tujuh kolom yang ikut mengecil masih terbaca, sementara kartu subdomain di bawah
+   340px mulai memecah nama domain jadi dua baris. */
+.calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+  gap: 14px;
+}
+
+@media (max-width: 1180px) {
+  .calendar-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.calendar-layout.is-locked {
+  align-items: stretch;
+}
+
+/* ═══ Tinggi dikunci ke layar ═══
+
+   Kalender adalah satu-satunya halaman di dashboard ini yang TIDAK boleh menggulir sebagai
+   halaman: menggulir untuk melihat minggu terakhir menaikkan panel rincian di sebelahnya, dan
+   angka yang sedang dibaca kehilangan tanggal yang menjelaskannya. Yang menggulir adalah kolom
+   kanannya sendiri; petak-petaknya membagi sisa layar.
+
+   Tinggi itu DIUKUR (`useFillViewport`, dipasang sebagai `style` pada `.calendar-layout`), bukan
+   dihitung `calc(100dvh - 168px)`: tinggi yang dijumlahkan dari topbar + tab + judul halaman akan
+   meleset pada hari seseorang menambah satu baris di antaranya, dan yang meleset tidak berbunyi
+   sebagai kesalahan apa pun. Aturan di bawah cuma MEMBAGIKAN tinggi itu ke kedua kolom; tanpa
+   tinggi dari sana (layar sempit, kolom bertumpuk) semuanya kembali setinggi isinya.
+
+   `align-items: stretch` HANYA saat tingginya benar-benar terpasang (`.is-locked`, dari hook yang
+   sama). Diregangkan tanpa tinggi pasti, "stretch" berarti setinggi kolom TERTINGGI — dan panel
+   kanan setinggi 18 subdomain membuat tiap petak jadi 345px, persis kebalikan dari yang diminta di
+   sini. Dengan tinggi pasti, ia berarti setinggi induknya, dan itu yang benar. */
+/* `.panel` sendiri cuma kotak berpadding — tanpa flex, `gap` di sini tidak berlaku dan baris
+   kepala menempel ke nama-nama harinya. */
+.calendar-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+/* Petak membagi sisa tinggi panel, dengan LANTAI setinggi isi terpadatnya (tanggal + ROI + uang +
+   chip + baris potensi). Petak `overflow: hidden` yang menyusut di bawah itu memotong angka tanpa
+   memberi tahu siapa pun; begitu lantainya tercapai, yang menggulir adalah petak-petaknya di dalam
+   panel — bukan halamannya.
+
+   Tanpa tinggi dari induknya (`.calendar-layout` di layar sempit), `1fr` jatuh ke tinggi isi dan
+   `flex: 1` tidak membagikan apa pun: petaknya kembali setinggi lantainya sendiri. */
+.calendar-grid:not(.calendar-weekdays) {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  grid-auto-rows: minmax(92px, 1fr);
+}
+
+/* Digulir di dalam dirinya sendiri, bukan menumbuhkan halaman: daftar subdomain sebuah hari sibuk
+   lebih tinggi dari kalendernya, dan panel yang menumbuhkan halaman berarti melihat baris terakhir
+   menuntut menggulir kalendernya keluar layar. Tingginya datang dari induknya (blok
+   `min-width: 1181px` di atas); di layar sempit ia kembali setinggi isinya. */
+.calendar-detail {
+  min-height: 0;
+  overflow-y: auto;
+  /* `backwards`, BUKAN `both`. Dengan `both` animasinya tetap "in effect" selamanya sesudah
+     selesai, dan elemen yang animasinya menyentuh `transform` menjadi containing block untuk
+     turunan `position: fixed` — popover "Kenapa?" di dalamnya lalu dikoordinatkan relatif ke panel
+     ini alih-alih ke viewport, jatuh jauh di luar, dan dipotong `overflow-y` di atas. Hilang tanpa
+     satu pun pesan; yang terlihat cuma tombol yang tidak melakukan apa-apa saat di-hover.
+     `backwards` sudah cukup untuk apa yang dibutuhkan animasi ini: menahan keadaan awal SEBELUM ia
+     mulai. Sesudah selesai, elemennya kembali memakai gayanya sendiri. */
+  animation: calendar-detail-in 220ms ease-out backwards;
+}
+
+/* Masuk dari kanan, dari arah petak yang baru diklik. Panel yang cuma berganti isi di tempat tidak
+   mengabarkan apa pun; yang bergerak sekali mengabarkan bahwa isinya SUDAH BERGANTI — dan itu satu-
+   satunya hal yang perlu diketahui orang yang baru saja mengklik tanggal lain. */
+@keyframes calendar-detail-in {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+}
+
+.calendar-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 10px;
+}
+
+.calendar-detail-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.calendar-detail-head p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+/* ROI hari itu, sendirian dan besar. Sembilan angka berukuran sama menuntut orang membaca
+   sembilanya dulu untuk tahu mana yang menjawab pertanyaannya. */
+.calendar-headline {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-sunken);
+}
+
+.calendar-headline strong {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--success-solid);
+}
+
+.calendar-headline strong.money-negative {
+  color: var(--destructive);
+}
+
+.calendar-headline span {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+}
+
+.calendar-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.calendar-nav strong {
+  font-size: 15px;
+  min-width: 96px;
+  text-align: center;
+}
+
+/* Lingkup yang sedang tergambar, di sebelah bulannya. Dipotong dengan elipsis alih-alih
+   membungkus: tiga nama panjang yang membungkus akan menaikkan seluruh baris kepala dan mendorong
+   petak pertama keluar dari layar pertama. */
+.calendar-scope {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 11.5px;
+  font-weight: 600;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Selisih cakupan, di sebelah lingkup yang sedang tergambar. Sewarna peringatan dan bukan
+   sewarna teks biasa: ia bukan keterangan tentang apa yang tergambar, melainkan tentang uang yang
+   TIDAK tergambar — dan yang tidak tergambar tidak punya tempat lain untuk memberitahukan dirinya. */
+.calendar-coverage {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--warning-bg);
+  color: var(--warning-fg);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.calendar-totals,
+.calendar-detail-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  margin: 0;
+}
+
+.calendar-totals dt,
+.calendar-detail-stats dt {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.calendar-totals dd,
+.calendar-detail-stats dd {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Di kolom selebar 320px, flex-wrap menghasilkan baris berisi tiga angka lalu baris berisi satu:
+   labelnya tidak lagi berbaris, dan mata harus mencari tiap angka alih-alih menyusurinya. Dua
+   kolom tetap yang membetulkannya. */
+.calendar-detail-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+  padding: 12px 0 4px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.calendar-weekdays {
+  margin-top: 4px;
+}
+
+/* Petak = tombol: yang bisa diklik harus bisa dicapai keyboard, dan sebuah <div> dengan onClick
+   tidak pernah bisa. */
+.calendar-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 92px;
+  padding: 7px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--foreground);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+/* Terangkat sedikit saat disentuh kursor. Di petak sekecil ini warna latar yang berubah nyaris
+   tidak terbaca — yang membedakan "bisa diklik" dari "cuma gambar" adalah geraknya. */
+.calendar-cell:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+
+/* Hari milik bulan tetangga tetap digambar berikut angkanya — petak kosong di ujung baris terbaca
+   seperti data yang hilang. Yang membedakannya cuma pucatnya. */
+.calendar-cell.outside {
+  background: var(--surface-sunken);
+  opacity: 0.6;
+}
+
+.calendar-cell.is-today {
+  border-color: var(--info-border-strong);
+}
+
+/* Tiga hari ber-ROI tertinggi bulan ini. Yang berubah HANYA garisnya — dipertebal lewat
+   `box-shadow: inset`, bukan `border-width`, supaya petaknya tidak bergeser satu piksel terhadap
+   tetangganya yang tidak berperingkat.
+
+   Berdiri SESUDAH `.is-today` supaya medali menang atas penanda hari ini: hari ini sudah punya
+   penanda kedua yang tidak bisa dikacaukan (nomor tanggalnya berlatar penuh), sementara medali
+   tidak punya penanda lain selain garis ini. Tapi kalah dari `.is-selected` di bawahnya — petak
+   yang sedang dibuka harus selalu terbaca sebagai petak yang sedang dibuka. */
+.calendar-cell.is-rank-1 {
+  border-color: var(--rank-gold);
+  box-shadow: inset 0 0 0 1px var(--rank-gold);
+}
+
+.calendar-cell.is-rank-2 {
+  border-color: var(--rank-silver);
+  box-shadow: inset 0 0 0 1px var(--rank-silver);
+}
+
+.calendar-cell.is-rank-3 {
+  border-color: var(--rank-bronze);
+  box-shadow: inset 0 0 0 1px var(--rank-bronze);
+}
+
+.calendar-cell.is-selected {
+  box-shadow: 0 0 0 2px var(--ring);
+  border-color: var(--info-solid);
+}
+
+.calendar-cell-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.calendar-day-number {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--foreground-soft);
+}
+
+.calendar-cell.is-today .calendar-day-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--info-fill);
+  color: var(--info-fill-fg);
+}
+
+.calendar-flag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--warning-bg-strong);
+  color: var(--warning-fg);
+}
+
+.calendar-cell-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.calendar-roi {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--success-solid);
+}
+
+.calendar-roi.money-negative {
+  color: var(--destructive);
+}
+
+/* Belanja → pendapatan dalam satu baris, dengan panah di antaranya: dua chip terpisah memakai dua
+   baris untuk satu kalimat, dan kalimat itulah yang dicari orang di petak sekecil ini. */
+.calendar-money {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+}
+
+.calendar-out {
+  color: var(--danger-fg);
+}
+
+.calendar-in {
+  color: var(--success-fg);
+}
+
+.calendar-empty {
+  font-size: 11px;
+  color: var(--foreground-faint);
+}
+
+.calendar-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: auto;
+}
+
+.calendar-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.calendar-chip.warning {
+  background: var(--warning-bg-strong);
+  color: var(--warning-fg);
+}
+
+.calendar-chip.info {
+  background: var(--info-bg-strong);
+  color: var(--info-fg);
+}
+
+/* Potensi digambar sebagai catatan, bukan sebagai angka: miring, pucat, dan berlabel. Sebuah
+   tebakan yang berpakaian sama dengan angka nyata di petak sebelahnya adalah kebohongan yang
+   tenang. */
+.calendar-potential {
+  font-size: 10.5px;
+  font-style: italic;
+  color: var(--foreground-faint);
+}
+
+.calendar-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border: 1px solid var(--warning-border);
+  border-radius: 8px;
+  background: var(--warning-bg);
+  color: var(--warning-fg);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+/* Ikon di dalam flex adalah ITEM FLEX, dan bawaannya `flex-shrink: 1` — begitu teks di sebelahnya
+   lebih panjang dari satu baris, yang mengalah adalah ikonnya: segitiga peringatan 14px menyusut
+   jadi lonjong 6px, dan yang paling perlu terbaca sekilas justru yang paling dulu rusak. `flex:
+   none` di satu tempat untuk seluruh ikon kalender, supaya tidak ada daftar tempat yang harus
+   diingat saat menambahkan ikon berikutnya.
+
+   `margin-top` menggantikan `align-items: center` pada catatan yang membungkus: ikon yang
+   ditengahkan terhadap tiga baris teks berdiri di sebelah baris KEDUA, jauh dari kalimat yang
+   diawalinya. */
+.calendar-note svg,
+.calendar-chip svg,
+.calendar-reminders li svg {
+  flex: none;
+}
+
+.calendar-note svg {
+  margin-top: 2px;
+}
+
+/* "Kenapa?" — tombol TEKS, bukan pil seperti lencana popover lain di dashboard ini. Ia berdiri di
+   dalam kalimat, dan pil di tengah kalimat terbaca sebagai label yang berdiri sendiri alih-alih
+   sebagai kelanjutan yang bisa ditekan. Garis bawah putus-putus + kursor `help` adalah kesepakatan
+   lama untuk "ada keterangan di baliknya". */
+/* Yang didorong ke ujung kanan adalah PEMBUNGKUS popover-nya, bukan tombolnya: tombol itu duduk di
+   dalam `.cell-popover` yang inline-block, jadi `margin-left: auto` padanya tidak mendorong apa
+   pun — yang jadi item flex di baris ini pembungkusnya. */
+.calendar-note .cell-popover {
+  margin-left: auto;
+}
+
+.calendar-why {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+.calendar-why:hover,
+.calendar-why:focus-visible {
+  text-decoration: underline;
+}
+
+/* Satu sebab per baris di dalam popover: hitungannya tebal, dan di bawahnya apa yang harus dibuka
+   untuk memperbaikinya. Tanpa baris kedua itu, popover ini cuma mengulang kalimat yang sudah ada
+   di catatan — panjang, dan tetap tidak memberi tahu ke mana orang harus pergi. */
+.calendar-why-row {
+  display: grid;
+  gap: 2px;
+  padding: 6px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.calendar-why-row:first-of-type {
+  border-top: 0;
+}
+
+.calendar-why-row b {
+  font-size: 12px;
+  color: var(--warning-fg);
+}
+
+.calendar-why-row i {
+  font-style: normal;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+
+.calendar-subhead {
+  margin: 18px 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+/* Satu kartu per subdomain, bukan satu baris tabel: di kolom selebar ini enam kolom berarti tiap
+   kolom memuat dua kata dan seluruh angkanya membungkus. Yang dibaca orang di sini urutannya —
+   nama, ROI, uang — dan urutan itu yang digambar. */
+.calendar-site-list,
+.calendar-pic-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.calendar-site-list li {
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-subtle);
+  /* Muncul berurutan mengikuti urutan belanja; jedanya dipasang komponennya sebagai
+     `animationDelay` inline — ia turunan dari POSISI baris, bukan nilai tema, dan token tema
+     adalah satu-satunya yang boleh berdiri di lapis var() ini. `both` supaya baris tidak berkedip
+     pada keadaan akhirnya sebelum jedanya lewat. */
+  /* `backwards` juga, dan di sini itu memang yang dibutuhkan: yang menahan baris tetap tak terlihat
+     SEBELUM jedanya lewat adalah fill ke belakang. `forwards` tidak pernah diperlukan — dan ia yang
+     meninggalkan jebakan containing block di atas. */
+  animation: calendar-row-in 200ms ease-out backwards;
+}
+
+@keyframes calendar-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.calendar-site-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Elipsisnya di BELAKANG, dan itu keputusan: yang membedakan trends.stylefemale.com dari
+   dogtraining.stylefemale.com ada di awal nama, sementara ekornya justru bagian yang sama di
+   sebagian besar baris. Nama penuhnya tetap ada di `title`. */
+.calendar-site-head strong {
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-site-roi {
+  flex: none;
+  font-size: 12.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--success-solid);
+}
+
+.calendar-site-roi.money-negative {
+  color: var(--destructive);
+}
+
+.calendar-site-money {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+}
+
+.calendar-site-profit {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--foreground-soft);
+}
+
+/* Proporsi belanja terhadap pembelanja terbesar hari itu. Setinggi tiga piksel: ia pembanding
+   sekilas, bukan angka kedua — yang perlu presisi sudah tertulis di barisnya. */
+.calendar-site-bar {
+  height: 3px;
+  margin-top: 2px;
+  border-radius: 999px;
+  background: var(--muted);
+  overflow: hidden;
+}
+
+.calendar-site-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--info-solid);
+  transition: width 240ms ease;
+}
+
+.calendar-site-pic {
+  font-size: 10.5px;
+  color: var(--foreground-faint);
+}
+
+.calendar-pic-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-subtle);
+  font-size: 12px;
+}
+
+.calendar-pic-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.calendar-pic-name small {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--foreground-faint);
+}
+
+.calendar-pic-money {
+  margin-left: auto;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+}
+
+.calendar-reminders {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.calendar-reminders li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+  font-size: 13px;
+}
+
+/* Yang mengalah pada judul panjang adalah judulnya sendiri — nominal di ujung kanan dipotong
+   berarti "Rp 1.200.0" tertulis sebagai angka yang sah. */
+.calendar-reminders li > span:not(.badge) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-reminders li strong {
+  flex: none;
+}
+
+.calendar-reminders li strong {
+  margin-left: auto;
+}
+
+.calendar-reminders li.done {
+  color: var(--muted-foreground);
+}
+
+.calendar-reminders li.done span {
+  text-decoration: line-through;
+}
+
+.calendar-reminders li em {
+  font-size: 11px;
+  color: var(--success-fg);
+}
+
+/* Di layar sempit tujuh kolom tetap tujuh kolom — bentuk kalender adalah seluruh gunanya, dan
+   daftar satu kolom sudah ada di tab Laporan ROI. Yang mengalah adalah ukuran hurufnya. */
+@media (max-width: 900px) {
+  .calendar-cell {
+    min-height: 84px;
+  }
+
+  .calendar-roi {
+    font-size: 13px;
+  }
+
+  .calendar-money {
+    font-size: 10px;
+  }
+}
+
+/* Geraknya hiasan, bukan informasi: yang dikabarkan animasi masuk juga sudah tertulis sebagai
+   tanggal di kepala panel. Untuk yang memintanya, semuanya diam. */
+@media (prefers-reduced-motion: reduce) {
+  .calendar-cell,
+  .calendar-site-bar span {
+    transition: none;
+  }
+
+  .calendar-cell:hover {
+    transform: none;
+  }
+
+  .calendar-detail,
+  .calendar-site-list li {
+    animation: none;
+  }
+}
+
+/* --- Spending ----------------------------------------------------------- */
+
+/* Kotak dana berdiri di kepala panel bersama labelnya. `header-actions` sendirian merapatkan
+   keduanya tanpa jarak yang membedakan label dari isinya. */
+.spending-budget {
+  align-items: center;
+  gap: 8px;
+}
+
+.spending-budget label {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Ikon "?" di kepala kolom, berikut kotak keterangannya.
+
+   Kotaknya `position: fixed` dan koordinatnya dipasang JS: tabel Proyeksi Budget menggulir mendatar
+   di dalam `.table-wrap` yang `overflow-x: auto`, dan kotak absolut di dalam `<th>` akan terpotong
+   tepi kotak itu — persis di kolom-kolom terakhir, yaitu yang punya ikon ini. `cursor: help` yang
+   mengabarkan bahwa ikonnya menjelaskan sesuatu; ia tidak menuju halaman mana pun, dan kursor
+   tangan akan menjanjikan yang tidak ada. */
+.column-hint {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+.column-hint-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted-foreground);
+  cursor: help;
+}
+
+.column-hint-button:hover,
+.column-hint-button:focus-visible {
+  color: var(--foreground);
+}
+
+/* Lebarnya disalin ke `HINT_WIDTH` di Spending.jsx, yang menahan kotak ini di dalam layar. */
+.column-hint-box {
+  position: fixed;
+  z-index: 60;
+  width: max-content;
+  max-width: 280px;
+  transform: translateX(-50%);
+  padding: 8px 10px;
+  border: 1px solid var(--tooltip-border);
+  border-radius: 8px;
+  background: var(--tooltip-bg);
+  box-shadow: var(--shadow-tooltip);
+  color: var(--tooltip-foreground);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: left;
+  white-space: normal;
+  /* Kotaknya digambar DI DALAM legend fieldset dan kepala tabel, yang keduanya uppercase + berjarak
+     huruf — tanpa dua baris ini keterangan sepanjang tiga kalimat terbaca sebagai teriakan. */
+  text-transform: none;
+  letter-spacing: normal;
+  /* Kotaknya cuma keterangan: kursor yang bergerak ke arahnya tidak boleh dianggap meninggalkan
+     ikonnya, dan tidak ada apa pun di dalamnya yang bisa disentuh. */
+  pointer-events: none;
+}
+
+/* Kolom keputusan. Ditebalkan, bukan diwarnai: hijau di dashboard ini berarti "untung", dan angka
+   ini bukan hasil melainkan usulan — mewarnainya hijau menjadikan usulan terbaca sebagai capaian. */
+.spending-table .spending-next {
+  font-weight: 700;
+}
+
+.spending-share {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  min-width: 62px;
+}
+
+.spending-share-value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Setinggi tiga piksel, sepola dengan proporsi belanja di panel Kalender: yang perlu presisi sudah
+   tertulis tepat di atasnya, dan yang dicari mata saat membandingkan belasan baris adalah
+   bentuknya. */
+.spending-share-bar {
+  width: 100%;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--muted);
+  overflow: hidden;
+}
+
+.spending-share-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--indigo-solid);
+}
+
+/* Keterangan di bawah nama advertiser tidak boleh setebal namanya — ia menjelaskan baris itu,
+   bukan menamainya. */
+.spending-table .muted-line {
+  font-weight: 400;
+}
+
+/* Kotak Budget/Hari di dalam tabel. `.control` dibuat untuk form berkolom satu (lebar penuh,
+   padding tinggi); di dalam sel ia harus setinggi barisnya dan selebar angkanya, dan rata KANAN
+   supaya digitnya berbaris dengan kolom uang di sebelahnya. */
+.spending-budget-input {
+  width: 120px;
+  min-width: 0;
+  padding: 4px 8px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Kotaknya digambar sebagai kotak, selalu — dan versi pertama yang menyembunyikan bingkainya
+   sampai disentuh adalah kesalahan yang mahal. Kolom ini adalah PEMBAGI seluruh halaman: selama ia
+   kosong, ROI Founder, Porsi, dan Next Budget kosong semuanya. Tanpa bingkai, "belum diisi" terbaca
+   sebagai keterangan yang tidak bisa diapa-apakan — orang mengetik dana di kepala panel, tidak
+   terjadi apa-apa, dan tidak ada di layar yang menunjukkan bahwa yang kurang justru kolom ini. */
+.spending-budget-input:placeholder-shown {
+  border-style: dashed;
+}
+
+.spending-budget-input::placeholder {
+  color: var(--foreground-faint);
+  font-style: italic;
+}
+
+/* Ad set di dalam satu campaign (panel yang terbuka dari tabel Manajemen Kampanye).
+   Isinya dibaca langsung dari Meta saat barisnya dibuka — lihat src/components/CampaignAdSets.jsx. */
+.expand-toggle {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.expand-toggle:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  color: var(--foreground);
+}
+
+.expand-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.expand-toggle:focus-visible {
+  outline: 2px solid var(--indigo-accent);
+  outline-offset: 2px;
+}
+
+/* Baris rincian bertumpu pada baris campaign di atasnya, jadi latarnya yang membedakannya — bukan
+   indentasi, yang akan menggeser kolomnya sendiri terhadap tabel induk. */
+.adset-detail-row > td {
+  padding: 0;
+  background: var(--surface-subtle);
+}
+
+.adset-panel {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px 14px;
+  border-left: 3px solid var(--indigo-border);
+}
+
+.adset-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.adset-panel-head strong {
+  font-size: 13px;
+}
+
+.adset-panel-head span {
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+
+.adset-note {
+  margin: 0;
+  padding: 10px 14px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.adset-note.danger {
+  color: var(--danger-fg);
+}
+
+.adset-table {
+  font-size: 12px;
+}
+
+.adset-table th,
+.adset-table td {
+  padding: 8px 10px;
+}
+
+.adset-table strong {
+  display: block;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Kepala panel ad set: ringkasan di kiri, umur pembacaan + tombol Segarkan di kanan. Umurnya
+   berdiri di sana justru karena isinya bisa datang dari cermin dua menit (src/lib/adSetCache.js) —
+   angka tanpa keterangan umur tidak bisa dibedakan dari angka yang baru saja dibaca. */
+.adset-age {
+  margin-left: auto;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+
+.adset-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--foreground-soft);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.adset-refresh:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  color: var(--foreground);
+}
+
+.adset-refresh:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.adset-refresh:focus-visible {
+  outline: 2px solid var(--indigo-accent);
+  outline-offset: 2px;
+}
+
+/* "Aktif tapi tidak ditayangkan" — ad set bersaklar On di bawah campaign yang jalan, yang tetap
+   tidak menayangkan apa pun (iklannya ditolak, direview, atau tidak ada). Satu-satunya nada merah
+   di kolom Status, karena ia satu-satunya yang menuntut tindakan hari itu juga. */
+.campaign-delivery-badge.danger {
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+}
+
+/* Hitungan "n tidak ditayangkan" di kepala panel ad set — sewarna dengan pil merahnya di tabel. */
+.adset-warning {
+  color: var(--danger-fg);
+  font-weight: 700;
+}
+
+/* ============================================================================
+   Tab DNS Record (/dns-records) — record Cloudflare tiap domain.
+
+   Tidak ada satu pun warna mentah di sini, sepola seluruh berkas ini: yang dipakai token, supaya
+   tema gelap tidak perlu menyebut satu pun selektor di bawah (lihat styles.theme.test.mjs).
+   ============================================================================ */
+
+/* Menumpang bentuk .gating-toolbar dan bukan menyalinnya: dua toolbar yang berdiri di
+   `.panel-header` yang sama harus punya tinggi dan jarak yang sama, dan dua daftar nilai untuk itu
+   akan bergeser suatu hari. Yang berbeda cuma isinya — pemilih domain di sini menggantikan deret
+   tab di sana, jadi ia tumbuh dari KIRI. */
+.dns-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 620px;
+}
+
+.dns-toolbar .control {
+  min-width: 0;
+}
+
+/* Nama zona bisa panjang ("theglobesimregistration.ph"), dan keterangan "(belum terdaftar di
+   Domains)" menempel di belakangnya. Dibatasi supaya kotak cari di sebelahnya tetap punya ruang;
+   yang terpotong cuma keadaan tertutupnya, menu yang terbuka tetap penuh. */
+.dns-toolbar .rs-container {
+  flex: 0 1 280px;
+  min-width: 180px;
+  max-width: 320px;
+}
+
+.dns-toolbar input[type="search"] {
+  flex: 1 1 auto;
+  min-width: 160px;
+}
+
+/* Tab Setup Sub: tiap saklar "Atur {grup}" berikut form-nya berjarak dari tetangganya — berderet
+   rapat, empat saklar terbaca sebagai satu daftar pilihan, bukan empat grup pengaturan. */
+.setup-sub-group {
+  padding: 10px 0;
+}
+
+/* Pilihan di bawah saklar langkah (task Setting Sub, halaman legal, kata kunci) menjorok sejajar
+   teks labelnya, dan hurufnya seukuran label — yang lebih besar terbaca sebagai judul, bukan pilihan. */
+.setup-sub-group > .plugin-actions-buttons,
+.setup-sub-group > .form-grid {
+  margin: 12px 0 4px 50px;
+}
+
+.setup-sub-group > .plugin-actions-buttons {
+  gap: 10px 20px;
+}
+
+.setup-sub-group .checkbox-option {
+  font-size: 13px;
+}
+
+/* Satu kartu per sub: nama, lalu kata dasar + total + bahasa untuk generator kata kunci. */
+.setup-sub-posts {
+  display: grid;
+  gap: 12px;
+  margin: 14px 0 4px 50px;
+}
+
+.setup-sub-post {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.setup-sub-adcode {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.setup-sub-post-name {
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.setup-sub-post-generator {
+  display: grid;
+  grid-template-columns: minmax(0, 320px) 90px 180px;
+  gap: 10px;
+  align-items: end;
+  justify-content: start;
+}
+
+.setup-sub-article {
+  margin: 14px 0 4px 50px;
+}
+
+.setup-sub-article .plugin-fieldset:first-of-type {
+  margin-top: 12px;
+}
+
+@media (max-width: 760px) {
+  .setup-sub-post-generator {
+    grid-template-columns: minmax(0, 1fr) 90px;
+  }
+
+  .setup-sub-post-generator .field:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+.setup-sub-ai {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: flex-end;
+  margin: 14px 0 4px 50px;
+}
+
+.setup-sub-ai .field {
+  flex: 0 1 420px;
+  min-width: 0;
+}
+
+/* Saklar sejajar tinggi kotak isian di sebelahnya. */
+.setup-sub-ai > .switch-field {
+  min-height: 38px;
+}
+
+.setup-sub-group + .setup-sub-group {
+  border-top: 1px solid var(--border);
+}
+
+.setup-sub-group .plugin-fieldset:first-of-type {
+  margin-top: 12px;
+}
+
+/* Tiga kartu, bukan `auto-fit`: jumlahnya tetap, dan grid yang memberi 2 kolom di satu layar dan 3
+   di layar lain menaruh kartu yang sama di baris yang berbeda dari satu monitor ke monitor lain. */
+.dns-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0 16px 12px;
+}
+
+@media (max-width: 720px) {
+  .dns-stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.dns-name,
+.dns-content {
+  display: block;
+  /* Isi record adalah alamat IP atau hostname — deretan karakter yang dibaca satu per satu, dan
+     dibandingkan dengan baris di atasnya. Huruf berlebar sama yang membuat perbandingan itu mungkin
+     tanpa membaca tiap karakter. */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.dns-name {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.dns-content {
+  color: var(--foreground-soft);
+}
+
+.dns-actions {
+  display: inline-flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+/* Kolom TTL dan Proxy memuat satu kata pendek; tanpa lebar minimum keduanya menyusut sampai
+   judulnya membungkus jadi dua baris sementara kolom Isi — satu-satunya yang benar-benar dibaca —
+   tetap sempit. */
+.dns-table th:nth-child(4),
+.dns-table th:nth-child(5) {
+  min-width: 82px;
+}
+
+.dns-dialog {
+  width: min(560px, 92vw);
+}
+
+/* Dua kolom: tipe/nama dan TTL/priority berpasangan, sementara Isi dan komentar mengambil seluruh
+   baris — yang terakhir itu yang paling panjang isinya dan paling sering disalin-tempel. */
+.dns-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.dns-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* Label + ikon keterangannya, satu baris. Tingginya DIPAKSA sama untuk tiap kotak (`min-height`)
+   supaya kotak yang punya ikon dan kotak yang tidak tetap memulai kontrolnya di garis yang sama —
+   tanpa itu, sepasang kotak bersebelahan berdiri beda beberapa piksel dan seluruh form terlihat
+   miring. */
+.dns-label {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 18px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--foreground-soft);
+}
+
+.dns-label label {
+  cursor: pointer;
+}
+
+.dns-form .wide,
+.dns-form .confirm-actions.wide,
+.dns-form .plugin-alert.wide {
+  grid-column: 1 / -1;
+}
+
+/* Saklar proxy berdiri sebagai KONTROL di dalam kotaknya sendiri, sejajar dengan kotak TTL di
+   sebelah kirinya — bukan satu baris centang yang melintang di bawah keduanya. `min-height`-nya
+   36px, ANGKA YANG SAMA dengan `.control`: tanpa itu kotak Proxy lebih pendek daripada kotak TTL di
+   sebelahnya, dan sepasang kotak yang sejajar berdiri tidak rata di bawah. */
+/* Tingginya disamakan dengan kotak isian di sebelahnya, sepola `.plugin-switch`: di grid dua kolom,
+   kontrol setinggi satu baris teks yang berdampingan dengan input membuat barisnya terlihat
+   jomplang. Yang lain — jarak ke labelnya, rupa relnya — datang dari `.switch-field`. */
+.dns-toggle {
+  min-height: 36px;
+}
+
+@media (max-width: 620px) {
+  .dns-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Dialog halaman Campaign (src/components/campaigns/CampaignDialogs.jsx). Menumpang
+   .confirm-dialog dan .dialog-head; yang berbeda cuma lebar dan susunan isiannya. */
+.campaign-dialog {
+  width: min(560px, 92vw);
+}
+
+.campaign-form {
+  display: grid;
+  gap: 14px;
+}
+
+.labeled-control {
+  display: grid;
+  gap: 6px;
+}
+
+.labeled-control-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.campaign-field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.campaign-review {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-sunken);
+  font-size: 13px;
+}
+
+.campaign-review ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.adset-edit {
+  min-height: 28px;
+  gap: 4px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+/* Halaman Campaign (src/components/campaigns/CampaignFleet.jsx). Menumpang tabel campaign profil
+   user; yang berbeda cuma kolom pemilik/aksi dan baris penyaring yang boleh turun ke baris kedua. */
+/* Lima penyaring (cari, pemilik, akun, subdomain, status) harus muat SEBARIS di lebar isi ~1000px:
+   yang turun ke baris kedua selalu yang terakhir, dan "Semua status" yang berdiri sendirian di bawah
+   terbaca seperti penyaring yang tidak sekelompok dengan keempat lainnya. Karena itu min-width-nya
+   140px, bukan 170px — 5 × 140 + 4 × 8 + kotak cari masih di bawah 1000px. */
+.fleet-filters {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fleet-filters .control {
+  width: auto;
+  min-width: 140px;
+}
+
+.fleet-filters .rs-container {
+  min-width: 160px;
+}
+
+/* `flex: 1 1 240px` DILARANG di sini: di bawah 980px `.toolbar-filters` jadi `flex-direction:
+   column`, dan flex-basis di sumbu itu adalah TINGGI — kotak carinya tumbuh jadi 240px tingginya,
+   dan itulah "search sangat besar di mode mobile". min-width cuma menyangkut lebar, jadi ia aman di
+   kedua arah. */
+.fleet-filters .search {
+  flex: 1 1 auto;
+  min-width: 200px;
+}
+
+.fleet-table {
+  min-width: 980px;
+}
+
+.fleet-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.fleet-jobs-table {
+  font-size: 12px;
+}
+
+/* Dialog "Buat campaign" (src/components/campaigns/CreateCampaignDialog.jsx). Menumpang
+   .campaign-form; yang berbeda cuma isinya yang jauh lebih panjang — galeri gambar dan daftar
+   variasi teks — jadi dialognya melebar dan menggulir sendiri. */
+.campaign-dialog:has(.campaign-create-form) {
+  width: min(720px, 94vw);
+}
+
+.campaign-create-form {
+  max-height: min(70vh, 720px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.campaign-age-inputs {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.campaign-age-inputs .control {
+  width: 96px;
+}
+
+.campaign-image-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+
+/* Petaknya TETAP, bukan auto-fit: urutan klik jadi urutan kartu carousel, dan lencana nomor di tiap
+   gambar hanya bisa dibaca sebagai urutan kalau petaknya tidak berpindah baris tiap layar berbeda. */
+.campaign-image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 72px);
+  gap: 8px;
+}
+
+.campaign-image {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-sunken);
+  cursor: pointer;
+}
+
+.campaign-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.campaign-image.is-picked {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+.campaign-image-badge {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  min-width: 18px;
+  padding: 1px 4px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+}
+
+.campaign-image-blank {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+
+.campaign-variants {
+  gap: 8px;
+}
+
+/* Satu BLOK per iklan, bukan satu baris. Judul dan body memang muat berdampingan — tapi sejak
+   gambarnya milik tiap iklan, satu baris harus memuat carousel-nya juga, dan grid gambar selebar
+   sepertiga baris tidak bisa dipilih siapa pun. Batasnya yang memisahkan satu iklan dari iklan
+   berikutnya; tanpa itu sepuluh blok berderet terbaca sebagai satu daftar tanpa ujung. */
+.campaign-variant {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-subtle);
+}
+
+.campaign-variant-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Jumlah gambarnya mendorong kedua tombol ke kanan — yang dibaca orang saat menyisir sepuluh blok
+   adalah nomor iklan dan berapa gambarnya, bukan tombolnya. */
+.campaign-variant-head .muted-line {
+  margin-right: auto;
+}
+
+/* Preset negara per advertiser: pilih yang tersimpan, atau simpan yang sedang dipilih dengan nama.
+   Satu baris karena ketiganya satu tindakan — dropdown yang berdiri sendiri di atas kotak namanya
+   terbaca sebagai dua pengaturan yang tidak berhubungan. */
+.campaign-preset-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.campaign-preset-row .control,
+.campaign-preset-row .rs-container {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+/* Pemilih negara targeting (src/components/campaigns/CountryPicker.jsx). Menumpang .control untuk
+   kotak carinya; yang berbeda cuma chip di atas dan daftar bergulir di bawahnya. */
+.country-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.country-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.country-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 4px 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.country-chip button,
+.country-clear {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.country-chip button:hover:not(:disabled),
+.country-clear:hover:not(:disabled) {
+  color: var(--danger-fg);
+}
+
+.country-clear {
+  padding: 2px 6px;
+  font-size: 12px;
+  text-decoration: underline;
+}
+
+/* Tingginya DIBATASI dan menggulir sendiri: 56 negara yang digambar sekaligus membuat tombol Tinjau
+   di kaki dialog berpindah ke luar layar, dan dialog ini sudah menggulir sebagai satu bidang. */
+.country-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 2px;
+  max-height: 190px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-sunken);
+}
+
+.country-option {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.country-option:hover:not(:disabled) {
+  background: var(--accent);
+}
+
+/* Yang terpilih memakai isian `--info-fill`, token yang sama dengan tanggal terpilih di pemilih
+   periode: dua "sedang dipilih" di satu dashboard yang berbeda warnanya berarti salah satunya
+   dibaca sebagai keadaan yang lain. */
+.country-option.is-picked {
+  background: var(--info-fill);
+  color: var(--info-fill-fg);
+  font-weight: 600;
+}
+
+.country-option.is-picked .country-option-code {
+  color: var(--info-fill-fg);
+  opacity: 0.75;
+}
+
+.country-option-name {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.country-option-code {
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.country-option-extra {
+  grid-column: 1 / -1;
+  color: var(--info-solid);
+  font-weight: 600;
+}
+
+/* Tab "Terjadwal" di Overview. Jam padat berderet sebagai daftar ringkas — tiap barisnya satu jam
+   yang harus dihindari, dan yang dibaca orang menurun adalah jamnya, bukan kalimat. */
+.launch-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.launch-toolbar .rs-container {
+  min-width: 180px;
+}
+
+/* Tab Terjadwal: satu kartu per MENIT mulai. Yang memuat dua campaign atau lebih kuning — satu-
+   satunya warna di daftar ini yang menuntut tindakan, jadi kartu biasa sengaja netral. */
+.launch-slots {
+  display: grid;
+  gap: 10px;
+}
+
+.launch-slot {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+
+.launch-slot.is-clash {
+  border-color: var(--warning-border);
+}
+
+.launch-slot header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--surface-subtle);
+}
+
+.launch-slot.is-clash header {
+  background: var(--warning-bg);
+}
+
+.launch-slot header strong {
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.launch-slot header .badge {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.launch-slot header small {
+  margin-left: auto;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.launch-slot ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.launch-slot > ul > li {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.launch-slot-row {
+  display: grid;
+  grid-template-columns: auto minmax(140px, 200px) minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.launch-adset-list {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0 34px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--surface-subtle);
+  font-size: 12px;
+  list-style: decimal inside;
+}
+
+.launch-adset-list li {
+  display: list-item;
+}
+
+.launch-adset-list span {
+  overflow-wrap: anywhere;
+}
+
+.launch-adset-list small {
+  margin-left: 8px;
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+.launch-slot-who {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.launch-slot-what {
+  display: grid;
+  min-width: 0;
+}
+
+.launch-slot-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.launch-slot-what small {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .launch-slot-row {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 4px 10px;
+  }
+
+  .launch-slot-what {
+    grid-column: 2;
+  }
+
+  .launch-adset-list {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .launch-toolbar {
+    flex-wrap: wrap;
+  }
+}
+
+.launch-warning ul {
+  margin: 2px 0 0;
+  padding-left: 16px;
+}
+
+/* Keterangan run Setup Sub: kalimat pertama tampil, sisanya dibuka lewat dropdown. */
+.setup-sub-detail summary {
+  cursor: pointer;
+}
+
+.setup-sub-detail-more {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.setup-sub-detail p {
+  margin: 4px 0 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.setup-sub-detail p.setup-sub-warn,
+.setup-sub-warn {
+  color: var(--warning-fg);
+}

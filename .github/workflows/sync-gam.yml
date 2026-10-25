@@ -1,0 +1,40 @@
+name: TigerROI Sync Google Ad Manager
+
+on:
+  # Terjadwal setiap 1 jam
+  schedule:
+    - cron: "15 * * * *"
+  # Tombol pemicu manual dari tab Actions di GitHub
+  workflow_dispatch:
+
+concurrency:
+  group: sync-gam
+  cancel-in-progress: false
+
+jobs:
+  sync-gam:
+    name: Sinkronisasi GAM ke Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Kode Repositori
+        uses: actions/checkout@v4
+
+      - name: Siapkan Lingkungan Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Pasang Dependensi
+        run: npm ci --omit=dev || npm install --omit=dev
+
+      - name: Jalankan Sinkronisasi Google Ad Manager
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GAM_CLIENT_EMAIL: ${{ secrets.GAM_CLIENT_EMAIL }}
+          GAM_PRIVATE_KEY: ${{ secrets.GAM_PRIVATE_KEY }}
+        run: node jobs/sync-gam.js
+

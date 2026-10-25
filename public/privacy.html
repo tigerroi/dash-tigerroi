@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kebijakan Privasi — RabbitROI</title>
+    <meta
+      name="description"
+      content="Kebijakan privasi aplikasi RabbitROI: data apa yang diproses, di mana disimpan, berapa lama, dan cara meminta penghapusannya."
+    />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --fg: #18181b;
+        --soft: #52525b;
+        --line: #e4e4e7;
+        --card: #fafafa;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #09090b;
+          --fg: #fafafa;
+          --soft: #a1a1aa;
+          --line: #27272a;
+          --card: #18181b;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          15px/1.65 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 40px 20px 72px;
+      }
+      h1 {
+        font-size: 26px;
+        margin: 0 0 6px;
+      }
+      h2 {
+        font-size: 17px;
+        margin: 32px 0 8px;
+      }
+      h3 {
+        font-size: 15px;
+        margin: 18px 0 6px;
+      }
+      p,
+      li {
+        color: var(--fg);
+      }
+      .meta {
+        color: var(--soft);
+        font-size: 13px;
+        margin: 0 0 24px;
+      }
+      ul {
+        padding-left: 20px;
+      }
+      li {
+        margin: 4px 0;
+      }
+      .box {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin: 18px 0;
+      }
+      .box p:first-child {
+        margin-top: 0;
+      }
+      .box p:last-child {
+        margin-bottom: 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0;
+        font-size: 14px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      th {
+        color: var(--soft);
+        font-weight: 600;
+      }
+      a {
+        color: inherit;
+      }
+      footer {
+        margin-top: 40px;
+        padding-top: 18px;
+        border-top: 1px solid var(--line);
+        color: var(--soft);
+        font-size: 13px;
+      }
+      .en {
+        margin-top: 44px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line);
+      }
+      .en h2 {
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Kebijakan Privasi RabbitROI</h1>
+      <p class="meta">Berlaku sejak 12 September 2026 · Dioperasikan oleh RabbitROI</p>
+
+      <h2>1. Apa itu RabbitROI</h2>
+      <p>
+        RabbitROI adalah alat <strong>internal</strong> yang kami pakai sendiri untuk mengelola
+        iklan Meta milik kami dan memantau pendapatan situs milik kami. Ia bukan layanan untuk
+        umum: tidak ada pendaftaran mandiri, dan tidak ada "Login dengan Facebook" untuk pengguna
+        luar. Yang bisa masuk hanya akun yang dibuatkan administrator kami untuk anggota tim.
+      </p>
+
+      <h2>2. Data yang kami proses</h2>
+
+      <h3>a. Dari Meta</h3>
+      <p>
+        Diambil lewat Marketing API memakai System User token milik Business Manager kami sendiri —
+        jadi yang terbaca hanya aset yang memang milik kami:
+      </p>
+      <ul>
+        <li>daftar dan setelan ad account, campaign, ad set, dan iklan kami</li>
+        <li>angka performa iklan kami: belanja, impresi, klik, dan hasil</li>
+        <li>daftar Halaman Facebook yang dipegang System User kami, berikut izin beriklannya</li>
+        <li>pixel milik ad account kami</li>
+        <li>gambar iklan yang diunggah tim kami ke pustaka ad account</li>
+      </ul>
+
+      <h3>b. Dari Google</h3>
+      <p>
+        Laporan pendapatan Google Ad Manager dan AdSense untuk situs milik kami sendiri — jumlah
+        tayangan, klik, dan pendapatan per situs per hari.
+      </p>
+
+      <h3>c. Dari tim kami sendiri</h3>
+      <ul>
+        <li>akun anggota tim: nama, alamat email, dan perannya</li>
+        <li>catatan operasional yang diketik tim (biaya, target, pengingat)</li>
+        <li>
+          jejak aktivitas di dashboard: halaman yang dibuka, tindakan yang dijalankan, alamat IP,
+          kota yang diturunkan dari IP itu, dan jenis perangkat/peramban
+        </li>
+      </ul>
+
+      <div class="box">
+        <p>
+          <strong>Yang TIDAK kami proses:</strong> data pribadi pengunjung situs, daftar teman,
+          pesan pribadi, atau data pengguna Facebook mana pun di luar aset yang kami miliki
+          sendiri. Kami tidak membeli, menjual, atau menukar data pribadi dengan siapa pun.
+        </p>
+      </div>
+
+      <h2>3. Untuk apa data itu dipakai</h2>
+      <p>
+        Hanya untuk menjalankan dan mengukur iklan kami sendiri: membuat dan menyalin campaign,
+        menyalakan atau mematikannya, menghitung laba per situs, dan mengabari tim kami saat ada
+        yang perlu diperbaiki. Tidak dipakai untuk membangun profil siapa pun, tidak dipakai untuk
+        menargetkan orang di luar fitur penargetan standar Meta, dan tidak dipakai melatih model.
+      </p>
+
+      <h2>4. Di mana data disimpan</h2>
+      <ul>
+        <li>Firebase Realtime Database dan Firebase Hosting (Google Cloud)</li>
+        <li>satu server aplikasi milik kami, yang menjalankan operasi ke Meta dan Google</li>
+      </ul>
+      <p>
+        Token akses Meta dan kunci API lain hanya tinggal di server kami dan
+        <strong>tidak pernah dikirim ke peramban</strong>. Sambungan ke dashboard maupun ke
+        seluruh API berjalan lewat HTTPS.
+      </p>
+
+      <h2>5. Berapa lama disimpan</h2>
+      <table>
+        <tbody>
+          <tr>
+            <th>Jejak aktivitas dashboard</th>
+            <td>90 hari, lalu dihapus otomatis</td>
+          </tr>
+          <tr>
+            <th>Catatan pekerjaan (salin/buat campaign)</th>
+            <td>7 hari, lalu dihapus otomatis</td>
+          </tr>
+          <tr>
+            <th>Snapshot performa per sinkronisasi</th>
+            <td>3 hari, lalu dihapus otomatis</td>
+          </tr>
+          <tr>
+            <th>Laporan harian dan catatan keuangan</th>
+            <td>selama dibutuhkan untuk pembukuan usaha kami</td>
+          </tr>
+          <tr>
+            <th>Akun anggota tim</th>
+            <td>selama yang bersangkutan masih di tim</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>6. Siapa yang bisa melihatnya</h2>
+      <p>
+        Hanya anggota tim kami yang punya akun, dan hanya sebatas perannya — sebagian halaman
+        tertutup untuk sebagian peran. Kami tidak membagikan data ini kepada pihak ketiga untuk
+        iklan, analitik pihak ketiga, atau tujuan komersial apa pun. Data hanya dapat dibuka
+        kepada pihak lain kalau diwajibkan hukum yang berlaku.
+      </p>
+
+      <h2>7. Pihak ketiga yang memproses atas nama kami</h2>
+      <ul>
+        <li>Google (Firebase, Google Ad Manager, AdSense) — penyimpanan dan laporan pendapatan</li>
+        <li>Meta Platforms — API iklan</li>
+        <li>Cloudflare — DNS dan pengamanan lalu lintas</li>
+        <li>penyedia server tempat aplikasi kami berjalan</li>
+        <li>Telegram — pengiriman notifikasi internal ke tim kami</li>
+      </ul>
+
+      <h2>8. Penghapusan data</h2>
+      <p>
+        Anggota tim dapat meminta akun dan jejak aktivitasnya dihapus dengan menghubungi alamat di
+        bawah; permintaan kami penuhi dalam 30 hari. Untuk menghentikan seluruh akses aplikasi ini
+        ke data Meta, pemilik Business Manager dapat mencabut aplikasi <em>New RabbitROI</em> lewat
+        Meta Business Settings — akses berhenti seketika, dan data Meta yang tersimpan di sistem
+        kami akan dihapus atas permintaan lewat alamat yang sama.
+      </p>
+
+      <h2>9. Kepatuhan platform</h2>
+      <p>
+        Kami mematuhi Meta Platform Terms dan Developer Policies. Data Platform hanya dipakai untuk
+        fungsi yang disebutkan di halaman ini, tidak dijual, tidak dipindahkan ke pialang data, dan
+        tidak dipakai untuk membangun profil pengguna.
+      </p>
+
+      <h2>10. Perubahan kebijakan ini</h2>
+      <p>
+        Kalau ada yang berubah, halaman ini diperbarui berikut tanggal berlakunya di bagian atas.
+      </p>
+
+      <h2>11. Kontak</h2>
+      <p>
+        Pertanyaan tentang kebijakan ini atau permintaan penghapusan data:
+        <a href="mailto:privacy@rabbitracing.live">privacy@rabbitracing.live</a>
+      </p>
+
+      <section class="en" lang="en">
+        <h2>English summary</h2>
+        <p>
+          RabbitROI is an <strong>internal</strong> tool used by RabbitROI to manage our own Meta
+          advertising and to monitor revenue from websites we own. It is not a public service:
+          there is no self sign-up and no Facebook Login for outside users.
+        </p>
+        <p>
+          <strong>What we process.</strong> Through the Meta Marketing API, using a System User
+          token belonging to our own Business Manager, we read our own ad accounts, campaigns, ad
+          sets and ads, their performance figures, the Facebook Pages our System User holds, our
+          pixels, and ad images our team uploads. We also read Google Ad Manager and AdSense
+          revenue reports for our own sites, and we store our team members' accounts (name, email,
+          role) plus an activity log of what they do in the dashboard (page, action, IP address,
+          city derived from that IP, device type).
+        </p>
+        <p>
+          <strong>What we do not process.</strong> No personal data of website visitors, no friend
+          lists, no private messages, and no Facebook user data outside assets we own. We never
+          sell, rent or trade personal data.
+        </p>
+        <p>
+          <strong>Storage and retention.</strong> Data is stored in Firebase (Google Cloud) and on
+          one application server we operate. Access tokens never reach the browser. Activity logs
+          are deleted after 90 days, job records after 7 days, per-sync performance snapshots after
+          3 days; daily reports and financial records are kept while needed for our own bookkeeping.
+        </p>
+        <p>
+          <strong>Deletion.</strong> Team members may request deletion of their account and activity
+          log by email; we comply within 30 days. The Business Manager owner can revoke the
+          <em>New RabbitROI</em> app in Meta Business Settings at any time, which stops all access
+          immediately.
+        </p>
+        <p>
+          <strong>Compliance.</strong> We comply with the Meta Platform Terms and Developer
+          Policies. Platform Data is used only for the purposes described here.
+        </p>
+        <p>Contact: <a href="mailto:privacy@rabbitracing.live">privacy@rabbitracing.live</a></p>
+      </section>
+
+      <footer>RabbitROI · Kebijakan Privasi · Berlaku sejak 12 September 2026</footer>
+    </main>
+  </body>
+</html>

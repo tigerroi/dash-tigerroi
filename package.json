@@ -1,0 +1,46 @@
+{
+  "name": "rabbitroi-dashboard",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test \"src/**/*.test.mjs\"",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "check": "biome check --write .",
+    "test:firebase": "node scripts/firebase-smoke-test.mjs",
+    "test:supabase": "node scripts/test-supabase-rls.mjs",
+    "test:auth-crud": "node scripts/test-supabase-auth-crud.mjs",
+    "test:gateway": "node --test tigerroi-gateway/src/index.test.mjs",
+    "sync:meta": "node jobs/sync-meta.js",
+    "sync:gam": "node jobs/sync-gam.js",
+    "import:keitaro": "node jobs/import-keitaro-csv.js",
+    "test:meta": "node jobs/test-meta-read.js",
+    "test:gam": "node jobs/test-gam-read.js",
+    "samples:import": "node scripts/create-import-samples.mjs",
+    "deploy:rules": "firebase deploy --only database",
+    "deploy": "npm run build"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "@tanstack/react-table": "^8.21.3",
+    "@vitejs/plugin-react": "^4.4.0",
+    "firebase": "^12.13.0",
+    "jose": "^6.2.13",
+    "lucide-react": "^1.14.0",
+    "otplib": "^13.4.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hot-toast": "^2.6.0",
+    "react-select": "^5.10.2",
+    "recharts": "^3.8.1",
+    "vite": "^6.0.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.15"
+  }
+}

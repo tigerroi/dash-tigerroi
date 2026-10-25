@@ -1,0 +1,35 @@
+node_modules/
+dist/
+# Secrets & Environment variables (semua .env ditutup di semua subdirektori)
+.env
+.env.*
+*.env
+*.env.*
+**/.env
+**/.env.*
+!**/.env.example
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.firebase/
+bun.lock
+firebase-debug.log*
+
+# Kredensial privat Service Account & Key
+*service-account*.json
+*service_account*.json
+*gam*.json
+*google*.json
+*.pem
+*.key
+
+# Ekspor spreadsheet referensi Laba Rugi. Bahan baca, bukan bagian aplikasi — 4 MB HTML +
+# aset yang tidak diimpor kode mana pun.
+ProfitLoss/
+
+# SQLite activity log store (server/activity-db.js) — a local dev run creates this
+activity.sqlite
+activity.sqlite-*
+*.sqlite-wal
+*.sqlite-shm
+.playwright-mcp/
