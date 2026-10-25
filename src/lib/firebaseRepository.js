@@ -9,6 +9,7 @@ const TABLE_MAP = {
   domains: "domains",
   subDomains: "subdomains",
   adAccounts: "ad_accounts",
+  gamAccounts: "gam_accounts",
   adsenseAccounts: "adsense_accounts",
   googleApiConfigs: "google_api_configs",
   expenses: "expenses",
