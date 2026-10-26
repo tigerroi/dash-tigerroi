@@ -32,31 +32,45 @@ function getJakartaDate(daysAgo = 0) {
   return formatter.format(d);
 }
 
-// Pencocokan nama campaign Meta ke site_code menggunakan tabel sites
+// Pencocokan nama campaign Meta ke site_code menggunakan tabel subdomains & sites
 function matchSiteCode(campaignName, sitesList) {
-  const nameLower = String(campaignName || "").toLowerCase();
+  const name = String(campaignName || "").trim();
+  const nameLower = name.toLowerCase();
 
+  // Ambil token kata pertama (misal: "RHGK" dari "RHGK 01 PROS EU RI CARROU...")
+  const firstWord = (name.split(/[\s_-]+/)[0] || "").toLowerCase();
+
+  // 1. Prioritaskan pencocokan pola spesifik (misal kode link Keitaro: "RHGK", "4QCP", "WYJ7")
+  // Urutkan pola yang lebih panjang lebih dulu agar "careers-tiktok" menang atas "tiktok"
+  const sortedSites = [...sitesList].sort((a, b) => {
+    const lenA = (a.campaign_pattern || "").length;
+    const lenB = (b.campaign_pattern || "").length;
+    return lenB - lenA;
+  });
+
+  for (const site of sortedSites) {
+    if (!site.campaign_pattern) continue;
+    const patterns = String(site.campaign_pattern)
+      .split(",")
+      .map((p) => p.trim().toLowerCase())
+      .filter(Boolean);
+
+    for (const pattern of patterns) {
+      if (firstWord && firstWord === pattern) {
+        return site.site_code;
+      }
+      if (nameLower.includes(pattern)) {
+        return site.site_code;
+      }
+    }
+  }
+
+  // 2. Cek kecocokan langsung site_code di nama campaign
   for (const site of sitesList) {
     if (!site.site_code) continue;
     const code = site.site_code.toLowerCase();
-
-    // 1. Cek kecocokan langsung site_code di nama campaign
     if (nameLower.includes(code)) {
       return site.site_code;
-    }
-
-    // 2. Cek pola campaign_pattern jika dikonfigurasi (misal kode Keitaro: "pBRw, TvH1")
-    if (site.campaign_pattern) {
-      const patterns = String(site.campaign_pattern)
-        .split(",")
-        .map((p) => p.trim().toLowerCase())
-        .filter(Boolean);
-
-      for (const pattern of patterns) {
-        if (nameLower.includes(pattern)) {
-          return site.site_code;
-        }
-      }
     }
   }
 
