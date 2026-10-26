@@ -166,9 +166,11 @@ export function subscribeValue(key, callback, onError) {
       }
       if (active) {
         const result = {};
-        for (const item of data || []) {
+        for (let idx = 0; idx < (data || []).length; idx++) {
+          const item = data[idx];
           const row = toCamelCaseRow(item);
-          result[row.id || row.code || row.name] = row;
+          const keyId = row.id || row.code || row.name || (row.date && row.siteCode ? `${row.date}_${row.siteCode}` : String(idx));
+          result[keyId] = { ...row, id: keyId };
         }
         callback(result);
       }
