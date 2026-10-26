@@ -1,4 +1,4 @@
-import { Copy, Pencil, Plus, TriangleAlert } from "lucide-react";
+import { Copy, FileUp, Pencil, Plus, TriangleAlert } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useUrlState } from "../../hooks/useUrlState";
 import { adSetCache, adSetCacheKey } from "../../lib/adSetCache";
@@ -39,6 +39,7 @@ import {
 } from "./CampaignDialogs";
 import { CampaignStatusCell } from "./CampaignStatusCell";
 import { CreateCampaignDialog } from "./CreateCampaignDialog";
+import { KeitaroCsvImportDialog } from "./KeitaroCsvImportDialog";
 
 /**
  * Halaman Campaign — campaign seluruh armada, disalin dan diubah dari satu tempat. SUPERADMIN.
@@ -416,19 +417,27 @@ export function CampaignFleet({
     <div className="page-stack">
       <PageHeader
         action={
-          CONTROL_API_ENABLED && (
-            <div className="header-actions">
+          <div className="header-actions">
+            <button
+              className="primary-button"
+              onClick={() => setDialog({ type: "keitaroCsv" })}
+              title="Unggah berkas CSV laporan performa tracker Keitaro"
+              type="button"
+            >
+              <FileUp size={15} /> Import CSV Keitaro
+            </button>
+            {CONTROL_API_ENABLED && (
               <button
-                className="primary-button"
+                className="secondary-button"
                 onClick={() => setDialog({ type: "create" })}
                 type="button"
               >
                 <Plus size={15} /> Buat campaign
               </button>
-            </div>
-          )
+            )}
+          </div>
         }
-        description="Buat, salin, dan kelola campaign Meta seluruh armada."
+        description="Buat, salin, dan kelola campaign Meta seluruh armada serta impor tracker Keitaro."
         title="Campaign"
       />
 
@@ -621,6 +630,16 @@ export function CampaignFleet({
             setAdSetVersion((version) => version + 1);
           }}
           row={dialog.row}
+        />
+      )}
+      {dialog?.type === "keitaroCsv" && (
+        <KeitaroCsvImportDialog
+          isOpen={true}
+          onClose={closeDialog}
+          onImportSuccess={() => {
+            closeDialog();
+            notifySuccess("Data laporan Keitaro berhasil disimpan ke database!");
+          }}
         />
       )}
     </div>

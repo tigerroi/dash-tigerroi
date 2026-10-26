@@ -1,5 +1,5 @@
-import { Activity, BadgeDollarSign, Globe2, TriangleAlert, Users } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { Activity, BadgeDollarSign, FileUp, Globe2, TriangleAlert, Users } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { canReadResource } from "../config/access";
 import { useFillViewport } from "../hooks/useFillViewport";
 import { useUrlRange, useUrlState } from "../hooks/useUrlState";
@@ -48,6 +48,7 @@ import {
   SubDomainRoiTable,
 } from "./ui/SubDomainRoiCharts";
 import { moneyColumn, roiColumn } from "./ui/tableColumns";
+import { KeitaroCsvImportDialog } from "./campaigns/KeitaroCsvImportDialog";
 
 function LinkButton({ to, navigate, children, className = "" }) {
   return (
@@ -73,6 +74,7 @@ export function Overview({ store, navigate, tab, role, viewer }) {
     ({ start, end }) => setChartRange({ from: start, to: end }),
     [setChartRange],
   );
+  const [keitaroOpen, setKeitaroOpen] = useState(false);
   // Baris ROI hari berjalan disimpan per SYNC (dashboard/roiSnapshots/{tanggal}T{jam}__{subdomainId}),
   // jadi tabelnya memuat tiap sync hari ini dan bukan cuma keadaan terakhir; hari-hari sebelumnya
   // datang dari baris harian (dashboard/roiReports), satu baris per hari. Defaultnya hari berjalan —
@@ -798,6 +800,14 @@ export function Overview({ store, navigate, tab, role, viewer }) {
               <h2>Laporan ROI Realtime</h2>
             </div>
             <div className="header-actions">
+              <button
+                className="secondary-button"
+                onClick={() => setKeitaroOpen(true)}
+                title="Unggah berkas CSV laporan tracker Keitaro"
+                type="button"
+              >
+                <FileUp size={15} /> Import CSV Keitaro
+              </button>
               <DateRangePicker
                 align="right"
                 label="Filter periode Laporan ROI Realtime"
@@ -836,6 +846,15 @@ export function Overview({ store, navigate, tab, role, viewer }) {
             rate={adTaxRate}
           />
         </section>
+      )}
+      {keitaroOpen && (
+        <KeitaroCsvImportDialog
+          isOpen={true}
+          onClose={() => setKeitaroOpen(false)}
+          onImportSuccess={() => {
+            setKeitaroOpen(false);
+          }}
+        />
       )}
     </div>
   );
