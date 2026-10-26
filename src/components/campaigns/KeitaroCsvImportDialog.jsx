@@ -4,6 +4,7 @@ import { supabase } from "../../config/supabase";
 import { processKeitaroCsv } from "../../lib/keitaroCsvParser";
 import { notifyError, notifySuccess } from "../../lib/notify";
 import { Dialog } from "../ui/Dialog";
+import { SelectField } from "../ui/SelectField";
 
 export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
   const [file, setFile] = useState(null);
@@ -40,6 +41,38 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
     };
   }, [isOpen]);
 
+  const [rawText, setRawText] = useState("");
+  const [targetSite, setTargetSite] = useState("");
+  const [targetDate, setTargetDate] = useState(() =>
+    new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(new Date()),
+  );
+
+  const fallbackSites = [
+    { site_code: "ihop-menu", name: "IHOP Menu (ihopmenuwithprices.us)" },
+    { site_code: "taco-fries", name: "Taco Bell Menu (tacobellmenuu.us)" },
+    { site_code: "tiktok-mod", name: "TikTok Mod APK (tiktokmodapk.net)" },
+    { site_code: "tray-decor", name: "Tray Edit (trayedit.com)" },
+  ];
+
+  const effectiveSites = sites.length > 0 ? sites : fallbackSites;
+
+  // Re-parse saat file, targetSite, atau targetDate berubah
+  const reparseCsv = (text, siteCode, dateStr) => {
+    if (!text) return;
+    setParsing(true);
+    try {
+      const result = processKeitaroCsv(text, effectiveSites, {
+        defaultSiteCode: siteCode || undefined,
+        defaultDate: dateStr || undefined,
+      });
+      setParseResult(result);
+    } catch (err) {
+      notifyError(`Gagal membaca berkas: ${err.message}`);
+    } finally {
+      setParsing(false);
+    }
+  };
+
   const handleFileChange = (selectedFile) => {
     if (!selectedFile) return;
     if (!selectedFile.name.endsWith(".csv") && !selectedFile.name.endsWith(".txt")) {
@@ -55,10 +88,9 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
     reader.onload = (e) => {
       const text = e.target?.result;
       if (typeof text === "string") {
-        const result = processKeitaroCsv(text, sites);
-        setParseResult(result);
+        setRawText(text);
+        reparseCsv(text, targetSite, targetDate);
       }
-      setParsing(false);
     };
     reader.onerror = () => {
       notifyError("Gagal membaca berkas CSV");
@@ -162,6 +194,51 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
           <p className="text-xs text-gray-500 mt-1">
             Mendukung pemisah koma (,), titik koma (;), atau tab. Format kolom: Date, Campaign / Sub ID, Clicks, Spend, Revenue.
           </p>
+        </div>
+
+        {/* Opsi Penyesuaian Tanggal dan Situs Target */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 bg-gray-50 dark:bg-gray-800/40 rounded-lg border border-gray-200 dark:border-gray-700 text-xs">
+          <div>
+            <label className="block font-semibold mb-1 text-gray-700 dark:text-gray-300">
+              Tanggal Laporan (Opsi / Fallback):
+            </label>
+            <input
+              type="date"
+              className="w-full px-2.5 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-xs"
+              value={targetDate}
+              onChange={(e) => {
+                setTargetDate(e.target.value);
+                if (rawText) reparseCsv(rawText, targetSite, e.target.value);
+              }}
+            />
+            <span className="text-[10px] text-gray-400">
+              Dipakai jika CSV tidak ada kolom tanggal (bawaan: hari ini).
+            </span>
+          </div>
+
+          <div>
+            <label className="block font-semibold mb-1 text-gray-700 dark:text-gray-300">
+              Situs Target (Opsi / Fallback):
+            </label>
+            <SelectField
+              id="keitaro-target-site"
+              value={targetSite}
+              onChange={(val) => {
+                setTargetSite(val);
+                if (rawText) reparseCsv(rawText, val, targetDate);
+              }}
+              options={[
+                { value: "", label: "Otomatis dari CSV (Kolom Campaign / Sub ID)" },
+                ...effectiveSites.map((s) => ({
+                  value: s.site_code,
+                  label: `${s.name || s.site_code} (${s.site_code})`,
+                })),
+              ]}
+            />
+            <span className="text-[10px] text-gray-400">
+              Pilih jika CSV ringkasan/global tanpa nama kampanye.
+            </span>
+          </div>
         </div>
 
         {parsing && (

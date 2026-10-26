@@ -128,9 +128,23 @@ test("processKeitaroCsv mengolah CSV laporan Keitaro dan mengagregasi data", () 
   assert.equal(result.unmatched[0].candidates.includes("unknown"), true);
 });
 
-test("processKeitaroCsv menolak CSV yang tidak memiliki kolom pengenal", () => {
+test("processKeitaroCsv menolak CSV yang tidak memiliki kolom pengenal jika tanpa defaultSiteCode", () => {
   const invalidCsv = `Date,Clicks,Cost\n2026-10-25,100,20`;
   const result = processKeitaroCsv(invalidCsv, mockSites);
   assert.equal(result.success, false);
   assert.match(result.error, /wajib memiliki minimal satu kolom pengenal/);
+});
+
+test("processKeitaroCsv mengolah ringkasan CSV Keitaro masdef dengan defaultSiteCode dan defaultDate", () => {
+  const masdefCsv = `#;Clicks;"UC (campaign)";Conv.;"ROI (confirmed)";CPC;"eCPM (confirmed)"\n0;133968;43358;0;0;0;0\n0;133968;43358;0;0;0;0`;
+  const result = processKeitaroCsv(masdefCsv, mockSites, {
+    defaultSiteCode: "ihop-menu",
+    defaultDate: "2026-10-26",
+  });
+
+  assert.equal(result.success, true);
+  assert.equal(result.dailyStats.length, 1);
+  assert.equal(result.dailyStats[0].site_code, "ihop-menu");
+  assert.equal(result.dailyStats[0].date, "2026-10-26");
+  assert.equal(result.dailyStats[0].clicks, 267936); // 133968 * 2 baris
 });

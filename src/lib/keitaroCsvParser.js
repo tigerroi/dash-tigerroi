@@ -145,8 +145,12 @@ export function detectColumnIndices(headers) {
       map.revenue = index;
     }
     // Conversions
-    else if (map.conversions === -1 && (k === "conversions" || k === "leads" || k === "sales" || k === "konversi")) {
+    else if (map.conversions === -1 && (k === "conversions" || k === "conv" || k === "conv." || k === "leads" || k === "sales" || k === "konversi")) {
       map.conversions = index;
+    }
+    // Unique Clicks (fallback jika kolom clicks belum ketemu)
+    else if (map.clicks === -1 && (k === "uc" || k === "uccampaign")) {
+      map.clicks = index;
     }
   });
 
@@ -369,12 +373,12 @@ export function processKeitaroCsv(csvText, sitesList = [], options = {}) {
 
   // Validasi kolom minimal
   const hasIdentifier = col.site !== -1 || col.sub_id_1 !== -1 || col.campaign !== -1;
-  if (!hasIdentifier) {
+  const defaultSite = options.defaultSiteCode || null;
+  if (!hasIdentifier && !defaultSite) {
     return {
       success: false,
       error:
-        "CSV Keitaro wajib memiliki minimal satu kolom pengenal: 'Campaign', 'Sub ID 1', 'site', atau 'site_code'. Kolom yang terdeteksi: " +
-        headers.join(", "),
+        "CSV Keitaro wajib memiliki minimal satu kolom pengenal: 'Campaign', 'Sub ID 1', 'site', atau pilih 'Situs / Domain Target' pada opsi di atas agar data dapat dipetakan.",
       summary: null,
       dailyStats: [],
       unmatched: [],
@@ -390,6 +394,8 @@ export function processKeitaroCsv(csvText, sitesList = [], options = {}) {
   let totalCost = 0;
   let totalRevenue = 0;
 
+  const todayJakarta = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(new Date());
+
   // Baca baris data (mulai dari index 1)
   for (let r = 1; r < rows.length; r++) {
     const row = rows[r];
@@ -401,12 +407,8 @@ export function processKeitaroCsv(csvText, sitesList = [], options = {}) {
       if (options.defaultDate) {
         rowDate = normalizeDate(options.defaultDate);
       } else {
-        errors.push({
-          rowNumber,
-          data: row,
-          message: `Kolom tanggal tidak valid atau kosong pada baris ${rowNumber}.`,
-        });
-        continue;
+        // Fallback otomatis ke hari ini jika tidak ada kolom tanggal di CSV
+        rowDate = todayJakarta;
       }
     }
 
@@ -417,7 +419,10 @@ export function processKeitaroCsv(csvText, sitesList = [], options = {}) {
     if (col.sub_id_2 !== -1 && row[col.sub_id_2]) candidates.push(row[col.sub_id_2]);
     if (col.campaign !== -1 && row[col.campaign]) candidates.push(row[col.campaign]);
 
-    const matchedSiteCode = matchSiteCode(candidates, sitesList);
+    let matchedSiteCode = matchSiteCode(candidates, sitesList);
+    if (!matchedSiteCode && defaultSite) {
+      matchedSiteCode = defaultSite;
+    }
 
     if (!matchedSiteCode) {
       unmatched.push({
