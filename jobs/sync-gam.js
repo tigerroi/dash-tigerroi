@@ -170,11 +170,12 @@ export async function runSyncGam() {
 
     const sites = sitesList || [];
 
+    const daysBack = Number(process.env.DAYS_BACK || 30);
     const dateToday = getJakartaDate(0);
-    const dateYesterday = getJakartaDate(1);
-    const dateRange = { startDate: dateYesterday, endDate: dateToday };
+    const dateSince = getJakartaDate(daysBack);
+    const dateRange = { startDate: dateSince, endDate: dateToday };
 
-    console.log(`Rentang Penarikan: ${dateRange.startDate} s/d ${dateRange.endDate}`);
+    console.log(`Rentang Penarikan GAM: ${dateRange.startDate} s/d ${dateRange.endDate} (${daysBack} hari ke belakang)...`);
 
     let totalSyncedRows = 0;
     const errors = [];

@@ -135,30 +135,17 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
   const summary = parseResult?.summary;
 
   return (
-    <Dialog className="confirm-dialog campaign-dialog keitaro-import-dialog" onClose={onClose}>
-      <div className="dialog-header flex items-center justify-between border-b pb-3">
-        <div className="flex items-center gap-2">
-          <UploadCloud className="text-blue-500" size={22} />
-          <h2 className="text-lg font-bold">Impor CSV Laporan Keitaro</h2>
-        </div>
-        <button
-          type="button"
-          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-          onClick={onClose}
-          aria-label="Tutup"
-        >
-          <X size={20} />
-        </button>
-      </div>
-
-      <div className="dialog-body py-4 space-y-4">
+    <Dialog
+      title="Impor CSV Laporan Keitaro"
+      subtitle="Unggah berkas laporan klik dan performa tracker Keitaro ke TigerROI"
+      className="confirm-dialog campaign-dialog keitaro-import-dialog"
+      onClose={onClose}
+      busy={uploading}
+    >
+      <div className="dialog-body" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         {/* Drop zone */}
         <div
-          className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-            dragOver
-              ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
-              : "border-gray-300 dark:border-gray-700 hover:border-blue-400"
-          }`}
+          className={`keitaro-dropzone ${dragOver ? "dragover" : ""}`}
           onDragOver={(e) => {
             e.preventDefault();
             setDragOver(true);
@@ -184,40 +171,40 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
             id="keitaro-csv-input"
             type="file"
             accept=".csv,.txt"
-            className="hidden"
+            style={{ display: "none" }}
             onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0])}
           />
-          <FileUp className="mx-auto mb-2 text-gray-400" size={36} />
-          <p className="font-medium text-sm">
+          <FileUp size={36} style={{ margin: "0 auto 10px", color: "var(--muted-foreground)" }} />
+          <p style={{ margin: "0 0 6px", fontWeight: 600, fontSize: "14px" }}>
             {file ? file.name : "Klik atau seret file CSV laporan Keitaro ke sini"}
           </p>
-          <p className="text-xs text-gray-500 mt-1">
-            Mendukung pemisah koma (,), titik koma (;), atau tab. Format kolom: Date, Campaign / Sub ID, Clicks, Spend, Revenue.
+          <p style={{ margin: 0, fontSize: "12px", color: "var(--muted-foreground)" }}>
+            Mendukung pemisah koma (,), titik koma (;), atau tab.
           </p>
         </div>
 
         {/* Opsi Penyesuaian Tanggal dan Situs Target */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 bg-gray-50 dark:bg-gray-800/40 rounded-lg border border-gray-200 dark:border-gray-700 text-xs">
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", padding: "12px", background: "var(--muted)", borderRadius: "8px", border: "1px solid var(--border)" }}>
           <div>
-            <label className="block font-semibold mb-1 text-gray-700 dark:text-gray-300">
+            <label style={{ display: "block", fontWeight: 600, fontSize: "12px", marginBottom: "4px" }}>
               Tanggal Laporan (Opsi / Fallback):
             </label>
             <input
               type="date"
-              className="w-full px-2.5 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-xs"
+              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--card)", color: "inherit", fontSize: "12px" }}
               value={targetDate}
               onChange={(e) => {
                 setTargetDate(e.target.value);
                 if (rawText) reparseCsv(rawText, targetSite, e.target.value);
               }}
             />
-            <span className="text-[10px] text-gray-400">
+            <span style={{ fontSize: "10px", color: "var(--muted-foreground)" }}>
               Dipakai jika CSV tidak ada kolom tanggal (bawaan: hari ini).
             </span>
           </div>
 
           <div>
-            <label className="block font-semibold mb-1 text-gray-700 dark:text-gray-300">
+            <label style={{ display: "block", fontWeight: 600, fontSize: "12px", marginBottom: "4px" }}>
               Situs Target (Opsi / Fallback):
             </label>
             <SelectField
@@ -235,50 +222,52 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
                 })),
               ]}
             />
-            <span className="text-[10px] text-gray-400">
+            <span style={{ fontSize: "10px", color: "var(--muted-foreground)" }}>
               Pilih jika CSV ringkasan/global tanpa nama kampanye.
             </span>
           </div>
         </div>
 
         {parsing && (
-          <div className="flex items-center justify-center gap-2 py-4 text-blue-600">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "16px", color: "#3b82f6" }}>
             <Loader2 className="animate-spin" size={18} />
-            <span className="text-sm">Memproses dan memvalidasi file CSV...</span>
+            <span style={{ fontSize: "13px" }}>Memproses dan memvalidasi file CSV...</span>
           </div>
         )}
 
         {/* Hasil Analisis */}
         {parseResult && (
-          <div className="space-y-4">
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             {parseResult.error && (
-              <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md flex items-start gap-2 text-red-700 dark:text-red-300 text-sm">
-                <AlertCircle size={18} className="shrink-0 mt-0.5" />
+              <div style={{ padding: "10px 14px", background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: "6px", color: "#ef4444", fontSize: "13px", display: "flex", alignItems: "center", gap: "8px" }}>
+                <AlertCircle size={18} style={{ flexShrink: 0 }} />
                 <span>{parseResult.error}</span>
               </div>
             )}
 
             {summary && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                <div className="p-2.5 rounded bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-                  <div className="text-gray-500">Baris Valid</div>
-                  <div className="text-base font-bold text-green-600 dark:text-green-400">
+              <div className="keitaro-stats-grid">
+                <div className="keitaro-stat-card">
+                  <div className="keitaro-stat-label">Baris Valid</div>
+                  <div className="keitaro-stat-val" style={{ color: "#22c55e" }}>
                     {summary.validAggregatedRows} hari-situs
                   </div>
                 </div>
-                <div className="p-2.5 rounded bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-                  <div className="text-gray-500">Total Klik</div>
-                  <div className="text-base font-bold">{summary.totalClicks.toLocaleString()}</div>
+                <div className="keitaro-stat-card">
+                  <div className="keitaro-stat-label">Total Klik</div>
+                  <div className="keitaro-stat-val">
+                    {summary.totalClicks.toLocaleString()}
+                  </div>
                 </div>
-                <div className="p-2.5 rounded bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-                  <div className="text-gray-500">Total Biaya (Spend)</div>
-                  <div className="text-base font-bold text-red-600 dark:text-red-400">
+                <div className="keitaro-stat-card">
+                  <div className="keitaro-stat-label">Total Biaya (Spend)</div>
+                  <div className="keitaro-stat-val" style={{ color: "#ef4444" }}>
                     ${summary.totalSpend.toFixed(2)}
                   </div>
                 </div>
-                <div className="p-2.5 rounded bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-                  <div className="text-gray-500">Total Pendapatan</div>
-                  <div className="text-base font-bold text-blue-600 dark:text-blue-400">
+                <div className="keitaro-stat-card">
+                  <div className="keitaro-stat-label">Total Pendapatan</div>
+                  <div className="keitaro-stat-val" style={{ color: "#3b82f6" }}>
                     ${summary.totalRevenue.toFixed(2)}
                   </div>
                 </div>
@@ -287,12 +276,12 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
 
             {/* Peringatan baris tidak cocok */}
             {parseResult.unmatched?.length > 0 && (
-              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md text-amber-800 dark:text-amber-200 text-xs">
-                <p className="font-semibold flex items-center gap-1.5 mb-1">
-                  <AlertCircle size={15} />
+              <div style={{ padding: "10px 14px", background: "rgba(245, 158, 11, 0.1)", border: "1px solid rgba(245, 158, 11, 0.3)", borderRadius: "6px", color: "#f59e0b", fontSize: "12px" }}>
+                <p style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: "6px", margin: "0 0 6px" }}>
+                  <AlertCircle size={14} />
                   {parseResult.unmatched.length} baris tidak dapat dicocokkan ke site_code:
                 </p>
-                <ul className="list-disc list-inside max-h-24 overflow-y-auto space-y-0.5 text-[11px] text-amber-700 dark:text-amber-300">
+                <ul style={{ margin: 0, paddingLeft: "18px", fontSize: "11px", lineHeight: "1.5" }}>
                   {parseResult.unmatched.slice(0, 5).map((u, i) => (
                     <li key={i}>
                       Baris {u.rowNumber}: {u.candidates.join(" | ")}
@@ -305,39 +294,41 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
               </div>
             )}
 
-            {/* Pratinjau Tabel Menggunakan Grid Div (Design System) */}
+            {/* Pratinjau Tabel Menggunakan Semantic Table */}
             {parseResult.dailyStats?.length > 0 && (
               <div>
-                <h3 className="text-xs font-semibold uppercase text-gray-500 mb-2">
+                <h3 style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", color: "var(--muted-foreground)", margin: "0 0 8px" }}>
                   Pratinjau Data (Sumber: 'keitaro'):
                 </h3>
-                <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md text-xs">
-                  <div className="bg-gray-100 dark:bg-gray-800 sticky top-0 grid grid-cols-6 p-2 font-semibold border-b border-gray-200 dark:border-gray-700">
-                    <div>Tanggal</div>
-                    <div>Site Code</div>
-                    <div className="text-right">Klik</div>
-                    <div className="text-right">Spend</div>
-                    <div className="text-right">Revenue</div>
-                    <div className="text-right">ROI</div>
-                  </div>
-                  <div className="divide-y divide-gray-200 dark:divide-gray-800">
-                    {parseResult.dailyStats.slice(0, 10).map((row, idx) => (
-                      <div key={idx} className="grid grid-cols-6 p-2 hover:bg-gray-50 dark:hover:bg-gray-800/40">
-                        <div className="font-mono">{row.date}</div>
-                        <div className="font-semibold text-blue-600 dark:text-blue-400">
-                          {row.site_code}
-                        </div>
-                        <div className="text-right">{row.clicks.toLocaleString()}</div>
-                        <div className="text-right text-red-500">${row.spend.toFixed(2)}</div>
-                        <div className="text-right text-green-500">${row.revenue.toFixed(2)}</div>
-                        <div className="text-right font-medium">{row.roi_percent}%</div>
-                      </div>
-                    ))}
-                  </div>
+                <div className="keitaro-table-scroll">
+                  <table className="keitaro-table">
+                    <thead>
+                      <tr>
+                        <th>Tanggal</th>
+                        <th>Site Code</th>
+                        <th style={{ textAlign: "right" }}>Klik</th>
+                        <th style={{ textAlign: "right" }}>Spend</th>
+                        <th style={{ textAlign: "right" }}>Revenue</th>
+                        <th style={{ textAlign: "right" }}>ROI</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {parseResult.dailyStats.slice(0, 15).map((row, idx) => (
+                        <tr key={idx}>
+                          <td style={{ fontFamily: "monospace" }}>{row.date}</td>
+                          <td style={{ fontWeight: 600, color: "#3b82f6" }}>{row.site_code}</td>
+                          <td style={{ textAlign: "right" }}>{row.clicks.toLocaleString()}</td>
+                          <td style={{ textAlign: "right", color: "#ef4444" }}>${row.spend.toFixed(2)}</td>
+                          <td style={{ textAlign: "right", color: "#22c55e" }}>${row.revenue.toFixed(2)}</td>
+                          <td style={{ textAlign: "right", fontWeight: 600 }}>{row.roi_percent}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                {parseResult.dailyStats.length > 10 && (
-                  <p className="text-[11px] text-gray-400 mt-1 text-right">
-                    Menampilkan 10 dari {parseResult.dailyStats.length} baris agregasi
+                {parseResult.dailyStats.length > 15 && (
+                  <p style={{ fontSize: "11px", color: "var(--muted-foreground)", marginTop: "4px", textAlign: "right" }}>
+                    Menampilkan 15 dari {parseResult.dailyStats.length} baris agregasi
                   </p>
                 )}
               </div>
@@ -346,10 +337,10 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
         )}
       </div>
 
-      <div className="dialog-footer flex items-center justify-end gap-2 border-t pt-3">
+      <div className="confirm-actions" style={{ marginTop: "16px", borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
         <button
           type="button"
-          className="px-4 py-2 text-sm rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+          className="secondary-button"
           onClick={onClose}
           disabled={uploading}
         >
@@ -357,19 +348,17 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
         </button>
         <button
           type="button"
-          className="px-4 py-2 text-sm rounded bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center gap-1.5 disabled:opacity-50"
+          className="primary-button"
           onClick={handleSaveToDatabase}
           disabled={uploading || !parseResult?.dailyStats?.length}
         >
           {uploading ? (
             <>
-              <Loader2 className="animate-spin" size={16} />
-              <span>Menyimpan ke Supabase...</span>
+              <Loader2 className="animate-spin" size={15} /> Menyimpan...
             </>
           ) : (
             <>
-              <CheckCircle2 size={16} />
-              <span>Simpan ke Database ({parseResult?.dailyStats?.length || 0})</span>
+              <CheckCircle2 size={15} /> Simpan ke Database ({parseResult?.dailyStats?.length || 0})
             </>
           )}
         </button>

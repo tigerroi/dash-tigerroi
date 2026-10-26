@@ -441,15 +441,6 @@ export function CampaignFleet({
         title="Campaign"
       />
 
-      {!CONTROL_API_ENABLED && (
-        <p className="plugin-alert plugin-alert-inline">
-          <TriangleAlert size={15} />
-          <span>
-            Server kontrol belum dikonfigurasi, jadi campaign tidak bisa disalin atau diubah dari
-            sini. Tabel armada tetap dibaca dari database.
-          </span>
-        </p>
-      )}
 
       {activeTab === "pekerjaan" && jobs.length === 0 && (
         // Tab yang kosong tanpa satu kalimat pun terbaca seperti halaman yang gagal memuat. Masa

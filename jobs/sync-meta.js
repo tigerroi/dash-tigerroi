@@ -135,9 +135,11 @@ export async function runSyncMeta() {
 
     console.log(`Memproses ${accounts.length} akun Meta Ads...`);
 
+    const daysBack = Number(process.env.DAYS_BACK || 30);
     const dateToday = getJakartaDate(0);
-    const dateYesterday = getJakartaDate(1);
-    const dateRange = { since: dateYesterday, until: dateToday };
+    const dateSince = getJakartaDate(daysBack);
+    const dateRange = { since: dateSince, until: dateToday };
+    console.log(`Rentang Penarikan Meta Ads: ${dateRange.since} s/d ${dateRange.until} (${daysBack} hari ke belakang)...`);
 
     let totalSyncedRows = 0;
     const errors = [];

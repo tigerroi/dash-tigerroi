@@ -4085,6 +4085,90 @@ button.country-breakdown-badge:focus-visible {
   gap: 8px;
 }
 
+.keitaro-import-dialog {
+  width: min(100%, 780px) !important;
+  max-height: 92vh;
+  overflow-y: auto;
+  gap: 16px;
+}
+
+.keitaro-dropzone {
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--card);
+  transition: all 0.2s ease;
+}
+
+.keitaro-dropzone:hover,
+.keitaro-dropzone.dragover {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.keitaro-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.keitaro-stat-card {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.keitaro-stat-label {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.keitaro-stat-val {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.keitaro-table-scroll {
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.keitaro-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.keitaro-table th {
+  position: sticky;
+  top: 0;
+  background: var(--muted);
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.keitaro-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.keitaro-table tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
 .backdrop {
   display: none;
 }
