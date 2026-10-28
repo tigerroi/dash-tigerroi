@@ -142,19 +142,63 @@ export function cleanDomain(value) {
 
 export function domainIndex(store) {
   const known = new Set();
+  const domainById = new Map();
   for (const domain of store?.domains || []) {
     const rawKey = normalize(domain?.domainUrl);
     const cleanKey = cleanDomain(domain?.domainUrl);
     if (rawKey) known.add(rawKey);
     if (cleanKey) known.add(cleanKey);
+    if (domain?.id) {
+      domainById.set(domain.id, cleanKey || rawKey);
+    }
   }
+
+  // Peta site_code resmi 4 domain TigerROI
+  const SITE_CODE_PARENT = {
+    "ihop-menu": "ihopmenuwithprices.us",
+    "taco-fries": "tacobellmenuu.us",
+    "tiktok-mod": "tiktokmodapk.net",
+    "tray-decor": "trayedit.com",
+  };
+
+  // Peta nama pendek 17 subdomain resmi ke domain induk
+  const SHORT_NAME_PARENT = {
+    menu: "ihopmenuwithprices.us",
+    deals: "ihopmenuwithprices.us",
+    keto: "ihopmenuwithprices.us",
+    hacks: "ihopmenuwithprices.us",
+    news: "ihopmenuwithprices.us",
+    cantina: "tacobellmenuu.us",
+    burrito: "tacobellmenuu.us",
+    fries: "tacobellmenuu.us",
+    insurance: "tiktokmodapk.net",
+    careers: "tiktokmodapk.net",
+    rewards: "tiktokmodapk.net",
+    mod: "tiktokmodapk.net",
+    decor: "trayedit.com",
+    materials: "trayedit.com",
+    cabinets: "trayedit.com",
+    guides: "trayedit.com",
+    styling: "trayedit.com",
+  };
 
   const parents = new Map();
   for (const sub of store?.subDomains || []) {
     const parentRaw = normalize(sub?.parentDomain);
     const parentClean = cleanDomain(sub?.parentDomain);
-    const resolvedParent = parentClean || parentRaw;
-    if (sub?.name) {
+    let resolvedParent = parentClean || parentRaw;
+    if (!resolvedParent && sub?.parentDomainId && domainById.has(sub.parentDomainId)) {
+      resolvedParent = domainById.get(sub.parentDomainId);
+    }
+    if (!resolvedParent && sub?.siteCode && SITE_CODE_PARENT[sub.siteCode]) {
+      resolvedParent = SITE_CODE_PARENT[sub.siteCode];
+    }
+    if (!resolvedParent && sub?.name) {
+      const p = cleanDomain(sub.name).split(".")[0];
+      if (SHORT_NAME_PARENT[p]) resolvedParent = SHORT_NAME_PARENT[p];
+    }
+
+    if (sub?.name && resolvedParent) {
       parents.set(normalize(sub.name), resolvedParent);
       parents.set(cleanDomain(sub.name), resolvedParent);
       const prefix = cleanDomain(sub.name).split(".")[0];
@@ -163,7 +207,7 @@ export function domainIndex(store) {
         parents.set(cleanDomain(prefix), resolvedParent);
       }
     }
-    if (sub?.siteCode) {
+    if (sub?.siteCode && resolvedParent) {
       parents.set(normalize(sub.siteCode), resolvedParent);
       parents.set(cleanDomain(sub.siteCode), resolvedParent);
     }
@@ -175,6 +219,10 @@ export function domainIndex(store) {
     if (!host && !cleanHost) return "";
     const parent = parents.get(host) || parents.get(cleanHost);
     if (parent) return parent;
+    const prefix = cleanHost.split(".")[0];
+    if (prefix && parents.get(prefix)) return parents.get(prefix);
+    if (prefix && SHORT_NAME_PARENT[prefix]) return SHORT_NAME_PARENT[prefix];
+    if (SITE_CODE_PARENT[cleanHost]) return SITE_CODE_PARENT[cleanHost];
     for (const key of known) {
       if (
         host === key ||
