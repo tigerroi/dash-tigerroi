@@ -266,10 +266,42 @@ export async function runSyncGam() {
             current.metadata.network_codes.push(net.networkCode);
           }
         }
+
+        // Hitung total pendapatan dan tanggal laporan terbaru untuk tabel gam_accounts
+        let netTotalRev = 0;
+        let netLatestDate = "";
+        for (const row of rows) {
+          netTotalRev += row.totalRevenue;
+          if (!netLatestDate || row.date > netLatestDate) {
+            netLatestDate = row.date;
+          }
+        }
+
+        const formattedEarning = `Rp ${Math.round(netTotalRev).toLocaleString("id-ID")}`;
+        await supabase
+          .from("gam_accounts")
+          .update({
+            sync_status: "ok",
+            sync_earning: formattedEarning,
+            last_sync_report_date: netLatestDate || dateRange.endDate,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("network_code", net.networkCode);
+
+        console.log(`    ✅ Updated gam_accounts (${net.domain}): ${formattedEarning}, Tgl: ${netLatestDate || dateRange.endDate}`);
       } catch (netErr) {
         const msg = `Network ${net.domain} (${net.networkCode}): ${netErr.message}`;
         console.error(`    ❌ ${msg}`);
         errors.push(msg);
+
+        await supabase
+          .from("gam_accounts")
+          .update({
+            sync_status: "error",
+            status_detail: netErr.message,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("network_code", net.networkCode);
       }
     }
 
