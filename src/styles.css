@@ -4104,8 +4104,8 @@ button.country-breakdown-badge:focus-visible {
 
 .keitaro-dropzone:hover,
 .keitaro-dropzone.dragover {
-  border-color: #3b82f6;
-  background: rgba(59, 130, 246, 0.05);
+  border-color: var(--primary);
+  background: var(--accent);
 }
 
 .keitaro-stats-grid {
@@ -4166,7 +4166,7 @@ button.country-breakdown-badge:focus-visible {
 }
 
 .keitaro-table tr:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--muted);
 }
 
 .backdrop {

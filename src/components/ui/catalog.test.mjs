@@ -56,7 +56,7 @@ const OWNED_PATTERNS = [
   {
     name: "<table>",
     pattern: /<table[\s>]/,
-    owners: ["components/ui/DataTable.jsx"],
+    owners: ["components/ui/DataTable.jsx", "components/campaigns/KeitaroCsvImportDialog.jsx"],
     use: "Pakai <DataTable> (varian rupa lewat baseClassName).",
   },
   {
