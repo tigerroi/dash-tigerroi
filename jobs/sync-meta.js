@@ -166,15 +166,17 @@ export async function runSyncMeta() {
     const dailyMap = new Map();
 
     for (const account of accounts) {
-      const token = account.access_token || GLOBAL_META_TOKEN;
+      // Prioritaskan token dari environment GitHub Secrets (GLOBAL_META_TOKEN) di atas database
+      const token = GLOBAL_META_TOKEN || account.access_token;
       if (!token) {
-        const msg = `Akun ${account.name} (${account.account_id}) tidak memiliki access token (baik di DB maupun env).`;
+        const msg = `Akun ${account.name} (${account.account_id}) tidak memiliki access token (baik di env maupun DB).`;
         console.error(`❌ ${msg}`);
         errors.push(msg);
         continue;
       }
 
       console.log(`\n--> Menarik data untuk: ${account.name} (${account.account_id})...`);
+      console.log(`    Menggunakan token: ${GLOBAL_META_TOKEN ? "GitHub Secret (META_ACCESS_TOKEN)" : "Database Supabase"}`);
 
       try {
         // A. Ambil status dan saldo akun
