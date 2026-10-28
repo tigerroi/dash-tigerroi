@@ -149,18 +149,28 @@ export async function fetchGamDailyRevenue(networkCode, accessToken, dateRange) 
 
   const operationName = runData.name; // format: networks/{code}/operations/reports/{operationId}
 
-  // 3. Polling operasi hingga selesai
+  // 3. Polling operasi hingga selesai (maksimal 60 attempts x 3 detik = 180 detik / 3 menit)
   let isDone = false;
   let attempts = 0;
   let resultName = "";
-  while (!isDone && attempts < 30) {
-    await new Promise((r) => setTimeout(r, 2000)); // tunggu 2 detik
+  while (!isDone && attempts < 60) {
+    await new Promise((r) => setTimeout(r, 3000)); // tunggu 3 detik
     attempts++;
 
     const pollRes = await fetch(`${GAM_BASE}/${operationName}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const pollData = await pollRes.json();
+
+    if (!pollRes.ok) {
+      console.warn(`    ⚠️ Peringatan polling GAM (${pollRes.status}): ${pollData.error?.message || JSON.stringify(pollData)}`);
+      continue;
+    }
+
+    if (attempts % 5 === 0) {
+      console.log(`    ⏳ Masih menunggu kompilasi laporan GAM (${attempts * 3} detik)...`);
+    }
+
     if (pollData.done) {
       isDone = true;
       if (pollData.error) {
@@ -181,7 +191,7 @@ export async function fetchGamDailyRevenue(networkCode, accessToken, dateRange) 
   }
 
   if (!isDone) {
-    throw new Error("Timeout menunggu kompilasi laporan Google Ad Manager.");
+    throw new Error("Timeout menunggu kompilasi laporan Google Ad Manager (melebihi 3 menit).");
   }
 
   // 4. Ambil baris hasil laporan
