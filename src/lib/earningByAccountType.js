@@ -132,26 +132,48 @@ function add(buckets, month, domain, type, earning, spend) {
  * di layar cuma persentase invalid traffic yang terlalu besar (atau target yang tidak pernah
  * tercapai).
  */
+export function cleanDomain(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "");
+}
+
 export function domainIndex(store) {
   const known = new Set();
   for (const domain of store?.domains || []) {
-    const key = normalize(domain?.domainUrl);
-    if (key) known.add(key);
+    const rawKey = normalize(domain?.domainUrl);
+    const cleanKey = cleanDomain(domain?.domainUrl);
+    if (rawKey) known.add(rawKey);
+    if (cleanKey) known.add(cleanKey);
   }
 
   const parents = new Map();
   for (const sub of store?.subDomains || []) {
-    const key = normalize(sub?.name);
-    if (key) parents.set(key, normalize(sub?.parentDomain));
+    const parentRaw = normalize(sub?.parentDomain);
+    const parentClean = cleanDomain(sub?.parentDomain);
+    const resolvedParent = parentClean || parentRaw;
+    if (sub?.name) {
+      parents.set(normalize(sub.name), resolvedParent);
+      parents.set(cleanDomain(sub.name), resolvedParent);
+    }
+    if (sub?.siteCode) {
+      parents.set(normalize(sub.siteCode), resolvedParent);
+      parents.set(cleanDomain(sub.siteCode), resolvedParent);
+    }
   }
 
   return (name) => {
     const host = normalize(name);
-    if (!host) return "";
-    const parent = parents.get(host);
+    const cleanHost = cleanDomain(name);
+    if (!host && !cleanHost) return "";
+    const parent = parents.get(host) || parents.get(cleanHost);
     if (parent) return parent;
     for (const key of known) {
-      if (host === key || host.endsWith(`.${key}`)) return key;
+      if (host === key || host.endsWith(`.${key}`) || cleanHost === key || cleanHost.endsWith(`.${key}`)) {
+        return key;
+      }
     }
     return "";
   };

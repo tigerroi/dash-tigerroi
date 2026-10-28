@@ -102,6 +102,57 @@ export function writeRole(uid, role) {
  * Langganan berkala (polling) untuk resource koleksi (berbentuk array)
  */
 export function subscribeResource(key, callback, onError) {
+  if (key === "weeklyFinancials") {
+    let active = true;
+    const fetchFinancials = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("view_daily_roi")
+          .select("*")
+          .order("date", { ascending: false });
+        if (error) {
+          if (onError) onError(error);
+          return;
+        }
+        if (active) {
+          const byDate = new Map();
+          for (const item of (data || [])) {
+            const row = toCamelCaseRow(item);
+            const d = row.date;
+            if (!d) continue;
+            if (!byDate.has(d)) {
+              byDate.set(d, {
+                id: d,
+                date: d,
+                grossRevenue: 0,
+                totalSpend: 0,
+                adTax: 0,
+                totalSpending: 0,
+                netProfit: 0,
+              });
+            }
+            const agg = byDate.get(d);
+            agg.grossRevenue += Number(row.earning || row.gamRevenue || 0);
+            agg.totalSpend += Number(row.spending || row.metaSpend || 0);
+            agg.adTax += Number(row.adTax || 0);
+            agg.totalSpending += Number(row.totalSpending || row.spending || 0);
+            agg.netProfit += Number(row.profit || 0);
+          }
+          callback(Array.from(byDate.values()));
+        }
+      } catch (err) {
+        if (onError) onError(err);
+      }
+    };
+
+    fetchFinancials();
+    const timer = setInterval(fetchFinancials, 30000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }
+
   const table = TABLE_MAP[key];
   if (!table) {
     callback([]);

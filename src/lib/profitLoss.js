@@ -12,6 +12,7 @@ import {
 } from "./dateRange.js";
 import {
   AD_EXCHANGE,
+  cleanDomain,
   domainIndex,
   normalize,
   sourceSplit,
@@ -403,8 +404,10 @@ function splitByOwner({
   // pindah ke `domainIndex`, yang tersisa cuma ejaan asli domainnya untuk kolom Nama.
   const domainLabel = new Map();
   for (const domain of domains || []) {
-    const key = normalize(domain?.domainUrl);
-    if (key) domainLabel.set(key, domain.domainUrl);
+    const raw = normalize(domain?.domainUrl);
+    const clean = cleanDomain(domain?.domainUrl);
+    if (raw) domainLabel.set(raw, clean || domain.domainUrl);
+    if (clean) domainLabel.set(clean, clean);
   }
 
   // Tarif dicari PER BARIS ROI HARIAN, bukan sekali per domain: sebuah domain yang di-relink 21 Mei
