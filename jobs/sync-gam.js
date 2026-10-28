@@ -308,8 +308,8 @@ export async function runSyncGam() {
           }
         }
 
-        const fxRate = GAM_FX_RATES[net.networkCode] || 18155.28;
-        const totalRevenueIdr = Math.round(netTotalRev * fxRate);
+        // Pendapatan GAM ditarik langsung dalam mata uang IDR murni
+        const totalRevenueIdr = Math.round(netTotalRev);
         const formattedEarning = `Rp ${totalRevenueIdr.toLocaleString("id-ID")}`;
         const cleanReportDate = formatIsoDate(netLatestDate || dateRange.endDate);
 

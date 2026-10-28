@@ -94,6 +94,7 @@ export async function fetchGamDailyRevenue(networkCode, accessToken, dateRange) 
         "ADSENSE_REVENUE",
         "AD_SERVER_REVENUE",
       ],
+      currencyCode: "IDR",
       dateRange: {
         fixed: {
           startDate: {
