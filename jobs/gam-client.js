@@ -82,7 +82,7 @@ export async function fetchGamDailyRevenue(networkCode, accessToken, dateRange) 
   const createUrl = `${GAM_BASE}/networks/${networkCode}/reports`;
   const reportDef = {
     reportDefinition: {
-      dimensions: ["DATE", "AD_UNIT_NAME"],
+      dimensions: ["DATE", "SITE", "AD_UNIT_NAME"],
       metrics: [
         "IMPRESSIONS",
         "CLICKS",
@@ -196,7 +196,8 @@ export async function fetchGamDailyRevenue(networkCode, accessToken, dateRange) 
       r.metricValueGroups?.[0]?.primaryValues || r.metricValues || [];
 
     const dateStr = dValues[0] || "";
-    const adUnitName = dValues[1] || "";
+    const siteName = dValues[1] || "";
+    const adUnitName = dValues[2] || "";
 
     const parseNum = (v) =>
       Number(v?.doubleValue != null ? v.doubleValue : v?.integerValue != null ? v.integerValue : v?.value ?? 0);
@@ -209,6 +210,7 @@ export async function fetchGamDailyRevenue(networkCode, accessToken, dateRange) 
 
     rows.push({
       date: dateStr,
+      siteName,
       adUnitName,
       impressions,
       clicks,

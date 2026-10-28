@@ -108,18 +108,40 @@ function loadServiceAccountCredentials() {
   return null;
 }
 
-// Pencocokan ad_unit_name ke site_code
-function mapAdUnitToSiteCode(adUnitName, defaultSiteCode, sitesList) {
-  const unitLower = String(adUnitName || "").toLowerCase();
+// Pencocokan baris GAM (siteName / URL / adUnitName) ke subdomain & site_code
+function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
+  const host = String(row.siteName || "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  const unit = String(row.adUnitName || "").toLowerCase();
 
-  for (const s of sitesList) {
-    if (!s.site_code) continue;
-    if (unitLower.includes(s.site_code.toLowerCase())) {
-      return s.site_code;
+  // 1. Prioritas 1: Cocokkan host URL langsung ke 17 subdomain
+  if (host) {
+    for (const sub of (subdomainsList || [])) {
+      const subHost = String(sub.name || "").toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+      if (host === subHost || host.endsWith(`.${subHost}`) || subHost.includes(host)) {
+        return {
+          siteCode: sub.site_code || defaultSiteCode,
+          subdomainName: sub.name,
+        };
+      }
     }
   }
 
-  return defaultSiteCode || "unmapped";
+  // 2. Prioritas 2: Cocokkan nama unit iklan ke sites
+  for (const s of (sitesList || [])) {
+    if (!s.site_code) continue;
+    if (unit.includes(s.site_code.toLowerCase())) {
+      return {
+        siteCode: s.site_code,
+        subdomainName: s.name || s.site_code,
+      };
+    }
+  }
+
+  // 3. Fallback ke default site code network tersebut
+  return {
+    siteCode: defaultSiteCode || "unmapped",
+    subdomainName: host || defaultSiteCode || "unmapped",
+  };
 }
 
 async function sendTelegramAlert(message) {
@@ -162,13 +184,14 @@ export async function runSyncGam() {
     console.log(`Mengautentikasi Service Account: ${creds.clientEmail}...`);
     const accessToken = await getGoogleServiceAccountToken(creds);
 
-    // 4. Ambil daftar sites untuk pencocokan unit iklan
-    const { data: sitesList } = await supabase
-      .from("sites")
-      .select("site_code, is_active")
-      .eq("is_active", true);
+    // 4. Ambil daftar sites dan subdomains untuk pencocokan unit iklan & URL
+    const [{ data: sitesList }, { data: subdomainsList }] = await Promise.all([
+      supabase.from("sites").select("site_code, is_active").eq("is_active", true),
+      supabase.from("subdomains").select("name, site_code, parent_domain"),
+    ]);
 
     const sites = sitesList || [];
+    const subdomains = subdomainsList || [];
 
     const daysBack = Number(process.env.DAYS_BACK || 30);
     const dateToday = getJakartaDate(0);
@@ -190,7 +213,8 @@ export async function runSyncGam() {
         console.log(`    Ditemukan ${rows.length} baris unit iklan.`);
 
         for (const row of rows) {
-          const siteCode = mapAdUnitToSiteCode(row.adUnitName, net.defaultSiteCode, sites);
+          const mapped = mapGamRowToSite(row, net.defaultSiteCode, subdomains, sites);
+          const siteCode = mapped.siteCode;
           const aggKey = `${row.date}__${siteCode}`;
 
           if (!dailyMap.has(aggKey)) {
@@ -206,6 +230,7 @@ export async function runSyncGam() {
                 adx_revenue: 0,
                 adsense_revenue: 0,
                 network_codes: [net.networkCode],
+                subdomains: {},
               },
             });
           }
@@ -216,6 +241,17 @@ export async function runSyncGam() {
           current.clicks += row.clicks;
           current.metadata.adx_revenue += row.adxRevenue;
           current.metadata.adsense_revenue += row.adsenseRevenue;
+
+          // Catat breakdown per subdomain
+          current.metadata.subdomains = current.metadata.subdomains || {};
+          current.metadata.subdomains[mapped.subdomainName] = current.metadata.subdomains[mapped.subdomainName] || {
+            revenue: 0,
+            impressions: 0,
+            clicks: 0,
+          };
+          current.metadata.subdomains[mapped.subdomainName].revenue += row.totalRevenue;
+          current.metadata.subdomains[mapped.subdomainName].impressions += row.impressions;
+          current.metadata.subdomains[mapped.subdomainName].clicks += row.clicks;
           if (!current.metadata.network_codes.includes(net.networkCode)) {
             current.metadata.network_codes.push(net.networkCode);
           }
