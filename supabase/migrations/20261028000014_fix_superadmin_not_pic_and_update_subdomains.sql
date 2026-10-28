@@ -47,35 +47,45 @@ WHERE (
     (s.pic = 'Man' AND (p.name ILIKE '%Man%' OR p.email ILIKE '%man%'))
 );
 
--- 4. Perbarui view_daily_roi agar TIDAK PERNAH meng-fallback PIC ke 'Mas Def'
-CREATE OR REPLACE VIEW public.view_daily_roi AS
+-- 4. Perbarui view_daily_roi agar membaca dari daily_stats dan TIDAK PERNAH meng-fallback PIC ke 'Mas Def'
+DROP VIEW IF EXISTS public.view_daily_roi CASCADE;
+
+CREATE OR REPLACE VIEW public.view_daily_roi 
+WITH (security_invoker = true) AS
 WITH site_dates AS (
-    SELECT DISTINCT date, site_code FROM (
-        SELECT date, site_code FROM public.tracker_stats WHERE site_code IS NOT NULL
-        UNION
-        SELECT date, site_code FROM public.meta_insights WHERE site_code IS NOT NULL
-        UNION
-        SELECT report_date AS date, site_code FROM public.gam_reports WHERE site_code IS NOT NULL
-    ) all_dates
+    SELECT DISTINCT date, site_code FROM public.daily_stats
+),
+aggregated_rev AS (
+    SELECT 
+        date,
+        site_code,
+        COALESCE(SUM(revenue), 0) AS gam_revenue,
+        COALESCE(SUM(impressions), 0) AS gam_impressions,
+        COALESCE(SUM(clicks), 0) AS gam_clicks
+    FROM public.daily_stats
+    WHERE source IN ('gam', 'adsense')
+    GROUP BY date, site_code
 ),
 aggregated_spend AS (
     SELECT 
         date,
         site_code,
-        SUM(spend) AS total_spend_idr,
-        SUM(impressions) AS ad_impressions,
-        SUM(clicks) AS ad_clicks
-    FROM public.meta_insights
+        COALESCE(SUM(spend), 0) AS total_spend_idr,
+        COALESCE(SUM(clicks), 0) AS ad_clicks,
+        COALESCE(SUM(impressions), 0) AS ad_impressions
+    FROM public.daily_stats
+    WHERE source IN ('meta', 'keitaro')
     GROUP BY date, site_code
 ),
-aggregated_rev AS (
+tracker_stats AS (
     SELECT 
-        report_date AS date,
+        date,
         site_code,
-        SUM(revenue) AS gam_revenue,
-        SUM(impressions) AS gam_impressions
-    FROM public.gam_reports
-    GROUP BY report_date, site_code
+        COALESCE(SUM(revenue), 0) AS tracker_revenue,
+        COALESCE(SUM(clicks), 0) AS tracker_clicks
+    FROM public.daily_stats
+    WHERE source = 'keitaro'
+    GROUP BY date, site_code
 ),
 subdomain_map AS (
     SELECT DISTINCT ON (site_code) 
