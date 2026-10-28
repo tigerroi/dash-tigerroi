@@ -42,9 +42,13 @@ async function main() {
     const overview = await fetchAccountOverview(actId, token);
     console.log(`   Nama Akun    : ${overview.name}`);
     console.log(`   Mata Uang    : ${overview.currency}`);
-    console.log(`   Batas Spend  : ${overview.spendCap ? overview.spendCap.toLocaleString() : "Tidak ada batas"}`);
+    console.log(
+      `   Batas Spend  : ${overview.spendCap ? overview.spendCap.toLocaleString() : "Tidak ada batas"}`,
+    );
     console.log(`   Total Spent  : ${overview.amountSpent.toLocaleString()}`);
-    console.log(`   Sisa Saldo   : ${overview.remainingBudget ? overview.remainingBudget.toLocaleString() : "-"}`);
+    console.log(
+      `   Sisa Saldo   : ${overview.remainingBudget ? overview.remainingBudget.toLocaleString() : "-"}`,
+    );
     console.log(`   Tagihan Berjalan : ${overview.balance.toLocaleString()}`);
 
     // 2. Ambil insights 1 hari terakhir
@@ -59,7 +63,9 @@ async function main() {
 
     for (const item of insights) {
       console.log(`   - [${item.campaignId}] ${item.campaignName}`);
-      console.log(`     Spend: ${overview.currency} ${item.spend.toLocaleString()} | Impresi: ${item.impressions} | Klik: ${item.clicks} | CPC: ${item.cpc}`);
+      console.log(
+        `     Spend: ${overview.currency} ${item.spend.toLocaleString()} | Impresi: ${item.impressions} | Klik: ${item.clicks} | CPC: ${item.cpc}`,
+      );
       totalSpend += item.spend;
       totalClicks += item.clicks;
       totalImpr += item.impressions;
@@ -70,7 +76,9 @@ async function main() {
     console.log(`Total Spend      : ${overview.currency} ${totalSpend.toLocaleString()}`);
     console.log(`Total Impresi    : ${totalImpr.toLocaleString()}`);
     console.log(`Total Klik       : ${totalClicks.toLocaleString()}`);
-    console.log(`Rata-rata CPC    : ${totalClicks > 0 ? (totalSpend / totalClicks).toFixed(2) : 0}`);
+    console.log(
+      `Rata-rata CPC    : ${totalClicks > 0 ? (totalSpend / totalClicks).toFixed(2) : 0}`,
+    );
     console.log("===============================================================");
     console.log("✅ [PASS] Uji baca Meta Ads sukses tanpa error!");
   } catch (err) {

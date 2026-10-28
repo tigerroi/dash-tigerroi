@@ -158,9 +158,7 @@ for (const [uid, user] of Object.entries(users)) {
     const landed = after[uid]?.[branch] || {};
     const oldestLanded = Object.keys(landed).sort()[0];
     const missing = Object.keys(rows).filter((key) => !(key in landed));
-    const unexplained = oldestLanded
-      ? missing.filter((key) => key >= oldestLanded)
-      : missing;
+    const unexplained = oldestLanded ? missing.filter((key) => key >= oldestLanded) : missing;
     if (unexplained.length) {
       console.error(
         `BERHENTI: ${user.name || uid} / ${branch} — ${unexplained.length} baris belum ada di ` +
@@ -175,7 +173,9 @@ for (const [uid, user] of Object.entries(users)) {
   }
 }
 if (pruned) {
-  console.log(`${pruned} baris lama tidak ada di tujuan karena sudah lewat masa simpan — dilewati.`);
+  console.log(
+    `${pruned} baris lama tidak ada di tujuan karena sudah lewat masa simpan — dilewati.`,
+  );
 }
 
 if (!dropped) {

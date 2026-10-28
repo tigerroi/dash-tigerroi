@@ -25,7 +25,10 @@ function loadEnv() {
         const eqIdx = trimmed.indexOf("=");
         if (eqIdx > 0) {
           const k = trimmed.slice(0, eqIdx).trim();
-          const v = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, "");
+          const v = trimmed
+            .slice(eqIdx + 1)
+            .trim()
+            .replace(/^["']|["']$/g, "");
           if (!process.env[k]) process.env[k] = v;
         }
       }
@@ -238,7 +241,7 @@ async function run() {
       "ROI %": r.roi_percent,
       Sumber: r.sources,
       Status: r.status,
-    }))
+    })),
   );
 
   // Detail Anomali & Rekonsiliasi
@@ -256,9 +259,15 @@ async function run() {
   console.log("\n🛡️  STATUS AUDIT PLUGIN WORDPRESS (FASE 0):");
   console.log("   Status: ⚠️ DITAHAN (BELUM LOLOS AUDIT PENUH)");
   console.log("   Alasan:");
-  console.log("   1. Ditemukan fungsi setSiteLicense / siteLicense yang memeriksa lisensi ke server luar.");
-  console.log("   2. Endpoint WordPress REST (/wp-json/rabbitroi/v1/manage) belum diaudit dari sisi PHP.");
-  console.log("   3. Sesuai instruksi ketat masdef, laporan 'traffic valid dari total' TIDAK ditambahkan.");
+  console.log(
+    "   1. Ditemukan fungsi setSiteLicense / siteLicense yang memeriksa lisensi ke server luar.",
+  );
+  console.log(
+    "   2. Endpoint WordPress REST (/wp-json/rabbitroi/v1/manage) belum diaudit dari sisi PHP.",
+  );
+  console.log(
+    "   3. Sesuai instruksi ketat masdef, laporan 'traffic valid dari total' TIDAK ditambahkan.",
+  );
 
   // Evaluasi RLS Supabase
   console.log("\n🔒 STATUS ROW LEVEL SECURITY (RLS) SUPABASE:");

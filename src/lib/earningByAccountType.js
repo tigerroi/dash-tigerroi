@@ -176,7 +176,12 @@ export function domainIndex(store) {
     const parent = parents.get(host) || parents.get(cleanHost);
     if (parent) return parent;
     for (const key of known) {
-      if (host === key || host.endsWith(`.${key}`) || cleanHost === key || cleanHost.endsWith(`.${key}`)) {
+      if (
+        host === key ||
+        host.endsWith(`.${key}`) ||
+        cleanHost === key ||
+        cleanHost.endsWith(`.${key}`)
+      ) {
         return key;
       }
     }

@@ -36,7 +36,10 @@ assert.equal(pluginBaseUrl("sub.domain.com"), `https://sub.domain.com${PLUGIN_NA
 
 // Yang diisi manusia lewat form: URL lengkap, huruf besar, garis miring di ekor. Ditolak mentah-
 // mentah, halaman akan bilang "hostname tidak berbentuk" untuk situs yang sebenarnya benar.
-assert.equal(pluginBaseUrl(" HTTPS://Sub.Domain.com/ "), `https://sub.domain.com${PLUGIN_NAMESPACE}`);
+assert.equal(
+  pluginBaseUrl(" HTTPS://Sub.Domain.com/ "),
+  `https://sub.domain.com${PLUGIN_NAMESPACE}`,
+);
 assert.equal(pluginBaseUrl("http://a.b.co"), `https://a.b.co${PLUGIN_NAMESPACE}`);
 
 // HTTPS selalu, walau yang ditulis http: api_key ikut di header TIAP request, bukan cuma saat enroll.
@@ -45,7 +48,11 @@ assert.ok(pluginBaseUrl("a.b.co").startsWith("https://"));
 // Yang tidak berbentuk hostname ditolak. Ini gerbang yang menahan enroll token — dibagi ke seluruh
 // armada — dari terkirim ke host yang bukan milik kita.
 for (const bad of ["", "   ", "localhost", "sub.domain.com/../evil", "a b.com", "sub..com"]) {
-  assert.throws(() => pluginBaseUrl(bad), PluginError, `seharusnya ditolak: ${JSON.stringify(bad)}`);
+  assert.throws(
+    () => pluginBaseUrl(bad),
+    PluginError,
+    `seharusnya ditolak: ${JSON.stringify(bad)}`,
+  );
 }
 
 // `assert.throws` tidak mengembalikan error yang ditangkapnya, dan yang perlu diperiksa di bawah
@@ -382,7 +389,10 @@ assert.deepEqual(unappliedFields({ jumlah_iklan: 4 }, { jumlah_iklan: "4" }), []
 assert.deepEqual(unappliedFields({ behaviour_detection: true }, { behaviour_detection: "1" }), []);
 assert.deepEqual(unappliedFields({ refresh_blank: 0 }, { refresh_blank: false }), []);
 assert.deepEqual(
-  unappliedFields({ akses_lokasi_countries: ["Indonesia"] }, { akses_lokasi_countries: ["Indonesia"] }),
+  unappliedFields(
+    { akses_lokasi_countries: ["Indonesia"] },
+    { akses_lokasi_countries: ["Indonesia"] },
+  ),
   [],
 );
 
@@ -392,7 +402,12 @@ assert.deepEqual(unappliedFields({ header_code: "<x>" }, {}), []);
 // --- Baris RTDB ---------------------------------------------------------------------------------
 
 const site = { id: "-Nsub1", name: "sub.domain.com" };
-const fresh = pluginSiteRow(site, { enrolled: true, version: "0.4.7" }, null, new Date("2026-08-18T03:00:00Z"));
+const fresh = pluginSiteRow(
+  site,
+  { enrolled: true, version: "0.4.7" },
+  null,
+  new Date("2026-08-18T03:00:00Z"),
+);
 assert.equal(fresh.enrolled, true);
 assert.equal(fresh.version, "0.4.7");
 assert.equal(fresh.name, "sub.domain.com");
@@ -419,12 +434,21 @@ assert.equal(pluginKeyEntry("abc123", "dev@x").apiKey, "abc123");
 // --- Landing ------------------------------------------------------------------------------------
 
 const landings = landingRows([
-  { id: 12, slug: "promo-a", title: "Watch Now", status: "1", template_file: "UniversalLongScreenshot" },
+  {
+    id: 12,
+    slug: "promo-a",
+    title: "Watch Now",
+    status: "1",
+    template_file: "UniversalLongScreenshot",
+  },
   { id: 3, slug: "promo-b", status: "0" },
   { slug: "tanpa-id" },
 ]);
 assert.equal(landings.length, 2);
-assert.deepEqual(landings.map((row) => row.id), ["3", "12"]);
+assert.deepEqual(
+  landings.map((row) => row.id),
+  ["3", "12"],
+);
 // `status` dipetakan ke boolean SEKALI di sini: di JS, "0" truthy, dan tiap tabel yang memutuskan
 // sendiri akan menggambar landing nonaktif sebagai aktif.
 assert.equal(landings[0].active, false);
@@ -467,9 +491,11 @@ assert.equal(video.type, "media");
 
 // Bentuk yang sedang ada di produksi: 120 URL dipisah baris baru alih-alih koma. `JSON.parse`
 // menolaknya, dan yang menyerah di situ meneruskan seluruh blok apa adanya ke kotak isian.
-const rusak = ['["\\"https://a.live/x1.m3u8"', '"https://a.live/x2.m3u8"', '"https://a.live/x3.m3u8\\""]'].join(
-  "\n",
-);
+const rusak = [
+  '["\\"https://a.live/x1.m3u8"',
+  '"https://a.live/x2.m3u8"',
+  '"https://a.live/x3.m3u8\\""]',
+].join("\n");
 assert.deepEqual(normalizeField(video, rusak), [
   "https://a.live/x1.m3u8",
   "https://a.live/x2.m3u8",

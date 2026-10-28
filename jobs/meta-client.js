@@ -109,7 +109,9 @@ async function requestGraph(path, token, params = {}) {
 
     const wait = retryDelay(data.error, attempt);
     if (wait === null) {
-      throw new Error(`Meta API error pada /${path}: ${describeGraphError(data.error, res.status)}`);
+      throw new Error(
+        `Meta API error pada /${path}: ${describeGraphError(data.error, res.status)}`,
+      );
     }
     await sleep(wait);
   }
@@ -127,7 +129,9 @@ async function graphAll(path, token, params = {}) {
     });
 
     if (data.error) {
-      throw new Error(`Meta API pagination error pada /${path}: ${describeGraphError(data.error, 400)}`);
+      throw new Error(
+        `Meta API pagination error pada /${path}: ${describeGraphError(data.error, 400)}`,
+      );
     }
 
     rows.push(...(data.data || []));
@@ -167,7 +171,8 @@ export async function fetchAccountOverview(actId, token) {
     spendCap,
     amountSpent,
     balance: toMajor(acc.balance),
-    remainingBudget: spendCap > 0 ? Math.max(0, Math.round((spendCap - amountSpent) * 100) / 100) : 0,
+    remainingBudget:
+      spendCap > 0 ? Math.max(0, Math.round((spendCap - amountSpent) * 100) / 100) : 0,
   };
 }
 

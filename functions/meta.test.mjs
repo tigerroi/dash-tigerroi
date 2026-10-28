@@ -35,13 +35,14 @@ globalThis.fetch = async (url) => {
   }
   return {
     ok: true,
-    text: async () => JSON.stringify({
-      balance: "5000",
-      amount_spent: "75157200",
-      spend_cap: "107500000",
-      currency: "IDR",
-      account_status: 1,
-    }),
+    text: async () =>
+      JSON.stringify({
+        balance: "5000",
+        amount_spent: "75157200",
+        spend_cap: "107500000",
+        currency: "IDR",
+        account_status: 1,
+      }),
   };
 };
 
@@ -60,7 +61,10 @@ assert.equal(r.currency, "IDR");
 globalThis.fetch = async (url) =>
   String(url).includes("/insights")
     ? { ok: true, text: async () => JSON.stringify({ data: [] }) }
-    : { ok: true, text: async () => JSON.stringify({ balance: "0", amount_spent: "12300", spend_cap: "0" }) };
+    : {
+        ok: true,
+        text: async () => JSON.stringify({ balance: "0", amount_spent: "12300", spend_cap: "0" }),
+      };
 const uncapped = await fetchAccount("act_9", "tok");
 assert.equal(uncapped.remaining, "", "tanpa spend_cap tidak ada sisa saldo, bukan angka minus");
 
@@ -77,9 +81,10 @@ assert.equal(z.amountDue, 0);
 // block, and the dashboard can only tell them apart if the numbers survive the trip.
 globalThis.fetch = async () => ({
   ok: false,
-  text: async () => JSON.stringify({
-    error: { message: "API access blocked.", type: "OAuthException", code: 200 },
-  }),
+  text: async () =>
+    JSON.stringify({
+      error: { message: "API access blocked.", type: "OAuthException", code: 200 },
+    }),
 });
 await assert.rejects(
   () => fetchAccount("123456", "tok"),
@@ -89,14 +94,15 @@ await assert.rejects(
 
 globalThis.fetch = async () => ({
   ok: false,
-  text: async () => JSON.stringify({
-    error: {
-      message: "Unsupported get request.",
-      code: 100,
-      error_subcode: 33,
-      error_user_msg: "Object does not exist or you lack permission to view it.",
-    },
-  }),
+  text: async () =>
+    JSON.stringify({
+      error: {
+        message: "Unsupported get request.",
+        code: 100,
+        error_subcode: 33,
+        error_user_msg: "Object does not exist or you lack permission to view it.",
+      },
+    }),
 });
 await assert.rejects(
   () => fetchAccount("123456", "tok"),
@@ -120,7 +126,11 @@ const htmlError = await fetchAccount("123456", "tok").then(
   () => null,
   (error) => error.message,
 );
-assert.match(htmlError, /non-JSON \(HTTP 502\)/, "pesan menyebut non-JSON + status, bukan error JS mentah");
+assert.match(
+  htmlError,
+  /non-JSON \(HTTP 502\)/,
+  "pesan menyebut non-JSON + status, bukan error JS mentah",
+);
 assert.doesNotMatch(htmlError, /Unexpected token/, "bukan lagi 'Unexpected token'");
 
 console.log("meta non-JSON response test ok");
@@ -134,7 +144,11 @@ assert.equal(
   6,
   "lead menang atas link_click",
 );
-assert.equal(resultsFromActions([{ action_type: "post_engagement", value: "9" }]), 0, "bukan hasil");
+assert.equal(
+  resultsFromActions([{ action_type: "post_engagement", value: "9" }]),
+  0,
+  "bukan hasil",
+);
 assert.equal(resultsFromActions(undefined), 0, "campaign tanpa actions sama sekali");
 
 // --- "Hasil" mengikuti tujuan optimasi ad set, bukan daftar prioritas tetap --------------------
@@ -162,7 +176,10 @@ const contentView = resultActionTypes({
 });
 assert.equal(contentView[0], "offsite_conversion.fb_pixel_view_content");
 assert.equal(resultsFromActions(turkiActions, contentView), 2449, "ViewContent, bukan klik tautan");
-assert.equal(resultActionUsed(turkiActions, contentView), "offsite_conversion.fb_pixel_view_content");
+assert.equal(
+  resultActionUsed(turkiActions, contentView),
+  "offsite_conversion.fb_pixel_view_content",
+);
 assert.equal(
   costPerResultFrom(turkiCosts, contentView),
   39.007758,
@@ -174,11 +191,18 @@ assert.equal(
   "nama persisnya memang tidak ada di cost_per_action_type",
 );
 // Tanpa peta tujuan, perilaku lamanya tetap: daftar cadangan, yang di sini mendarat di link_click.
-assert.equal(resultsFromActions(turkiActions), 4908, "cadangan untuk campaign yang tujuannya gelap");
+assert.equal(
+  resultsFromActions(turkiActions),
+  4908,
+  "cadangan untuk campaign yang tujuannya gelap",
+);
 
 // Tujuan tanpa custom_event_type dipetakan dari optimization_goal-nya sendiri.
 assert.deepEqual(resultActionTypes({ optimization_goal: "LINK_CLICKS" }), ["link_click"]);
-assert.equal(resultActionTypes({ optimization_goal: "LANDING_PAGE_VIEWS" })[0], "landing_page_view");
+assert.equal(
+  resultActionTypes({ optimization_goal: "LANDING_PAGE_VIEWS" })[0],
+  "landing_page_view",
+);
 // REACH/IMPRESSIONS tidak punya baris di `actions` — kosong, supaya pemanggilnya jatuh ke cadangan
 // alih-alih mengarang angka dari event lain.
 assert.deepEqual(resultActionTypes({ optimization_goal: "REACH" }), []);
@@ -246,27 +270,32 @@ globalThis.fetch = async (url) => {
   assert.match(String(url), /optimization_goal/);
   return {
     ok: true,
-    text: async () => JSON.stringify({
-      data: [
-        {
-          campaign_id: "1",
-          optimization_goal: "OFFSITE_CONVERSIONS",
-          promoted_object: { custom_event_type: "CONTENT_VIEW" },
-        },
-        {
-          campaign_id: "1",
-          optimization_goal: "OFFSITE_CONVERSIONS",
-          promoted_object: { custom_event_type: "CONTENT_VIEW" },
-        },
-        { campaign_id: "1", optimization_goal: "LINK_CLICKS" },
-        { campaign_id: "2", optimization_goal: "LANDING_PAGE_VIEWS" },
-        { campaign_id: "3", optimization_goal: "REACH" },
-      ],
-    }),
+    text: async () =>
+      JSON.stringify({
+        data: [
+          {
+            campaign_id: "1",
+            optimization_goal: "OFFSITE_CONVERSIONS",
+            promoted_object: { custom_event_type: "CONTENT_VIEW" },
+          },
+          {
+            campaign_id: "1",
+            optimization_goal: "OFFSITE_CONVERSIONS",
+            promoted_object: { custom_event_type: "CONTENT_VIEW" },
+          },
+          { campaign_id: "1", optimization_goal: "LINK_CLICKS" },
+          { campaign_id: "2", optimization_goal: "LANDING_PAGE_VIEWS" },
+          { campaign_id: "3", optimization_goal: "REACH" },
+        ],
+      }),
   };
 };
 const goals = await fetchCampaignResultGoals("act_1", "tok");
-assert.equal(goals.get("1")[0], "offsite_conversion.fb_pixel_view_content", "dua ad set lawan satu");
+assert.equal(
+  goals.get("1")[0],
+  "offsite_conversion.fb_pixel_view_content",
+  "dua ad set lawan satu",
+);
 assert.equal(goals.get("2")[0], "landing_page_view");
 assert.equal(goals.has("3"), false, "tujuan tanpa action tidak masuk peta");
 
@@ -279,17 +308,18 @@ globalThis.fetch = async (url) => {
   );
   return {
     ok: true,
-    text: async () => JSON.stringify({
-      data: [
-        {
-          campaign_id: "120210",
-          campaign_name: "A",
-          spend: "45.5",
-          actions: [{ action_type: "lead", value: "2" }],
-        },
-        { campaign_name: "B", spend: "10" },
-      ],
-    }),
+    text: async () =>
+      JSON.stringify({
+        data: [
+          {
+            campaign_id: "120210",
+            campaign_name: "A",
+            spend: "45.5",
+            actions: [{ action_type: "lead", value: "2" }],
+          },
+          { campaign_name: "B", spend: "10" },
+        ],
+      }),
   };
 };
 const campaigns = await fetchCampaignSpend("act_1", "tok");
@@ -319,19 +349,36 @@ globalThis.fetch = async (url) => {
   assert.doesNotMatch(text, /date_preset/, "date_preset hanya untuk panel hari ini");
   return {
     ok: true,
-    text: async () => JSON.stringify({
-      data: [
-        { date_start: "2026-08-10", campaign_name: "A", spend: "30" },
-        { date_start: "2026-08-11", campaign_name: "A", spend: "12" },
-      ],
-    }),
+    text: async () =>
+      JSON.stringify({
+        data: [
+          { date_start: "2026-08-10", campaign_name: "A", spend: "30" },
+          { date_start: "2026-08-11", campaign_name: "A", spend: "12" },
+        ],
+      }),
   };
 };
 assert.deepEqual(
   await fetchCampaignSpend("act_1", "tok", { since: "2026-08-10", until: "2026-08-11" }),
   [
-    { date: "2026-08-10", id: "", name: "A", spend: 30, results: 0, resultType: "", costPerResult: null },
-    { date: "2026-08-11", id: "", name: "A", spend: 12, results: 0, resultType: "", costPerResult: null },
+    {
+      date: "2026-08-10",
+      id: "",
+      name: "A",
+      spend: 30,
+      results: 0,
+      resultType: "",
+      costPerResult: null,
+    },
+    {
+      date: "2026-08-11",
+      id: "",
+      name: "A",
+      spend: 12,
+      results: 0,
+      resultType: "",
+      costPerResult: null,
+    },
   ],
   "satu baris per hari, bukan satu total rentang",
 );
@@ -346,14 +393,17 @@ globalThis.fetch = async (url) => {
   const first = !String(url).includes("after=kursor");
   return {
     ok: true,
-    text: async () => JSON.stringify({
-      data: first
-        ? [{ date_start: "2026-08-10", campaign_name: "A", spend: "30" }]
-        : [{ date_start: "2026-08-11", campaign_name: "B", spend: "12" }],
-      paging: first
-        ? { next: "https://graph.facebook.com/v21.0/act_1/insights?after=kursor&access_token=tok" }
-        : {},
-    }),
+    text: async () =>
+      JSON.stringify({
+        data: first
+          ? [{ date_start: "2026-08-10", campaign_name: "A", spend: "30" }]
+          : [{ date_start: "2026-08-11", campaign_name: "B", spend: "12" }],
+        paging: first
+          ? {
+              next: "https://graph.facebook.com/v21.0/act_1/insights?after=kursor&access_token=tok",
+            }
+          : {},
+      }),
   };
 };
 const berhalaman = await fetchCampaignSpend("act_1", "tok", {
@@ -383,19 +433,20 @@ globalThis.fetch = async (url) => {
   );
   return {
     ok: true,
-    text: async () => JSON.stringify({
-      data: [
-        {
-          id: "120210",
-          name: "A",
-          status: "ACTIVE",
-          effective_status: "PENDING_REVIEW",
-          start_time: "2026-09-10T00:00:00+0700",
-          daily_budget: "5000000",
-        },
-        { id: "120211", name: "B", status: "PAUSED", effective_status: "PAUSED" },
-      ],
-    }),
+    text: async () =>
+      JSON.stringify({
+        data: [
+          {
+            id: "120210",
+            name: "A",
+            status: "ACTIVE",
+            effective_status: "PENDING_REVIEW",
+            start_time: "2026-09-10T00:00:00+0700",
+            daily_budget: "5000000",
+          },
+          { id: "120211", name: "B", status: "PAUSED", effective_status: "PAUSED" },
+        ],
+      }),
   };
 };
 assert.deepEqual(await fetchCampaignSettings("act_1", "tok"), [
@@ -427,14 +478,15 @@ console.log("meta campaign settings tests ok");
 // tersimpan justru karena token yang sama baru saja membacanya — yang kurang adalah ads_management.
 globalThis.fetch = async () => ({
   ok: false,
-  text: async () => JSON.stringify({
-    error: {
-      message:
-        "Unsupported post request. Object with ID '120251003975450007' does not exist, cannot be loaded due to missing permissions, or does not support this operation. Please read the Graph API documentation at https://developers.facebook.com/docs/graph-api",
-      code: 100,
-      error_subcode: 33,
-    },
-  }),
+  text: async () =>
+    JSON.stringify({
+      error: {
+        message:
+          "Unsupported post request. Object with ID '120251003975450007' does not exist, cannot be loaded due to missing permissions, or does not support this operation. Please read the Graph API documentation at https://developers.facebook.com/docs/graph-api",
+        code: 100,
+        error_subcode: 33,
+      },
+    }),
 });
 const writeError = await setCampaignStatus("120251003975450007", "tok", "PAUSED").then(
   () => null,
@@ -461,22 +513,23 @@ globalThis.fetch = async (url) => {
   assert.match(String(url), /effective_status/, "effective_status ikut diminta");
   return {
     ok: true,
-    text: async () => JSON.stringify({
-      data: [
-        {
-          id: "120249777765560789",
-          name: "MECIL Adset 4",
-          status: "ACTIVE",
-          effective_status: "CAMPAIGN_PAUSED",
-          start_time: "2026-09-05T00:05:00+0700",
-          optimization_goal: "OFFSITE_CONVERSIONS",
-          billing_event: "IMPRESSIONS",
-          promoted_object: { pixel_id: "149", custom_event_type: "CONTENT_VIEW" },
-          targeting: { age_min: 18, age_max: 65, geo_locations: { countries: ["mx", "cl"] } },
-        },
-        { id: "2", name: "ABO", status: "PAUSED", daily_budget: "10000" },
-      ],
-    }),
+    text: async () =>
+      JSON.stringify({
+        data: [
+          {
+            id: "120249777765560789",
+            name: "MECIL Adset 4",
+            status: "ACTIVE",
+            effective_status: "CAMPAIGN_PAUSED",
+            start_time: "2026-09-05T00:05:00+0700",
+            optimization_goal: "OFFSITE_CONVERSIONS",
+            billing_event: "IMPRESSIONS",
+            promoted_object: { pixel_id: "149", custom_event_type: "CONTENT_VIEW" },
+            targeting: { age_min: 18, age_max: 65, geo_locations: { countries: ["mx", "cl"] } },
+          },
+          { id: "2", name: "ABO", status: "PAUSED", daily_budget: "10000" },
+        ],
+      }),
   };
 };
 const adSets = await fetchAdSets("120249777765470789", "tok");
@@ -501,24 +554,25 @@ globalThis.fetch = async (url) => {
   assert.match(u, /ctr%2Ccpc%2Ccpm/, "CTR/CPC/CPM diminta, bukan dihitung sendiri");
   return {
     ok: true,
-    text: async () => JSON.stringify({
-      data: [
-        {
-          adset_id: "120249777765560789",
-          spend: "69419",
-          impressions: "7057",
-          clicks: "4708",
-          ctr: "66.713901",
-          cpc: "14.744902",
-          actions: [
-            { action_type: "link_click", value: "4708" },
-            { action_type: "offsite_conversion.fb_pixel_view_content", value: "2" },
-          ],
-          cost_per_action_type: [{ action_type: "omni_view_content", value: "34709.5" }],
-        },
-        { adset_id: "2", spend: "0" },
-      ],
-    }),
+    text: async () =>
+      JSON.stringify({
+        data: [
+          {
+            adset_id: "120249777765560789",
+            spend: "69419",
+            impressions: "7057",
+            clicks: "4708",
+            ctr: "66.713901",
+            cpc: "14.744902",
+            actions: [
+              { action_type: "link_click", value: "4708" },
+              { action_type: "offsite_conversion.fb_pixel_view_content", value: "2" },
+            ],
+            cost_per_action_type: [{ action_type: "omni_view_content", value: "34709.5" }],
+          },
+          { adset_id: "2", spend: "0" },
+        ],
+      }),
   };
 };
 const adSetGoalMap = new Map([
@@ -551,19 +605,20 @@ globalThis.fetch = async (url) => {
   assert.match(u, /creative%7Bid%2Cobject_story_spec%7Bpage_id%7D%7D/, "creative + page_id ikut");
   return {
     ok: true,
-    text: async () => JSON.stringify({
-      data: [
-        {
-          id: "a1",
-          name: "Iklan 1",
-          adset_id: "s1",
-          status: "ACTIVE",
-          effective_status: "ACTIVE",
-          creative: { id: "cr1", object_story_spec: { page_id: "105" } },
-        },
-        { id: "a2", adset_id: "s2", status: "ACTIVE", effective_status: "DISAPPROVED" },
-      ],
-    }),
+    text: async () =>
+      JSON.stringify({
+        data: [
+          {
+            id: "a1",
+            name: "Iklan 1",
+            adset_id: "s1",
+            status: "ACTIVE",
+            effective_status: "ACTIVE",
+            creative: { id: "cr1", object_story_spec: { page_id: "105" } },
+          },
+          { id: "a2", adset_id: "s2", status: "ACTIVE", effective_status: "DISAPPROVED" },
+        ],
+      }),
   };
 };
 assert.deepEqual(await fetchCampaignAds("120257050704180339", "tok"), [
@@ -614,9 +669,10 @@ await assert.rejects(() => setAdSetStatus("", "tok", "PAUSED"), /kosong/);
 // Izin yang kurang berbunyi seperti "ID-nya tidak ada"; sebab yang benar disebutkan.
 globalThis.fetch = async () => ({
   ok: false,
-  text: async () => JSON.stringify({
-    error: { message: "Unsupported post request. (#100)", code: 100, error_subcode: 33 },
-  }),
+  text: async () =>
+    JSON.stringify({
+      error: { message: "Unsupported post request. (#100)", code: 100, error_subcode: 33 },
+    }),
 });
 const adSetWriteError = await setAdSetStatus("1", "tok", "PAUSED").then(
   () => null,
@@ -643,11 +699,20 @@ let shellUrl;
 globalThis.fetch = async (url, options) => {
   shellUrl = new URL(String(url));
   assert.equal(options?.method, "POST");
-  return { ok: true, text: async () => JSON.stringify({ copied_campaign_id: "900", ad_object_ids: [] }) };
+  return {
+    ok: true,
+    text: async () => JSON.stringify({ copied_campaign_id: "900", ad_object_ids: [] }),
+  };
 };
-assert.deepEqual(await copyCampaignShell("120210", "tok", { suffix: " (salinan j1-1)" }), { campaignId: "900" });
+assert.deepEqual(await copyCampaignShell("120210", "tok", { suffix: " (salinan j1-1)" }), {
+  campaignId: "900",
+});
 assert.match(shellUrl.pathname, /\/120210\/copies$/);
-assert.equal(shellUrl.searchParams.get("deep_copy"), "false", "isinya disalin per ad set, bukan di sini");
+assert.equal(
+  shellUrl.searchParams.get("deep_copy"),
+  "false",
+  "isinya disalin per ad set, bukan di sini",
+);
 assert.equal(shellUrl.searchParams.get("status_option"), "PAUSED", "salinan selalu lahir mati");
 // Tidak pernah lahir dengan nama persis sumbernya: sync melebur campaign bernama sama jadi satu baris.
 assert.deepEqual(JSON.parse(shellUrl.searchParams.get("rename_options")), {
@@ -655,10 +720,17 @@ assert.deepEqual(JSON.parse(shellUrl.searchParams.get("rename_options")), {
   rename_suffix: " (salinan j1-1)",
 });
 await copyCampaignShell("120210", "tok");
-assert.equal(JSON.parse(shellUrl.searchParams.get("rename_options")).rename_suffix, " (salinan)", "tanpa akhiran pun tetap tidak kembar");
+assert.equal(
+  JSON.parse(shellUrl.searchParams.get("rename_options")).rename_suffix,
+  " (salinan)",
+  "tanpa akhiran pun tetap tidak kembar",
+);
 
 globalThis.fetch = async () => ({ ok: true, text: async () => JSON.stringify({}) });
-await assert.rejects(() => copyCampaignShell("120210", "tok"), /tidak mengembalikan ID campaign salinan/);
+await assert.rejects(
+  () => copyCampaignShell("120210", "tok"),
+  /tidak mengembalikan ID campaign salinan/,
+);
 await assert.rejects(() => copyCampaignShell("", "tok"), /kosong/);
 
 let adSetUrlCopy;
@@ -666,16 +738,20 @@ globalThis.fetch = async (url) => {
   adSetUrlCopy = new URL(String(url));
   return {
     ok: true,
-    text: async () => JSON.stringify({
-      copied_adset_id: "901",
-      ad_object_ids: [
-        { ad_object_type: "ad_set", source_id: "555", copied_id: "901" },
-        { ad_object_type: "ad", source_id: "777", copied_id: "902" },
-      ],
-    }),
+    text: async () =>
+      JSON.stringify({
+        copied_adset_id: "901",
+        ad_object_ids: [
+          { ad_object_type: "ad_set", source_id: "555", copied_id: "901" },
+          { ad_object_type: "ad", source_id: "777", copied_id: "902" },
+        ],
+      }),
   };
 };
-assert.deepEqual(await copyAdSetInto("555", "tok", { campaignId: "900" }), { adSetId: "901", adIds: ["902"] });
+assert.deepEqual(await copyAdSetInto("555", "tok", { campaignId: "900" }), {
+  adSetId: "901",
+  adIds: ["902"],
+});
 assert.match(adSetUrlCopy.pathname, /\/555\/copies$/);
 assert.equal(adSetUrlCopy.searchParams.get("campaign_id"), "900");
 assert.equal(adSetUrlCopy.searchParams.get("deep_copy"), "true");
@@ -688,22 +764,41 @@ assert.equal(
 // Deep copy MELEWATKAN iklan tanpa error kalau izin Halaman kurang — `adIds` kosong, bukan dikarang.
 globalThis.fetch = async () => ({
   ok: true,
-  text: async () => JSON.stringify({ copied_adset_id: "903", ad_object_ids: [{ ad_object_type: "ad_set", copied_id: "903" }] }),
+  text: async () =>
+    JSON.stringify({
+      copied_adset_id: "903",
+      ad_object_ids: [{ ad_object_type: "ad_set", copied_id: "903" }],
+    }),
 });
-assert.deepEqual(await copyAdSetInto("555", "tok", { campaignId: "900" }), { adSetId: "903", adIds: [] });
-await assert.rejects(() => copyAdSetInto("555", "tok", { campaignId: "" }), /campaign tujuan kosong/);
+assert.deepEqual(await copyAdSetInto("555", "tok", { campaignId: "900" }), {
+  adSetId: "903",
+  adIds: [],
+});
+await assert.rejects(
+  () => copyAdSetInto("555", "tok", { campaignId: "" }),
+  /campaign tujuan kosong/,
+);
 await assert.rejects(() => copyAdSetInto("", "tok", { campaignId: "900" }), /kosong/);
 
 console.log("meta staged copy tests ok");
 
 // --- Form edit ---------------------------------------------------------------------------
 globalThis.fetch = async (url) => {
-  assert.match(String(url), /fields=id%2Cname%2Cstatus%2Cdaily_budget%2Clifetime_budget%2Caccount_id/);
+  assert.match(
+    String(url),
+    /fields=id%2Cname%2Cstatus%2Cdaily_budget%2Clifetime_budget%2Caccount_id/,
+  );
   return {
     ok: true,
-    text: async () => JSON.stringify({
-      id: "120210", name: "TvH1-06", status: "ACTIVE", daily_budget: "5000000", lifetime_budget: "0", account_id: "123",
-    }),
+    text: async () =>
+      JSON.stringify({
+        id: "120210",
+        name: "TvH1-06",
+        status: "ACTIVE",
+        daily_budget: "5000000",
+        lifetime_budget: "0",
+        account_id: "123",
+      }),
   };
 };
 assert.deepEqual(await fetchCampaignForEdit("120210", "tok"), {
@@ -721,7 +816,9 @@ globalThis.fetch = async (url, options) => {
   editCall = `${options?.method || "GET"} ${url}`;
   return { ok: true, text: async () => JSON.stringify({ success: true }) };
 };
-assert.deepEqual(await updateCampaign("120210", "tok", { name: "TvH1-07", dailyBudget: 75000 }), { id: "120210" });
+assert.deepEqual(await updateCampaign("120210", "tok", { name: "TvH1-07", dailyBudget: 75000 }), {
+  id: "120210",
+});
 assert.match(editCall, /^POST .*\/120210\?/);
 assert.match(editCall, /name=TvH1-07/);
 assert.match(editCall, /daily_budget=7500000/, "satuan utuh dikali META_MINOR_UNIT");
@@ -729,23 +826,38 @@ await assert.rejects(() => updateCampaign("120210", "tok", {}), /Tidak ada yang 
 
 globalThis.fetch = async () => ({
   ok: true,
-  text: async () => JSON.stringify({
-    id: "555", name: "Adset 1", campaign_id: "120210", status: "ACTIVE", daily_budget: "10000",
-    targeting: { age_min: 18, geo_locations: { countries: ["TR"] }, flexible_spec: [{ interests: [{ id: "1" }] }] },
-  }),
+  text: async () =>
+    JSON.stringify({
+      id: "555",
+      name: "Adset 1",
+      campaign_id: "120210",
+      status: "ACTIVE",
+      daily_budget: "10000",
+      targeting: {
+        age_min: 18,
+        geo_locations: { countries: ["TR"] },
+        flexible_spec: [{ interests: [{ id: "1" }] }],
+      },
+    }),
 });
 const editAdSet = await fetchAdSetForEdit("555", "tok");
 assert.equal(editAdSet.campaignId, "120210");
 assert.equal(editAdSet.dailyBudget, 100);
 assert.equal(editAdSet.lifetimeBudget, null);
-assert.deepEqual(editAdSet.targeting.flexible_spec, [{ interests: [{ id: "1" }] }], "targeting utuh, bukan sepotong");
+assert.deepEqual(
+  editAdSet.targeting.flexible_spec,
+  [{ interests: [{ id: "1" }] }],
+  "targeting utuh, bukan sepotong",
+);
 
 let adSetUrl;
 globalThis.fetch = async (url) => {
   adSetUrl = new URL(String(url));
   return { ok: true, text: async () => JSON.stringify({ success: true }) };
 };
-await updateAdSet("555", "tok", { targeting: { geo_locations: { countries: ["MX"] }, age_min: 21 } });
+await updateAdSet("555", "tok", {
+  targeting: { geo_locations: { countries: ["MX"] }, age_min: 21 },
+});
 assert.deepEqual(JSON.parse(adSetUrl.searchParams.get("targeting")), {
   geo_locations: { countries: ["MX"] },
   age_min: 21,

@@ -1,6 +1,6 @@
-import { readFileSync, existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { getGoogleServiceAccountToken, getGamNetwork, fetchGamDailyRevenue } from "./gam-client.js";
+import { fetchGamDailyRevenue, getGamNetwork, getGoogleServiceAccountToken } from "./gam-client.js";
 
 /**
  * Skrip Uji Coba Read-Only Google Ad Manager API
@@ -73,7 +73,9 @@ async function main() {
     let totalAdx = 0;
     let totalAdSense = 0;
     for (const r of rows.slice(0, 5)) {
-      console.log(`   - [${r.date}] ${r.adUnitName}: AdX = ${networkInfo.currencyCode} ${r.adxRevenue} | AdSense = ${networkInfo.currencyCode} ${r.adsenseRevenue} | Impresi: ${r.impressions}`);
+      console.log(
+        `   - [${r.date}] ${r.adUnitName}: AdX = ${networkInfo.currencyCode} ${r.adxRevenue} | AdSense = ${networkInfo.currencyCode} ${r.adsenseRevenue} | Impresi: ${r.impressions}`,
+      );
       totalAdx += r.adxRevenue;
       totalAdSense += r.adsenseRevenue;
     }

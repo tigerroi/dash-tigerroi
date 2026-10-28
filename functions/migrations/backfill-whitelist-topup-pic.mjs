@@ -39,9 +39,7 @@ for (const row of Object.values(accounts)) {
 }
 
 const topups = (await get(ref(db, "whitelistTopup"))).val() || {};
-const pending = Object.entries(topups).filter(
-  ([, row]) => row && !String(row.pic ?? "").trim(),
-);
+const pending = Object.entries(topups).filter(([, row]) => row && !String(row.pic ?? "").trim());
 
 const filled = [];
 const skipped = [];

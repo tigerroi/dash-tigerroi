@@ -1,5 +1,5 @@
-import { createRemoteJWKSet, jwtVerify } from "jose";
 import { createClient } from "@supabase/supabase-js";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 import { isAdmin, isSuperAdmin, roleOf } from "../functions/roles.mjs";
 
 /**
@@ -16,9 +16,7 @@ const JWK_URL =
   process.env.SUPABASE_JWK_URL ||
   (SUPABASE_URL ? `${SUPABASE_URL}/auth/v1/.well-known/jwks.json` : "");
 
-const ISSUER =
-  process.env.SUPABASE_JWT_ISSUER ||
-  (SUPABASE_URL ? `${SUPABASE_URL}/auth/v1` : "");
+const ISSUER = process.env.SUPABASE_JWT_ISSUER || (SUPABASE_URL ? `${SUPABASE_URL}/auth/v1` : "");
 
 // Remote JWKS set yang di-cache otomatis oleh jose
 let jwks = null;
@@ -89,7 +87,10 @@ export async function verifyIdToken(token) {
 
   // 2. Fallback: Verifikasi langsung via Supabase Auth API
   if (supabaseAdmin) {
-    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    const {
+      data: { user },
+      error,
+    } = await supabaseAdmin.auth.getUser(token);
     if (error || !user) {
       throw new AuthError(error?.message || "Token tidak sah.");
     }
@@ -139,8 +140,12 @@ export async function requireUser(db, token) {
  */
 export function mayToggleCampaign(actor, user) {
   if (isAdmin(actor?.role)) return true;
-  const owner = String(user?.email || "").trim().toLowerCase();
-  const viewer = String(actor?.email || "").trim().toLowerCase();
+  const owner = String(user?.email || "")
+    .trim()
+    .toLowerCase();
+  const viewer = String(actor?.email || "")
+    .trim()
+    .toLowerCase();
   return Boolean(owner) && owner === viewer;
 }
 

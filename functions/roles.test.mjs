@@ -145,7 +145,13 @@ for (const node of keuanganNodes) {
 // aturan .write tapi ditolak validasi ini tidak akan pernah bisa ditulis ke /roles — halaman Team
 // menyimpannya, database menolaknya, dan pesannya cuma "permission denied".
 const validate = new RegExp(rules.roles.$uid[".validate"].match(/\.matches\(\/(.*?)\/\)/)[1]);
-for (const role of ["superadmin", "admin", "superadmin,keuangan", "admin,user,advertiser", "guest"]) {
+for (const role of [
+  "superadmin",
+  "admin",
+  "superadmin,keuangan",
+  "admin,user,advertiser",
+  "guest",
+]) {
   assert.ok(validate.test(role), `role sah ditolak .validate: "${role}"`);
 }
 for (const role of ["adminx", "superadmin,", "owner"]) {

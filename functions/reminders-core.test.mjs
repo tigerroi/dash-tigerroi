@@ -96,7 +96,10 @@ test("tanggal di pesan memakai format dashboard, bukan ISO", () => {
 });
 
 test("judul yang diketik orang tidak boleh merusak HTML pesan", () => {
-  const text = reminderMessage([{ id: "x", title: "Bayar <b>2x</b> & sisa", dueDate: TODAY }], TODAY);
+  const text = reminderMessage(
+    [{ id: "x", title: "Bayar <b>2x</b> & sisa", dueDate: TODAY }],
+    TODAY,
+  );
   assert.match(text, /Bayar &lt;b&gt;2x&lt;\/b&gt; &amp; sisa/);
   assert.match(text, /15 Agu 2026 \(hari ini\)/);
 });

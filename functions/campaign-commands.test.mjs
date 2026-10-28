@@ -48,14 +48,31 @@ const users = {
     email: "a@x.id",
     campaigns: [{ campaignId: "120210", campaign: "nPJL-06", configuredStatus: "ACTIVE" }],
     campaignCommands: {
-      120210: { campaignId: "120210", desiredStatus: "PAUSED", state: "pending", requestedAt: "2026-08-12T03:00:00.000Z" },
-      120211: { campaignId: "120211", desiredStatus: "ACTIVE", state: "applied", requestedAt: "2026-08-12T02:00:00.000Z" },
-      120212: { campaignId: "120212", desiredStatus: "ARCHIVED", state: "pending", requestedAt: "2026-08-12T03:00:00.000Z" },
+      120210: {
+        campaignId: "120210",
+        desiredStatus: "PAUSED",
+        state: "pending",
+        requestedAt: "2026-08-12T03:00:00.000Z",
+      },
+      120211: {
+        campaignId: "120211",
+        desiredStatus: "ACTIVE",
+        state: "applied",
+        requestedAt: "2026-08-12T02:00:00.000Z",
+      },
+      120212: {
+        campaignId: "120212",
+        desiredStatus: "ARCHIVED",
+        state: "pending",
+        requestedAt: "2026-08-12T03:00:00.000Z",
+      },
     },
   },
   u2: {
     deletedAt: "2026-08-01T00:00:00.000Z",
-    campaignCommands: { 9: { desiredStatus: "PAUSED", state: "pending", requestedAt: "2026-08-12T03:00:00.000Z" } },
+    campaignCommands: {
+      9: { desiredStatus: "PAUSED", state: "pending", requestedAt: "2026-08-12T03:00:00.000Z" },
+    },
   },
 };
 const now = new Date("2026-08-12T03:05:00.000Z");
@@ -84,7 +101,10 @@ assert.deepEqual(okUpdate, {
 
 // Gagal: barisnya TIDAK disentuh. Campaign yang masih menyala di Meta tidak boleh tertulis mati.
 const failUpdate = campaignCommandUpdate(users.u1, pending[0], { ok: false, error: "boom" }, now);
-assert.deepEqual(Object.keys(failUpdate).filter((k) => k.startsWith("campaigns/")), []);
+assert.deepEqual(
+  Object.keys(failUpdate).filter((k) => k.startsWith("campaigns/")),
+  [],
+);
 assert.equal(failUpdate["campaignCommands/120210/state"], "failed");
 assert.equal(failUpdate["campaignCommands/120210/error"], "boom");
 
@@ -143,13 +163,25 @@ const seed = {
     u1: {
       campaigns: [{ campaignId: "1", campaign: "Satu", configuredStatus: "ACTIVE" }],
       campaignCommands: {
-        1: { campaignId: "1", campaign: "Satu", desiredStatus: "PAUSED", state: "pending", requestedAt: "2026-08-12T03:00:00.000Z" },
+        1: {
+          campaignId: "1",
+          campaign: "Satu",
+          desiredStatus: "PAUSED",
+          state: "pending",
+          requestedAt: "2026-08-12T03:00:00.000Z",
+        },
       },
     },
     u2: {
       campaigns: [{ campaignId: "2", campaign: "Dua", configuredStatus: "PAUSED" }],
       campaignCommands: {
-        2: { campaignId: "2", campaign: "Dua", desiredStatus: "ACTIVE", state: "pending", requestedAt: "2026-08-12T03:00:00.000Z" },
+        2: {
+          campaignId: "2",
+          campaign: "Dua",
+          desiredStatus: "ACTIVE",
+          state: "pending",
+          requestedAt: "2026-08-12T03:00:00.000Z",
+        },
       },
     },
   },
@@ -160,7 +192,11 @@ globalThis.fetch = async (url, init) => {
   const id = String(url).split("?")[0].split("/").pop();
   calls.push({ id, method: init?.method, status: new URL(String(url)).searchParams.get("status") });
   if (id === "1") {
-    return { ok: false, text: async () => JSON.stringify({ error: { message: "Izin ads_management kurang", code: 200 } }) };
+    return {
+      ok: false,
+      text: async () =>
+        JSON.stringify({ error: { message: "Izin ads_management kurang", code: 200 } }),
+    };
   }
   return { ok: true, text: async () => JSON.stringify({ success: true }) };
 };
@@ -203,7 +239,12 @@ const staleStore = fakeStore({
     u1: {
       campaigns: [{ campaignId: "1", campaign: "Satu", configuredStatus: "PAUSED" }],
       campaignCommands: {
-        1: { campaignId: "1", desiredStatus: "ACTIVE", state: "pending", requestedAt: "2026-08-11T03:00:00.000Z" },
+        1: {
+          campaignId: "1",
+          desiredStatus: "ACTIVE",
+          state: "pending",
+          requestedAt: "2026-08-11T03:00:00.000Z",
+        },
       },
     },
   },
@@ -221,7 +262,13 @@ const oneStore = fakeStore({
     u1: {
       campaigns: [{ campaignId: "2", campaign: "Dua", configuredStatus: "PAUSED" }],
       campaignCommands: {
-        2: { campaignId: "2", campaign: "Dua", desiredStatus: "ACTIVE", state: "pending", requestedAt: "2026-08-12T03:00:00.000Z" },
+        2: {
+          campaignId: "2",
+          campaign: "Dua",
+          desiredStatus: "ACTIVE",
+          state: "pending",
+          requestedAt: "2026-08-12T03:00:00.000Z",
+        },
       },
     },
   },

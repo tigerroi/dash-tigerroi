@@ -43,5 +43,7 @@ for (let i = 0; i < rows.length; i += CHUNK) {
   done += activityDb.insertRows(rows.slice(i, i + CHUNK));
 }
 
-console.log(`${done} baris disalin ke SQLite (${process.env.ACTIVITY_DB_PATH || "./activity.sqlite"}).`);
+console.log(
+  `${done} baris disalin ke SQLite (${process.env.ACTIVITY_DB_PATH || "./activity.sqlite"}).`,
+);
 process.exit(0);

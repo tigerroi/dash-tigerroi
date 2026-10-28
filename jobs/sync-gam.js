@@ -1,7 +1,7 @@
-import { createClient } from "@supabase/supabase-js";
-import { readFileSync, existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { getGoogleServiceAccountToken, fetchGamDailyRevenue } from "./gam-client.js";
+import { createClient } from "@supabase/supabase-js";
+import { fetchGamDailyRevenue, getGoogleServiceAccountToken } from "./gam-client.js";
 
 /**
  * Job Sinkronisasi Google Ad Manager (GAM) ke Supabase TigerROI
@@ -11,11 +11,7 @@ import { getGoogleServiceAccountToken, fetchGamDailyRevenue } from "./gam-client
 
 // Muat variabel environment (.env, server/.env jika ada)
 function loadEnv() {
-  const envCandidates = [
-    resolve(".env"),
-    resolve("server/.env"),
-    resolve("jobs/.env"),
-  ];
+  const envCandidates = [resolve(".env"), resolve("server/.env"), resolve("jobs/.env")];
 
   for (const envPath of envCandidates) {
     if (existsSync(envPath)) {
@@ -26,7 +22,10 @@ function loadEnv() {
         const eqIdx = trimmed.indexOf("=");
         if (eqIdx > 0) {
           const k = trimmed.slice(0, eqIdx).trim();
-          const v = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, "");
+          const v = trimmed
+            .slice(eqIdx + 1)
+            .trim()
+            .replace(/^["']|["']$/g, "");
           if (!process.env[k]) process.env[k] = v;
         }
       }
@@ -42,7 +41,6 @@ loadEnv();
 
 const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/+$/, "");
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-
 
 // Daftar 4 Network GAM beserta domain utamanya
 const GAM_NETWORKS = [
@@ -75,8 +73,8 @@ function getJakartaDate(daysAgo = 0) {
 
 // Mengambil kredensial Service Account dari env atau file lokal
 function loadServiceAccountCredentials() {
-  let clientEmail = process.env.GAM_CLIENT_EMAIL;
-  let privateKey = process.env.GAM_PRIVATE_KEY;
+  const clientEmail = process.env.GAM_CLIENT_EMAIL;
+  const privateKey = process.env.GAM_PRIVATE_KEY;
 
   if (clientEmail && privateKey) {
     return { clientEmail, privateKey };
@@ -110,13 +108,20 @@ function loadServiceAccountCredentials() {
 
 // Pencocokan baris GAM (siteName / URL / adUnitName) ke subdomain & site_code
 function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
-  const host = String(row.siteName || "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  const host = String(row.siteName || "")
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "");
   const unit = String(row.adUnitName || "").toLowerCase();
 
   // 1. Prioritas 1: Cocokkan host URL langsung ke 17 subdomain
   if (host) {
-    for (const sub of (subdomainsList || [])) {
-      const subHost = String(sub.name || "").toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+    for (const sub of subdomainsList || []) {
+      const subHost = String(sub.name || "")
+        .toLowerCase()
+        .replace(/^https?:\/\//, "")
+        .replace(/\/.*$/, "");
       if (host === subHost || host.endsWith(`.${subHost}`) || subHost.includes(host)) {
         return {
           siteCode: sub.site_code || defaultSiteCode,
@@ -127,7 +132,7 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
   }
 
   // 2. Prioritas 2: Cocokkan nama unit iklan ke sites
-  for (const s of (sitesList || [])) {
+  for (const s of sitesList || []) {
     if (!s.site_code) continue;
     if (unit.includes(s.site_code.toLowerCase())) {
       return {
@@ -148,7 +153,6 @@ async function sendTelegramAlert(message) {
   // Telegram ditunda sesuai instruksi (docs/deferred-features.md)
   console.warn(`[Alert] ${message}`);
 }
-
 
 export async function runSyncGam() {
   const startedAt = new Date().toISOString();
@@ -198,7 +202,9 @@ export async function runSyncGam() {
     const dateSince = getJakartaDate(daysBack);
     const dateRange = { startDate: dateSince, endDate: dateToday };
 
-    console.log(`Rentang Penarikan GAM: ${dateRange.startDate} s/d ${dateRange.endDate} (${daysBack} hari ke belakang)...`);
+    console.log(
+      `Rentang Penarikan GAM: ${dateRange.startDate} s/d ${dateRange.endDate} (${daysBack} hari ke belakang)...`,
+    );
 
     let totalSyncedRows = 0;
     const errors = [];
@@ -206,7 +212,9 @@ export async function runSyncGam() {
 
     // 5. Loop ke 4 Network GAM
     for (const net of GAM_NETWORKS) {
-      console.log(`\n--> Menarik Pendapatan GAM untuk ${net.domain} (Network: ${net.networkCode})...`);
+      console.log(
+        `\n--> Menarik Pendapatan GAM untuk ${net.domain} (Network: ${net.networkCode})...`,
+      );
 
       try {
         const rows = await fetchGamDailyRevenue(net.networkCode, accessToken, dateRange);
@@ -244,7 +252,9 @@ export async function runSyncGam() {
 
           // Catat breakdown per subdomain
           current.metadata.subdomains = current.metadata.subdomains || {};
-          current.metadata.subdomains[mapped.subdomainName] = current.metadata.subdomains[mapped.subdomainName] || {
+          current.metadata.subdomains[mapped.subdomainName] = current.metadata.subdomains[
+            mapped.subdomainName
+          ] || {
             revenue: 0,
             impressions: 0,
             clicks: 0,
@@ -311,7 +321,9 @@ export async function runSyncGam() {
         .eq("id", runId);
     }
 
-    console.log(`\n[${finishedAt}] Selesai. Status: ${status}, Baris Disinkronkan: ${totalSyncedRows}`);
+    console.log(
+      `\n[${finishedAt}] Selesai. Status: ${status}, Baris Disinkronkan: ${totalSyncedRows}`,
+    );
   } catch (fatalErr) {
     console.error("\n❌ Fatal error saat sinkronisasi GAM:", fatalErr.message);
 
@@ -333,10 +345,10 @@ export async function runSyncGam() {
 
 // Jalankan otomatis bila dipanggil langsung
 import { fileURLToPath } from "node:url";
+
 const isDirectRun =
   process.argv[1] &&
-  resolve(fileURLToPath(import.meta.url)).toLowerCase() ===
-    resolve(process.argv[1]).toLowerCase();
+  resolve(fileURLToPath(import.meta.url)).toLowerCase() === resolve(process.argv[1]).toLowerCase();
 
 if (isDirectRun) {
   runSyncGam();

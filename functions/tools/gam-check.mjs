@@ -1,6 +1,6 @@
 import { get, ref } from "firebase/database";
-import { connect } from "../db.mjs";
 import { listAccounts } from "../adsense.js";
+import { connect } from "../db.mjs";
 import { listAdUnits, listNetworks, listSites } from "../gam.js";
 import { accessTokenFrom } from "../oauth.mjs";
 
@@ -32,16 +32,22 @@ if (entries.length === 0) {
   process.exit(1);
 }
 
-console.log(`${entries.length} credential terdaftar. ${known.size} networkCode sudah ada di /adsense-accounts.\n`);
+console.log(
+  `${entries.length} credential terdaftar. ${known.size} networkCode sudah ada di /adsense-accounts.\n`,
+);
 
 let usable = 0;
 for (const cfg of entries) {
   const label = cfg.name || "(tanpa nama)";
   console.log(`── ${label}`);
   console.log(`   status tersimpan : ${cfg.status || "-"}`);
-  console.log(`   clientId         : ${cfg.clientId ? `${String(cfg.clientId).slice(0, 24)}…` : "KOSONG"}`);
+  console.log(
+    `   clientId         : ${cfg.clientId ? `${String(cfg.clientId).slice(0, 24)}…` : "KOSONG"}`,
+  );
   console.log(`   clientSecret     : ${cfg.clientSecret ? "terisi" : "KOSONG"}`);
-  console.log(`   refreshToken     : ${cfg.refreshToken ? "terisi" : "KOSONG — belum pernah consent"}`);
+  console.log(
+    `   refreshToken     : ${cfg.refreshToken ? "terisi" : "KOSONG — belum pernah consent"}`,
+  );
 
   if (!cfg.clientId || !cfg.clientSecret || !cfg.refreshToken) {
     console.log(`   → Jalankan: npm run authorize "${label}"\n`);
@@ -85,7 +91,11 @@ for (const cfg of entries) {
   } catch (e) {
     console.log(`   akun AdSense     : GAGAL — ${e.message}`);
     if (/insufficient|scope|permission/i.test(e.message)) {
-      console.log('   → Consent ulang supaya scope adsense.readonly ikut: npm run authorize -- "' + label + '"');
+      console.log(
+        '   → Consent ulang supaya scope adsense.readonly ikut: npm run authorize -- "' +
+          label +
+          '"',
+      );
     }
   }
 
@@ -107,9 +117,13 @@ for (const cfg of entries) {
   if (networks.length === 0) {
     if (adsenseSeen > 0) usable++;
     console.log("   network GAM      : 0");
-    console.log("   → Akun Google ini tidak punya akses GAM. Kalau memang hanya AdSense, itu wajar —");
-    console.log("     lihat baris \"akun AdSense\" di atas. Kalau seharusnya punya, cek di GAM:");
-    console.log("     Admin → Access & authorization → Users (daftarkan akunnya, role harus bisa baca report)");
+    console.log(
+      "   → Akun Google ini tidak punya akses GAM. Kalau memang hanya AdSense, itu wajar —",
+    );
+    console.log('     lihat baris "akun AdSense" di atas. Kalau seharusnya punya, cek di GAM:');
+    console.log(
+      "     Admin → Access & authorization → Users (daftarkan akunnya, role harus bisa baca report)",
+    );
     console.log("     Admin → Global settings → API access (harus ON)\n");
     continue;
   }
@@ -120,7 +134,9 @@ for (const cfg of entries) {
     const code = String(net.networkCode || "");
     const flag = known.has(code) ? "sudah ada" : "BARU";
     console.log(`     • ${net.displayName || code} (${code}) — ${flag}`);
-    console.log(`       propertyCode ${net.propertyCode || "-"} · mata uang ${net.currencyCode || "-"}`);
+    console.log(
+      `       propertyCode ${net.propertyCode || "-"} · mata uang ${net.currencyCode || "-"}`,
+    );
 
     // What "Impor dari Google" on /domains and /sub-domains would have to work with.
     const counts = [];

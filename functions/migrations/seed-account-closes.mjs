@@ -40,30 +40,54 @@ const ROWS = [
   ["2026-04", "Aca", ADX, "flash", 902_639, 383_459, 90_264, 5_476, 423_440, 42_344],
   ["2026-04", "Aca", ADX, "data", 2_401_074, 903_702, 240_107, 14_565, 1_242_699, 124_270],
   ["2026-04", "Nurjaman", ADSENSE, "firmware", 6_601_826, 1_518_302, 0, 30_475, 5_053_049, 757_957],
-  ["2026-04", "Nurjaman", ADX, "pro", 17_700_248, 4_154_919, 1_770_025, 107_374, 11_667_930, 1_750_190],
+  [
+    "2026-04",
+    "Nurjaman",
+    ADX,
+    "pro",
+    17_700_248,
+    4_154_919,
+    1_770_025,
+    107_374,
+    11_667_930,
+    1_750_190,
+  ],
   ["2026-04", "Nurjaman", ADX, "dev", 91_679, 31_648, 9_168, 556, 50_307, 7_546],
   ["2026-04", "Nurjaman", ADX, "flash", 5_036_731, 2_269_702, 503_673, 30_554, 2_232_802, 334_920],
   ["2026-05", "Aca", ADX, "data", 25_427_816, 7_007_796, 2_542_782, 156_935, 15_720_304, 1_572_030],
   ["2026-05", "Aca", ADX, "flash", 11_483_398, 3_452_333, 1_148_340, 70_873, 6_811_852, 681_185],
-  ["2026-05", "Nurjaman", ADX, "pro", 35_525_950, 8_705_977, 3_552_595, 219_258, 23_048_120, 3_457_218],
+  [
+    "2026-05",
+    "Nurjaman",
+    ADX,
+    "pro",
+    35_525_950,
+    8_705_977,
+    3_552_595,
+    219_258,
+    23_048_120,
+    3_457_218,
+  ],
   ["2026-05", "Nurjaman", ADX, "dev", 6_453_307, 1_915_996, 645_331, 39_828, 3_852_152, 577_823],
   ["2026-06", "Aca", ADSENSE, "tools", 878_924, 215_474, 0, 878_924, -215_474, -21_547],
   ["2026-06", "Aca", ADX, "data", 488_577, 172_025, 73_287, 0, 243_265, 24_327],
   ["2026-06", "Nurjaman", ADSENSE, "firmware", 565_175, 289_010, 0, 565_175, -289_010, -43_352],
   ["2026-06", "Nurjaman", ADSENSE, "usb", 156_187, 296_149, 0, 156_187, -296_149, -44_422],
   ["2026-06", "Nurjaman", ADX, "pro", 1_164_183, 896_927, 174_627, 0, 92_629, 13_894],
-].map(([month, pic, accountType, host, earning, totalSpending, company, ivt, netProfit, bonus]) => ({
-  month,
-  pic,
-  accountType,
-  subDomain: `${host}.xiaomidriversdownload.com`,
-  earning,
-  totalSpending,
-  company,
-  ivt,
-  netProfit,
-  bonus,
-}));
+].map(
+  ([month, pic, accountType, host, earning, totalSpending, company, ivt, netProfit, bonus]) => ({
+    month,
+    pic,
+    accountType,
+    subDomain: `${host}.xiaomidriversdownload.com`,
+    earning,
+    totalSpending,
+    company,
+    ivt,
+    netProfit,
+    bonus,
+  }),
+);
 
 const rupiah = (value) => `Rp ${Math.round(value).toLocaleString("id-ID")}`;
 const slug = (value) =>
@@ -166,7 +190,9 @@ for (const row of ROWS) {
 // 2c. Tarif bonus tiap advertiser.
 const bonusPercent = new Map();
 for (const row of Object.values((await get(ref(db, "users"))).val() || {})) {
-  const name = String(row?.name || "").trim().toLowerCase();
+  const name = String(row?.name || "")
+    .trim()
+    .toLowerCase();
   if (name) bonusPercent.set(name, Number(row?.bonusPercent) || null);
 }
 

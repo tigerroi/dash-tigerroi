@@ -7,8 +7,8 @@
 //   npm run meta:insights act_1234567890
 //   npm run meta:insights act_1234567890 yesterday
 
-import { resolve } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 const VERSION = process.env.META_API_VERSION || "v25.0";
 const BASE = `https://graph.facebook.com/${VERSION}`;
@@ -25,7 +25,10 @@ function loadEnvSync() {
     if (eqIdx !== -1) {
       const key = trimmed.slice(0, eqIdx).trim();
       let val = trimmed.slice(eqIdx + 1).trim();
-      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      if (
+        (val.startsWith('"') && val.endsWith('"')) ||
+        (val.startsWith("'") && val.endsWith("'"))
+      ) {
         val = val.slice(1, -1);
       }
       env[key] = val;
@@ -40,7 +43,7 @@ const token = process.env.META_ACCESS_TOKEN || fileEnv.META_ACCESS_TOKEN;
 if (!token) {
   console.error("❌ Token META_ACCESS_TOKEN belum diatur!");
   console.error("   Isi META_ACCESS_TOKEN di functions/.env.sync atau jalankan dengan:");
-  console.error("   $env:META_ACCESS_TOKEN=\"token_anda\"; npm run meta:insights");
+  console.error('   $env:META_ACCESS_TOKEN="token_anda"; npm run meta:insights');
   process.exit(1);
 }
 
@@ -102,9 +105,13 @@ async function main() {
         process.exit(1);
       }
       targetActId = `act_${accounts[0].account_id}`;
-      console.log(`ℹ️  Tidak ada ACT ID yang diberikan. Menggunakan akun pertama: ${accounts[0].name} (${targetActId})`);
+      console.log(
+        `ℹ️  Tidak ada ACT ID yang diberikan. Menggunakan akun pertama: ${accounts[0].name} (${targetActId})`,
+      );
       if (accounts.length > 1) {
-        console.log(`   (Tersedia ${accounts.length} akun lain. Anda bisa menentukan akun spesifik: npm run meta:insights act_XXXXXXXX)`);
+        console.log(
+          `   (Tersedia ${accounts.length} akun lain. Anda bisa menentukan akun spesifik: npm run meta:insights act_XXXXXXXX)`,
+        );
       }
     } catch (err) {
       console.error(`❌ Gagal mengambil daftar akun: ${err.message}`);
@@ -157,7 +164,9 @@ async function main() {
   console.log(`\n📊 RINGKASAN PERFORMA 1 HARI (${datePreset.toUpperCase()}):`);
   if (!accountInsights) {
     console.log(`   ⚠️  Tidak ada penayangan/spend pada periode "${datePreset}".`);
-    console.log(`      (Tips: coba jalankan dengan 'yesterday' jika hari ini belum ada iklan tayang:`);
+    console.log(
+      `      (Tips: coba jalankan dengan 'yesterday' jika hari ini belum ada iklan tayang:`,
+    );
     console.log(`       npm run meta:insights ${targetActId} yesterday)`);
   } else {
     const spend = Number(accountInsights.spend || 0);
@@ -177,7 +186,13 @@ async function main() {
     // Konversi / Actions
     if (accountInsights.actions && accountInsights.actions.length > 0) {
       console.log("\n🎯 HASIL TINDAKAN / EVENT KONVERSI:");
-      const primaryEvents = ["link_click", "landing_page_view", "onsite_conversion.post_save", "purchase", "lead"];
+      const primaryEvents = [
+        "link_click",
+        "landing_page_view",
+        "onsite_conversion.post_save",
+        "purchase",
+        "lead",
+      ];
       for (const act of accountInsights.actions) {
         const val = Number(act.value || 0).toLocaleString("id-ID");
         const highlight = primaryEvents.includes(act.action_type) ? "⭐ " : "   ";
@@ -206,8 +221,12 @@ async function main() {
       for (const c of campaigns) {
         const name = (c.campaign_name || c.campaign_id || "").slice(0, 38).padEnd(40);
         const sp = formatMoney(c.spend, currency).padEnd(15);
-        const imp = Number(c.impressions || 0).toLocaleString("id-ID").padEnd(10);
-        const clk = Number(c.clicks || 0).toLocaleString("id-ID").padEnd(8);
+        const imp = Number(c.impressions || 0)
+          .toLocaleString("id-ID")
+          .padEnd(10);
+        const clk = Number(c.clicks || 0)
+          .toLocaleString("id-ID")
+          .padEnd(8);
         const cpcStr = formatMoney(c.cpc, currency).padEnd(10);
         const ctrStr = `${Number(c.ctr || 0).toFixed(2)}%`;
         console.log(`   ${name} | ${sp} | ${imp} | ${clk} | ${cpcStr} | ${ctrStr}`);

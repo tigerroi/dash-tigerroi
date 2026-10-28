@@ -62,7 +62,9 @@ if (command === "--whoami") {
     isAdmin(role)
       ? "OK — akun ini boleh menulis dashboard/* dan settings/*."
       : "MASALAH — sync terjadwal akan ditolak saat menulis dashboard/*. Jadikan admin lewat\n" +
-          "  npm run role:set -- " + user.uid + " admin   (dijalankan oleh akun yang sudah admin)",
+          "  npm run role:set -- " +
+          user.uid +
+          " admin   (dijalankan oleh akun yang sudah admin)",
   );
   process.exit(isAdmin(role) ? 0 : 1);
 }
@@ -131,7 +133,9 @@ if (!uid || !role) {
 const wanted = role === "none" ? [] : parseRoles(role);
 const unknown = wanted.filter((r) => !ROLES.includes(r));
 if (role !== "none" && (wanted.length === 0 || unknown.length > 0)) {
-  console.error(`Role tidak dikenal: ${unknown.join(", ") || role}. Pilih ${LISTED_ROLES.join(" / ")} atau none.`);
+  console.error(
+    `Role tidak dikenal: ${unknown.join(", ") || role}. Pilih ${LISTED_ROLES.join(" / ")} atau none.`,
+  );
   console.error(`Boleh digabung dengan koma, mis. "admin,keuangan".`);
   process.exit(1);
 }

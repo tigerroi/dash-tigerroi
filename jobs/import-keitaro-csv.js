@@ -32,7 +32,10 @@ function loadEnv() {
         const eqIdx = trimmed.indexOf("=");
         if (eqIdx > 0) {
           const k = trimmed.slice(0, eqIdx).trim();
-          const v = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, "");
+          const v = trimmed
+            .slice(eqIdx + 1)
+            .trim()
+            .replace(/^["']|["']$/g, "");
           if (!process.env[k]) process.env[k] = v;
         }
       }
@@ -125,7 +128,9 @@ async function run() {
     console.error(`❌ Validasi CSV Gagal: ${result.error || "Tidak ada data yang valid"}`);
     if (result.errors?.length > 0) {
       console.log("\nDaftar Error:");
-      result.errors.forEach((e) => console.log(` - Baris ${e.rowNumber}: ${e.message}`));
+      result.errors.forEach((e) => {
+        console.log(` - Baris ${e.rowNumber}: ${e.message}`);
+      });
     }
     process.exit(1);
   }
@@ -137,8 +142,12 @@ async function run() {
   console.log(` - Baris Valid (Agregat): ${summary.validAggregatedRows}`);
   console.log(` - Baris Tidak Cocok    : ${summary.unmatchedRows}`);
   console.log(` - Total Klik           : ${summary.totalClicks.toLocaleString()}`);
-  console.log(` - Total Biaya (Spend)  : $${summary.totalSpend.toLocaleString("en-US", { minimumFractionDigits: 2 })}`);
-  console.log(` - Total Pendapatan     : $${summary.totalRevenue.toLocaleString("en-US", { minimumFractionDigits: 2 })}`);
+  console.log(
+    ` - Total Biaya (Spend)  : $${summary.totalSpend.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+  );
+  console.log(
+    ` - Total Pendapatan     : $${summary.totalRevenue.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+  );
 
   // Tabel Pratinjau
   console.log("\n📋 PRATINJAU DATA SIAP DI-UPSERT KE daily_stats (source = 'keitaro'):");
@@ -152,12 +161,14 @@ async function run() {
       Profit: `$${(row.revenue - row.spend).toFixed(2)}`,
       "ROI %": `${row.roi_percent}%`,
       "Jml Camp": row.campaign_count,
-    }))
+    })),
   );
 
   // Tampilkan peringatan jika ada baris tidak cocok
   if (result.unmatched.length > 0) {
-    console.log(`\n⚠️  PERINGATAN: ${result.unmatched.length} baris tidak dapat dicocokkan ke site_code:`);
+    console.log(
+      `\n⚠️  PERINGATAN: ${result.unmatched.length} baris tidak dapat dicocokkan ke site_code:`,
+    );
     result.unmatched.slice(0, 10).forEach((u) => {
       console.log(`   - Baris ${u.rowNumber}: ${u.candidates.join(" | ")}`);
     });
@@ -224,7 +235,7 @@ async function run() {
       `📊 Baris Disinkronkan: *${result.dailyStats.length}*\n` +
       `🖱️ Total Klik: *${summary.totalClicks.toLocaleString()}*\n` +
       `💰 Total Spend: *$${summary.totalSpend}*\n` +
-      `💵 Total Revenue: *$${summary.totalRevenue}*`
+      `💵 Total Revenue: *$${summary.totalRevenue}*`,
   );
 }
 

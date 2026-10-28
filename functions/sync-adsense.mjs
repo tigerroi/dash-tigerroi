@@ -3,8 +3,8 @@ import { get, push, ref, update } from "firebase/database";
 import { ADS_NOT_SERVING } from "./account-status.js";
 import { listAccounts } from "./adsense.js";
 import { connect } from "./db.mjs";
-import { loadUsdRates } from "./fx.mjs";
 import { preconditionError, summarizeNetworks } from "./discover-core.js";
+import { loadUsdRates } from "./fx.mjs";
 import { accessTokenFrom } from "./oauth.mjs";
 import { asStore } from "./store.mjs";
 import {
@@ -54,7 +54,10 @@ export async function syncAdsenseAccounts(db, only = []) {
   const results = await Promise.all(
     eligible.map(async ([id, account]) => {
       try {
-        await update(ref(db, `adsenseAccounts/${id}`), await earningUpdate(account, configs, { rates }));
+        await update(
+          ref(db, `adsenseAccounts/${id}`),
+          await earningUpdate(account, configs, { rates }),
+        );
         return { id, account };
       } catch (error) {
         return { id, account, error };

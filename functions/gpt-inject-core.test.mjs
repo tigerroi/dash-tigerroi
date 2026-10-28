@@ -82,22 +82,42 @@ assert.equal(tags.bodies[2], BODY_1.replaceAll("-0'", "-2'"));
 // --- Akun GAM & unit iklan (bentuk jawaban Ad Manager API v1, dibaca 14 Sep 2026) ---------------
 
 const GAM = {
-  a1: { name: "designingaround.com", networkCode: 23352267851, publisherId: "ca-pub-8660742543707970" },
+  a1: {
+    name: "designingaround.com",
+    networkCode: 23352267851,
+    publisherId: "ca-pub-8660742543707970",
+  },
   a2: { name: "petcins.com", networkCode: 23355628943 },
   a3: { name: "", networkCode: 23342108020 },
   a4: { name: "lama.com", networkCode: 1, deletedAt: "2026-01-01" },
 };
-assert.equal(gamAccountForSite({ name: "credit.designingaround.com", parentDomain: "designingaround.com" }, GAM).id, "a1");
+assert.equal(
+  gamAccountForSite(
+    { name: "credit.designingaround.com", parentDomain: "designingaround.com" },
+    GAM,
+  ).id,
+  "a1",
+);
 // Tanpa parentDomain: akhiran hostname, satu akun yang cocok.
 assert.equal(gamAccountForSite({ name: "care.petcins.com" }, GAM).id, "a2");
-assert.throws(() => gamAccountForSite({ name: "furniture.dekadeko.com", parentDomain: "dekadeko.com" }, GAM), PluginError);
+assert.throws(
+  () => gamAccountForSite({ name: "furniture.dekadeko.com", parentDomain: "dekadeko.com" }, GAM),
+  PluginError,
+);
 assert.throws(() => gamAccountForSite({ name: "x.lama.com" }, GAM), PluginError);
 assert.throws(
-  () => gamAccountForSite({ name: "a.petcins.com" }, { ...GAM, b: { name: "petcins.com", networkCode: 9 } }),
+  () =>
+    gamAccountForSite(
+      { name: "a.petcins.com" },
+      { ...GAM, b: { name: "petcins.com", networkCode: 9 } },
+    ),
   PluginError,
 );
 
-const PROPERTY = { parentAdUnit: "networks/23352267851/adUnits/23351267854", adUnitCode: "ca-pub-8660742543707970" };
+const PROPERTY = {
+  parentAdUnit: "networks/23352267851/adUnits/23351267854",
+  adUnitCode: "ca-pub-8660742543707970",
+};
 const UNITS = [
   { adUnitCode: "23352267851", hasChildren: true, status: "ACTIVE" },
   { adUnitCode: "ca-pub-8660742543707970", hasChildren: true, status: "ACTIVE" },
@@ -138,12 +158,19 @@ assert.throws(() => normalizeGptDivStamp("12345"), PluginError);
 // Satu stempel per subdomain: jam yang sama tetap menghasilkan angka berbeda dan selalu naik.
 const clock = gptStampClock(() => 1789368958539);
 assert.deepEqual([clock(), clock(), clock()], ["1789368958539", "1789368958540", "1789368958541"]);
-assert.deepEqual(normalizeGptDivStamps({ a: "1789368958539", b: "", c: undefined }), { a: "1789368958539" });
+assert.deepEqual(normalizeGptDivStamps({ a: "1789368958539", b: "", c: undefined }), {
+  a: "1789368958539",
+});
 assert.throws(() => normalizeGptDivStamps({ a: "1'); alert(1" }), PluginError);
 
 // --- Ukuran -------------------------------------------------------------------------------------
 
-assert.deepEqual(parseGptSizes("300x250, 728X90\n320×50 fluid"), ["300x250", "728x90", "320x50", "fluid"]);
+assert.deepEqual(parseGptSizes("300x250, 728X90\n320×50 fluid"), [
+  "300x250",
+  "728x90",
+  "320x50",
+  "fluid",
+]);
 assert.deepEqual(parseGptSizes("[[300, 250], [728, 90]]"), ["300x250", "728x90"]);
 assert.deepEqual(parseGptSizes("300x250,300x250"), ["300x250"]);
 for (const bad of ["", "300x", "300-250", "0x250", "5000x10"]) {
@@ -170,10 +197,10 @@ for (const bad of [
 assert.equal(normalizeGptSpec({ ...parsed, slots: 1 }).divPrefix, "div-gpt-ad-1789368958539");
 assert.equal(normalizeGptOptions({ sizes: "300x250", slots: "2" }).slots, 2);
 // Pilihan dari browser tidak membawa unit iklan maupun div id sama sekali.
-assert.deepEqual(Object.keys(normalizeGptOptions({ sizes: "300x250", slots: 1, adUnitPath: "/1/x" })).sort(), [
-  "sizes",
-  "slots",
-]);
+assert.deepEqual(
+  Object.keys(normalizeGptOptions({ sizes: "300x250", slots: 1, adUnitPath: "/1/x" })).sort(),
+  ["sizes", "slots"],
+);
 
 // Hanya fluid: tidak ada sisi terkecil, jadi tidak ada style yang dikarang.
 const fluid = buildGptTags(normalizeGptSpec({ ...parsed, sizes: "fluid", slots: 1 }));
@@ -213,12 +240,18 @@ assert.equal(cleaned.code, `${OTHER}\n${smaller.header}\n<meta name="x">`);
 
 const ads = {
   kode_iklan_1: "lama",
-  kode_iklan_3: "<script>googletag.cmd.push(function() { googletag.display('div-lama-2'); });</script>",
+  kode_iklan_3:
+    "<script>googletag.cmd.push(function() { googletag.display('div-lama-2'); });</script>",
   kode_iklan_4: '<ins class="adsbygoogle"></ins>',
   jumlah_iklan: 4,
 };
 const plan = planGptBodies(ads, normalizeGptSpec({ ...parsed, slots: 2 }), tags.bodies);
-assert.deepEqual(Object.keys(plan.values).sort(), ["jumlah_iklan", "kode_iklan_1", "kode_iklan_2", "kode_iklan_3"]);
+assert.deepEqual(Object.keys(plan.values).sort(), [
+  "jumlah_iklan",
+  "kode_iklan_1",
+  "kode_iklan_2",
+  "kode_iklan_3",
+]);
 assert.equal(plan.values.kode_iklan_1, tags.bodies[0]);
 assert.equal(plan.values.kode_iklan_3, "");
 assert.deepEqual(plan.cleared, ["kode_iklan_3"]);
@@ -227,6 +260,5 @@ assert.equal(plan.previousSlotCount, 4);
 // AdSense di kotak 4 bukan milik tag ini — tidak disentuh.
 assert.equal(Object.hasOwn(plan.values, "kode_iklan_4"), false);
 assert.equal(GPT_BODY_FIELDS.length, 5);
-
 
 console.log("gpt-inject-core: ok");

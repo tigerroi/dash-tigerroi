@@ -123,7 +123,8 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     console.log(`\nNama GAM yang dilewati (${res.skipped.length}):`);
     for (const name of res.skipped) console.log(`  - ${name}`);
   }
-  for (const e of res.sourceFailures) console.warn(`\nSumber tidak terbaca — ${e.name}: ${e.message}`);
+  for (const e of res.sourceFailures)
+    console.warn(`\nSumber tidak terbaca — ${e.name}: ${e.message}`);
   for (const e of res.errors) console.error(`\nGagal membaca ${e.name}: ${e.message}`);
   process.exit(0);
 }

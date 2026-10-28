@@ -53,7 +53,10 @@ assert.equal(parseAdsenseCode(FIXED.split("\n").slice(1).join("\n")).slot, "2172
 // Yang ditolak — tiap kalimat menyebut nomor kotaknya.
 rejects(() => parseAdsenseCode("", 2), /Kode iklan 3 kosong/);
 rejects(
-  () => parseAdsenseCode(`<div id='div-gpt-ad-1-0'><script>googletag.cmd.push(function(){});</script></div>`),
+  () =>
+    parseAdsenseCode(
+      `<div id='div-gpt-ad-1-0'><script>googletag.cmd.push(function(){});</script></div>`,
+    ),
   /bukan kode unit AdSense/,
 );
 rejects(
@@ -66,7 +69,10 @@ rejects(
 rejects(() => parseAdsenseCode(RESPONSIVE.replace(' data-ad-slot="3445630456"', "")), /Auto ads/);
 rejects(() => parseAdsenseCode(`${RESPONSIVE}\n${FIXED}`), /2 <ins>/);
 rejects(
-  () => parseAdsenseCode(RESPONSIVE.replace("client=ca-pub-2520327538603736", "client=ca-pub-1375442959645911")),
+  () =>
+    parseAdsenseCode(
+      RESPONSIVE.replace("client=ca-pub-2520327538603736", "client=ca-pub-1375442959645911"),
+    ),
   /loader menyebut/,
 );
 rejects(
@@ -86,7 +92,11 @@ rejects(() => normalizeAdsenseCodes([RESPONSIVE, "", FIXED]), /Kode iklan 2 koso
 rejects(() => normalizeAdsenseCodes([]), /minimal satu/);
 rejects(() => normalizeAdsenseCodes(["", ""]), /minimal satu/);
 rejects(
-  () => normalizeAdsenseCodes([RESPONSIVE, FIXED.replaceAll("ca-pub-2520327538603736", "ca-pub-1375442959645911")]),
+  () =>
+    normalizeAdsenseCodes([
+      RESPONSIVE,
+      FIXED.replaceAll("ca-pub-2520327538603736", "ca-pub-1375442959645911"),
+    ]),
   /2 akun AdSense/,
 );
 rejects(() => normalizeAdsenseCodes([RESPONSIVE, RESPONSIVE]), /sudah dipakai/);
@@ -116,7 +126,10 @@ assert.deepEqual(
     [true, "cathealth-2", "300x600", "Unit berstatus ARCHIVED di AdSense."],
   ],
 );
-rejects(() => verifyAdsenseSlots(slots, UNITS.slice(0, 1)), /Kode iklan 2: slot 2172584371 tidak ada/);
+rejects(
+  () => verifyAdsenseSlots(slots, UNITS.slice(0, 1)),
+  /Kode iklan 2: slot 2172584371 tidak ada/,
+);
 // Akun yang tidak terbaca: tidak ditolak, dilaporkan belum terverifikasi berikut sebabnya.
 assert.deepEqual(
   verifyAdsenseSlots(slots, null, "kredensial ditolak").map((row) => [row.verified, row.note]),
@@ -136,7 +149,8 @@ assert.equal(adBoxKind("<a href='/'>banner</a>"), "lain");
 
 const plan = planAdsenseBodies(
   {
-    kode_iklan_1: "<div id='div-gpt-ad-1-0'><script>googletag.cmd.push(function() { googletag.display('div-gpt-ad-1-0'); });</script></div>",
+    kode_iklan_1:
+      "<div id='div-gpt-ad-1-0'><script>googletag.cmd.push(function() { googletag.display('div-gpt-ad-1-0'); });</script></div>",
     kode_iklan_3: RESPONSIVE,
     kode_iklan_4: "<a href='/'>banner</a>",
     kode_iklan_5: "<script>googletag.display('div-gpt-ad-1-4');</script>",

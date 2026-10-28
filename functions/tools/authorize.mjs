@@ -20,7 +20,9 @@ const db = await connect();
 const configs = (await get(ref(db, "googleApiConfigs"))).val() || {};
 const found = Object.entries(configs).find(([, c]) => c?.name === name);
 if (!found) {
-  console.error(`googleApiConfig "${name}" tidak ditemukan. Tambahkan dulu di /google-api-configs/new.`);
+  console.error(
+    `googleApiConfig "${name}" tidak ditemukan. Tambahkan dulu di /google-api-configs/new.`,
+  );
   process.exit(1);
 }
 const [id, cfg] = found;
@@ -29,7 +31,9 @@ if (!cfg.clientId || !cfg.clientSecret) {
   process.exit(1);
 }
 
-console.log(`\nBuka URL ini di browser, login dengan akun Google pemilik GAM, lalu setujui:\n\n${consentUrlFor(cfg)}\n`);
+console.log(
+  `\nBuka URL ini di browser, login dengan akun Google pemilik GAM, lalu setujui:\n\n${consentUrlFor(cfg)}\n`,
+);
 
 const port = Number(new URL(REDIRECT).port);
 const code = await new Promise((resolve, reject) => {

@@ -1,11 +1,11 @@
 import { getDatabase } from "firebase-admin/database";
 import { defineSecret } from "firebase-functions/params";
 import { onSchedule } from "firebase-functions/v2/scheduler";
-import { noticeUpdate, reminderMessage, reminderRows, remindersToSend } from "./reminders-core.js";
-import { rowsOf, topicRecipients } from "./notifications-core.js";
 import { dashboardUrl } from "./dashboard-url.js";
-import { deliverToChats } from "./telegram.mjs";
+import { rowsOf, topicRecipients } from "./notifications-core.js";
+import { noticeUpdate, reminderMessage, reminderRows, remindersToSend } from "./reminders-core.js";
 import { zonedDateKey } from "./sync-core.js";
+import { deliverToChats } from "./telegram.mjs";
 
 /**
  * Pengingat jatuh tempo ke Telegram.
@@ -78,7 +78,7 @@ export const scheduledReminders = onSchedule(
     });
     if (recipients.length === 0) {
       console.warn(
-        "[reminders] belum ada penerima topik \"Pengingat jatuh tempo\" — pilih orang atau grup " +
+        '[reminders] belum ada penerima topik "Pengingat jatuh tempo" — pilih orang atau grup ' +
           "di halaman Notification Center (cara mendapatkan chat id: cd functions && " +
           "npm run telegram:chat-id).",
       );

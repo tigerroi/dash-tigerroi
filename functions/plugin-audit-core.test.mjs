@@ -1,7 +1,15 @@
 import assert from "node:assert";
 
-const { auditAdCode, auditDisplayMode, auditBehaviour, auditCmp, auditLanding, auditNetwork, auditSite, gptTagsOf } =
-  await import("./plugin-audit-core.js");
+const {
+  auditAdCode,
+  auditDisplayMode,
+  auditBehaviour,
+  auditCmp,
+  auditLanding,
+  auditNetwork,
+  auditSite,
+  gptTagsOf,
+} = await import("./plugin-audit-core.js");
 
 // --- Tag nyata dari inject dashboard (bentuk buildGptTags) ------------------------------------------
 
@@ -22,7 +30,13 @@ const body = (index) => `<!-- /23352267851/ca-pub-9198385730397674-tag -->
 </div>`;
 const ADSENSE = `<ins class="adsbygoogle" data-ad-client="ca-pub-1" data-ad-slot="2"></ins>`;
 
-const gptAds = { jumlah_iklan: 2, kode_iklan_1: body(0), kode_iklan_2: body(1), simpan_log: "Aktifkan", mode_tampilan: "Acak" };
+const gptAds = {
+  jumlah_iklan: 2,
+  kode_iklan_1: body(0),
+  kode_iklan_2: body(1),
+  simpan_log: "Aktifkan",
+  mode_tampilan: "Acak",
+};
 const gam = { networkCode: "23352267851", accountName: "designingaround.com" };
 
 // gptTagsOf: network + div yang didefinisikan, termasuk ukuran 'fluid' di tengah argumen.
@@ -58,12 +72,21 @@ assert.equal(auditAdCode(null, null).status, "error");
 // --- Network ID -------------------------------------------------------------------------------------
 
 assert.equal(auditNetwork(gptAds, { header_code: HEADER }, gam).status, "ok");
-assert.match(auditNetwork(gptAds, { header_code: HEADER }, { ...gam, accountName: "sheetz.us " }).detail, /sheetz\.us di/);
+assert.match(
+  auditNetwork(gptAds, { header_code: HEADER }, { ...gam, accountName: "sheetz.us " }).detail,
+  /sheetz\.us di/,
+);
 const mismatch = auditNetwork(gptAds, { header_code: HEADER }, { ...gam, networkCode: "999" });
 assert.equal(mismatch.status, "fail");
 assert.match(mismatch.detail, /Plugin: 23352267851/);
-assert.equal(auditNetwork(gptAds, { header_code: HEADER }, { error: "Tidak ada akun" }).status, "warn");
-assert.equal(auditNetwork({ jumlah_iklan: 1, kode_iklan_1: ADSENSE }, { header_code: "" }, gam).status, "na");
+assert.equal(
+  auditNetwork(gptAds, { header_code: HEADER }, { error: "Tidak ada akun" }).status,
+  "warn",
+);
+assert.equal(
+  auditNetwork({ jumlah_iklan: 1, kode_iklan_1: ADSENSE }, { header_code: "" }, gam).status,
+  "na",
+);
 assert.equal(auditNetwork(gptAds, { header_code: "" }, gam).status, "fail");
 // Tag utuh yang ditempel di kotak kode iklan tetap terbaca.
 assert.equal(
@@ -73,7 +96,11 @@ assert.equal(
 );
 
 // --- Mode tampilan ---
-assert.deepEqual(auditDisplayMode({ mode_tampilan: "Stacked" }), { status: "ok", label: "Stacked", detail: "" });
+assert.deepEqual(auditDisplayMode({ mode_tampilan: "Stacked" }), {
+  status: "ok",
+  label: "Stacked",
+  detail: "",
+});
 assert.equal(auditDisplayMode({}).status, "warn");
 assert.equal(auditDisplayMode({ mode_tampilan: "Acakk" }).status, "warn");
 assert.equal(auditDisplayMode(null).status, "error");
@@ -81,7 +108,10 @@ assert.equal(auditDisplayMode(null).status, "error");
 // --- CMP --------------------------------------------------------------------------------------------
 
 assert.deepEqual(
-  [auditCmp({ cmp_enabled: true, cmp_code: "<script></script>" }).label, auditCmp({ cmp_enabled: false }).label],
+  [
+    auditCmp({ cmp_enabled: true, cmp_code: "<script></script>" }).label,
+    auditCmp({ cmp_enabled: false }).label,
+  ],
   ["On", "Off"],
 );
 // Kode CMP kosong bukan masalah.
@@ -102,7 +132,12 @@ assert.equal(auditLanding(null).status, "error");
 
 // --- Behaviour --------------------------------------------------------------------------------------
 
-const on = { behaviour_detection: true, behaviour_action: "hide_ads", behaviour_lolos: 1, behaviour_batas: 3 };
+const on = {
+  behaviour_detection: true,
+  behaviour_action: "hide_ads",
+  behaviour_lolos: 1,
+  behaviour_batas: 3,
+};
 assert.equal(auditBehaviour(on, gptAds).status, "ok");
 assert.equal(auditBehaviour({ behaviour_detection: false }, gptAds).label, "Off");
 // "Nonaktifkan" memuat "aktif" — tetap dibaca sebagai log mati.

@@ -26,7 +26,8 @@ import { adTaxRate, dateKeyFrom, financialPoint } from "../sync-core.js";
 import { loadUnreadableSpend } from "../unreadable-spend.mjs";
 
 const dry = process.argv.includes("--dry");
-const argOf = (name) => process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3);
+const argOf = (name) =>
+  process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3);
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const since = argOf("since");
 const until = argOf("until");
@@ -46,7 +47,8 @@ const adAccounts = (await store.read("adAccounts")) || {};
 const users = (await store.read("users")) || {};
 const rate = adTaxRate(await store.read("settings/roi"));
 const points =
-  (await get(query(ref(db, "dashboard/weeklyFinancials"), orderByKey(), startAt(since)))).val() || {};
+  (await get(query(ref(db, "dashboard/weeklyFinancials"), orderByKey(), startAt(since)))).val() ||
+  {};
 
 const spendByDate = new Map();
 for (const account of Object.values(adAccounts)) {
@@ -56,7 +58,9 @@ for (const account of Object.values(adAccounts)) {
     rows = await fetchDailySpend(account.actId, token, since, until);
   } catch (e) {
     console.error(`GAGAL membaca ${account.name || account.actId}: ${e.message}`);
-    console.error("Run dihentikan: belanja yang tidak lengkap akan MENURUNKAN total hari-hari itu.");
+    console.error(
+      "Run dihentikan: belanja yang tidak lengkap akan MENURUNKAN total hari-hari itu.",
+    );
     process.exit(1);
   }
   for (const row of rows) {
@@ -80,9 +84,15 @@ for (const [date, point] of Object.entries(points).sort()) {
     console.log(`  ${date}  dilewati (titik spreadsheet)`);
     continue;
   }
-  const next = financialPoint(date, Number(point.grossRevenue) || 0, spendByDate.get(date) || 0, rate, {
-    partial: point.partial === true,
-  });
+  const next = financialPoint(
+    date,
+    Number(point.grossRevenue) || 0,
+    spendByDate.get(date) || 0,
+    rate,
+    {
+      partial: point.partial === true,
+    },
+  );
   const before = Number(point.totalSpend) || 0;
   if (Math.abs(next.totalSpend - before) < 1) continue;
   for (const field of ["totalSpend", "adTax", "totalSpending", "updatedAt"]) {

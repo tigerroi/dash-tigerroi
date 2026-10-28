@@ -17,8 +17,8 @@
 
 import { connect } from "../db.mjs";
 import { clientStore } from "../store.mjs";
-import { registeredChatIds, TELEGRAM_INBOX_PATH } from "../telegram-inbox-core.js";
 import { chatsFromUpdates, getTelegramUpdates, sendTelegramMessage } from "../telegram.mjs";
+import { registeredChatIds, TELEGRAM_INBOX_PATH } from "../telegram-inbox-core.js";
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 if (!token) {
@@ -33,7 +33,11 @@ if (testFlag !== -1) {
     console.error("Pakai: npm run telegram:chat-id -- --test <chatId>");
     process.exit(1);
   }
-  await sendTelegramMessage(token, chatId, "🔔 <b>Tes RabbitROI</b> — pengingat akan dikirim ke sini.");
+  await sendTelegramMessage(
+    token,
+    chatId,
+    "🔔 <b>Tes RabbitROI</b> — pengingat akan dikirim ke sini.",
+  );
   console.log(`Pesan uji terkirim ke ${chatId}.`);
   process.exit(0);
 }

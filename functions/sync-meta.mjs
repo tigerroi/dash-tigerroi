@@ -62,7 +62,11 @@ export async function syncAdAccounts(db, token, only = []) {
       console.error(`FAIL ${account.name || id}: ${error.message}`);
       errors.push({ id, name: account.name || account.actId || id, message: error.message });
       if (permanentAccountError(error.message)) {
-        permanentlyFailed.push({ id, name: account.name || account.actId || id, message: error.message });
+        permanentlyFailed.push({
+          id,
+          name: account.name || account.actId || id,
+          message: error.message,
+        });
       }
     }
   }
@@ -446,10 +450,7 @@ export async function syncCampaigns(db, token, only = []) {
     // Yang dipangkas diminta BERBATAS: dua riwayat ini tumbuh sampai masa simpannya (30 dan 90
     // hari), dan mengunduhnya utuh tiap jam demi daftar yang normalnya kosong adalah persis biaya
     // yang pemisahan pohon ini ada untuk menghapusnya.
-    const staleSpend = await staleBefore(
-      `${reportsPath}/dailySpend`,
-      dailySpendPruneBefore(now),
-    );
+    const staleSpend = await staleBefore(`${reportsPath}/dailySpend`, dailySpendPruneBefore(now));
     for (const key of expiredDailySpendKeys(staleSpend, now)) {
       if (!(key in history.dailySpend)) reports[`dailySpend/${key}`] = null;
     }

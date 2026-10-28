@@ -172,7 +172,10 @@ for (const key of [...extra.keys()].sort()) {
   }
   const spend = base + missing;
   const results = (Number(existing.results) || 0) + add.reduce((s, c) => s + c.results, 0);
-  const campaigns = [...(existing.campaigns || []), ...add.map(({ name, spend: s }) => ({ name, spend: s }))];
+  const campaigns = [
+    ...(existing.campaigns || []),
+    ...add.map(({ name, spend: s }) => ({ name, spend: s })),
+  ];
   const next = roiReportUpdate(subs[id], null, spend, {
     now,
     day,
@@ -211,17 +214,22 @@ for (const [id, days] of touchedIds) {
     if (!nextKey || touchedIds.get(id).includes(nextKey.slice(0, 10))) continue;
     const row = rows[nextKey];
     const nextDay = nextKey.slice(0, 10);
-    const recomputed = roiReportUpdate(subs[id], null, typeof row.spending === "number" ? row.spending : undefined, {
-      now,
-      day: nextDay,
-      partial: row.partial === true,
-      previous: previousRoiReport(rows, id, nextDay),
-      existing: row,
-      adTaxRate: rate,
-      metaComplete: row.metaMissing !== "unavailable",
-      results: Number(row.results) || 0,
-      campaigns: row.campaigns,
-    });
+    const recomputed = roiReportUpdate(
+      subs[id],
+      null,
+      typeof row.spending === "number" ? row.spending : undefined,
+      {
+        now,
+        day: nextDay,
+        partial: row.partial === true,
+        previous: previousRoiReport(rows, id, nextDay),
+        existing: row,
+        adTaxRate: rate,
+        metaComplete: row.metaMissing !== "unavailable",
+        results: Number(row.results) || 0,
+        campaigns: row.campaigns,
+      },
+    );
     for (const field of FLUK_KEYS) {
       if (field in recomputed && !same(recomputed[field], row[field])) {
         patches[`${nextKey}/${field}`] = recomputed[field];

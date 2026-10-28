@@ -12,7 +12,10 @@ import {
 
 test("siteKey: hostname jadi kunci RTDB yang sah, yang bukan hostname masuk ember network", () => {
   assert.equal(siteKey("Brands.StyleFemale.com"), "brands,stylefemale,com");
-  assert.equal(siteKey("(Not applicable)", "stylefemale.com", "23349918610"), "_net_stylefemale,com");
+  assert.equal(
+    siteKey("(Not applicable)", "stylefemale.com", "23349918610"),
+    "_net_stylefemale,com",
+  );
   assert.equal(siteKey("", "", "23349918610"), "_net_23349918610");
   // Karakter yang ditolak RTDB tidak pernah sampai ke kunci.
   assert.doesNotMatch(siteKey("a#b$c/d[e]", "x.com"), /[.#$/[\]]/);
@@ -49,8 +52,14 @@ test("fillRateLeaves: situs non-hostname di jam yang sama dijumlahkan ke satu em
 
 test("addLeaves menjumlahkan jalur yang sama dari dua network", () => {
   const target = { "d/a/h01": { req: 1, imp: 1 } };
-  addLeaves(target, { "d/a/h01": { req: 2, imp: 1, partial: true }, "d/b/h01": { req: 1, imp: 0 } });
-  assert.deepEqual(target, { "d/a/h01": { req: 3, imp: 2, partial: true }, "d/b/h01": { req: 1, imp: 0 } });
+  addLeaves(target, {
+    "d/a/h01": { req: 2, imp: 1, partial: true },
+    "d/b/h01": { req: 1, imp: 0 },
+  });
+  assert.deepEqual(target, {
+    "d/a/h01": { req: 3, imp: 2, partial: true },
+    "d/b/h01": { req: 1, imp: 0 },
+  });
 });
 
 test("flattenFillRate meratakan pohon RTDB ke jalur daun", () => {
@@ -75,9 +84,15 @@ test("changedLeaves: yang sama tidak ditulis, partial yang hilang ditulis ulang 
     "d/a/h12": { req: 2, imp: 2, partial: true },
   });
   // Angka sama, cuma tanda partial yang lepas: tetap ditulis.
-  assert.deepEqual(changedLeaves({ "d/a/h11": { req: 9, imp: 6, partial: true } }, { "d/a/h11": { req: 9, imp: 6 } }), {
-    "d/a/h11": { req: 9, imp: 6 },
-  });
+  assert.deepEqual(
+    changedLeaves(
+      { "d/a/h11": { req: 9, imp: 6, partial: true } },
+      { "d/a/h11": { req: 9, imp: 6 } },
+    ),
+    {
+      "d/a/h11": { req: 9, imp: 6 },
+    },
+  );
   // Tanpa perubahan: objek kosong (pemanggil tidak menulis apa pun).
   assert.deepEqual(changedLeaves(next, next), {});
 });

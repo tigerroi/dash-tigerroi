@@ -117,7 +117,7 @@ export const GATEWAY_ROUTES = {
     target_domain: "burrito.tacobellmenuu.us",
     description: "Burrito Subdomain",
   },
-  "grilledcheeseburrito": {
+  grilledcheeseburrito: {
     site_code: "taco-fries",
     keitaro_alias: "taco",
     target_domain: "burrito.tacobellmenuu.us",
@@ -311,6 +311,9 @@ export const GATEWAY_ROUTES = {
  */
 export function findGatewayRoute(slug) {
   if (!slug) return null;
-  const clean = String(slug).toLowerCase().trim().replace(/^\/+|\/+$/g, "");
+  const clean = String(slug)
+    .toLowerCase()
+    .trim()
+    .replace(/^\/+|\/+$/g, "");
   return GATEWAY_ROUTES[clean] || null;
 }

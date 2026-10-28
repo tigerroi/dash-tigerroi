@@ -56,7 +56,10 @@ async function redirectRegistered(clientId, redirectUri) {
     ok: false,
     reason: blob.includes("redirect_uri_mismatch")
       ? "redirect_uri_mismatch — alamat callback belum terdaftar di OAuth client ini"
-      : blob.replace(/[^\x20-\x7e]+/g, " ").trim().slice(0, 120),
+      : blob
+          .replace(/[^\x20-\x7e]+/g, " ")
+          .trim()
+          .slice(0, 120),
   };
 }
 

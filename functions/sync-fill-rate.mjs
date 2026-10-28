@@ -77,7 +77,9 @@ export async function syncFillRate(
       });
       continue;
     }
-    const domain = String(account.name || "").trim().toLowerCase();
+    const domain = String(account.name || "")
+      .trim()
+      .toLowerCase();
     const { leaves, lastSlot } = fillRateLeaves(rows, { domain, code });
     addLeaves(next, leaves);
     networks[networkStatusKey(code)] = { name: label, ok: true, lastSlot };

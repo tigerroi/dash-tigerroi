@@ -48,6 +48,7 @@
 import { get, ref, update } from "firebase/database";
 import { connect } from "../db.mjs";
 import {
+  adTaxRate,
   dateDimension,
   earningAccounts,
   earningRowsByDimensions,
@@ -56,7 +57,6 @@ import {
   previousRoiReport,
   roiReportKey,
   roiReportUpdate,
-  adTaxRate,
   shiftDateKey,
   zonedDateKey,
 } from "../sync-core.js";
@@ -164,8 +164,12 @@ for (const { account, provider, label } of accounts) {
   // menjawab mata uang lain, dan mengalikannya dengan kurs hari ini adalah persis yang diperbaiki.
   const foreign = report.find((r) => (r.reportCurrency || "") !== "IDR");
   if (foreign) {
-    console.error(`\n${label} menjawab dalam "${foreign.reportCurrency || "(tidak disebut)"}", bukan IDR.`);
-    console.error("Run dihentikan. Periksa GAM_CURRENCY / ADSENSE_CURRENCY (harus IDR atau tidak diset).");
+    console.error(
+      `\n${label} menjawab dalam "${foreign.reportCurrency || "(tidak disebut)"}", bukan IDR.`,
+    );
+    console.error(
+      "Run dihentikan. Periksa GAM_CURRENCY / ADSENSE_CURRENCY (harus IDR atau tidak diset).",
+    );
     process.exit(1);
   }
   console.log(`  ${provider.padEnd(7)} ${label}: ${report.length} baris`);
@@ -219,7 +223,16 @@ for (const [key, row] of Object.entries(rows)) {
 const writes = [];
 const created = [];
 const now = new Date();
-const ZERO = { earning: 0, impressions: 0, clicks: 0, adx: 0, adsense: 0, adServer: 0, currency: "IDR", fxRate: null };
+const ZERO = {
+  earning: 0,
+  impressions: 0,
+  clicks: 0,
+  adx: 0,
+  adsense: 0,
+  adServer: 0,
+  currency: "IDR",
+  fxRate: null,
+};
 for (const day of days) {
   const totals = totalsByDay.get(day) || new Map();
   const ids = new Set([...(idsByDay.get(day) || []), ...totals.keys()]);
@@ -276,7 +289,9 @@ for (const day of days) {
 }
 
 // --- Laporan -------------------------------------------------------------------------------------
-console.log(`\nRentang ${since} s/d ${until} · ${days.length} hari · ${accounts.length} akun dibaca.`);
+console.log(
+  `\nRentang ${since} s/d ${until} · ${days.length} hari · ${accounts.length} akun dibaca.`,
+);
 for (const { domain, start } of domainStarts) console.log(`${domain} dihitung mulai ${start}.`);
 
 const byMonth = new Map();
@@ -295,7 +310,9 @@ for (const c of created) {
 if (byMonth.size) {
   console.log("\nroiReports — perubahan earning per bulan:");
   for (const [month, e] of [...byMonth].sort()) {
-    console.log(`  ${month}: ${e.rows} baris, netto ${e.delta >= 0 ? "+" : "-"}Rp ${rupiah(Math.abs(e.delta))}`);
+    console.log(
+      `  ${month}: ${e.rows} baris, netto ${e.delta >= 0 ? "+" : "-"}Rp ${rupiah(Math.abs(e.delta))}`,
+    );
   }
 }
 
@@ -319,7 +336,9 @@ if (shown.length) {
   console.log("\nPer subdomain (netto, diurut dari yang terbesar):");
   for (const [name, e] of shown) {
     const note = e.filled ? ` · ${e.filled} baris earning-nya sebelumnya kosong/baru` : "";
-    console.log(`  ${e.delta >= 0 ? "+" : "-"}Rp ${rupiah(Math.abs(e.delta)).padStart(10)}  ${name} (${e.rows} baris${note})`);
+    console.log(
+      `  ${e.delta >= 0 ? "+" : "-"}Rp ${rupiah(Math.abs(e.delta)).padStart(10)}  ${name} (${e.rows} baris${note})`,
+    );
   }
 }
 
@@ -336,7 +355,9 @@ if (skippedEarning.size) {
   }
 }
 if (unmatched.size) {
-  console.log("\nSitus berearning yang BELUM terdaftar di /sub-domains (ikut weeklyFinancials, tidak punya baris ROI):");
+  console.log(
+    "\nSitus berearning yang BELUM terdaftar di /sub-domains (ikut weeklyFinancials, tidak punya baris ROI):",
+  );
   for (const [site, idr] of [...unmatched].sort((a, b) => b[1] - a[1])) {
     console.log(`  Rp ${rupiah(idr)} — ${site}`);
   }

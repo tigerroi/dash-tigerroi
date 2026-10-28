@@ -60,7 +60,11 @@ const actor = getAuth().currentUser?.email || "migrate-script";
 // --- 1. Grant Aca the Keuangan role -----------------------------------------------------------
 const users = (await get(ref(db, "users"))).val() || {};
 const aca = Object.values(users).find(
-  (u) => !u?.deletedAt && String(u?.name || "").trim().toLowerCase() === "aca",
+  (u) =>
+    !u?.deletedAt &&
+    String(u?.name || "")
+      .trim()
+      .toLowerCase() === "aca",
 );
 
 if (!aca?.uid) {

@@ -85,7 +85,11 @@ assert.equal(domains[0].status, "Active");
 assert.equal(planDomains(hosts, { d1: { domainUrl: "example.com", deletedAt: "x" } }).length, 2);
 
 // planSubdomains: parent linked only when the domain exists; the rest counted as orphans.
-const subs = planSubdomains(hosts, { s1: { name: "News.Example.com" } }, { d1: { domainUrl: "example.com" } });
+const subs = planSubdomains(
+  hosts,
+  { s1: { name: "News.Example.com" } },
+  { d1: { domainUrl: "example.com" } },
+);
 assert.equal(subs.records.length, 2, "news.example.com already exists");
 assert.equal(subs.records[0].name, "shop.example.com");
 assert.equal(subs.records[0].parentDomain, "example.com", "linked");
@@ -162,6 +166,10 @@ assert.equal(gamList[0].path, "gamAccounts");
 assert.equal(adsenseList[0].provider, "adsense");
 assert.equal(adsenseList[0].path, "adsenseAccounts");
 // Provider yang tertulis di record menang atas tebakan dari bentuknya.
-assert.equal(earningAccounts({ a: { networkCode: "1", provider: "adsense", publisherId: "pub-1" } }, {})[0].provider, "adsense");
+assert.equal(
+  earningAccounts({ a: { networkCode: "1", provider: "adsense", publisherId: "pub-1" } }, {})[0]
+    .provider,
+  "adsense",
+);
 
 console.log("discover-core.test ok");

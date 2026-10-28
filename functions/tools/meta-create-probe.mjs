@@ -28,7 +28,8 @@ if (!token) {
   console.error("META_ACCESS_TOKEN belum di-set.");
   process.exit(1);
 }
-const print = (label, value) => console.log(`\n=== ${label} ===\n${JSON.stringify(value, null, 2)}`);
+const print = (label, value) =>
+  console.log(`\n=== ${label} ===\n${JSON.stringify(value, null, 2)}`);
 const args = process.argv.slice(2);
 
 if (args[0] === "--cleanup") {
@@ -45,7 +46,9 @@ if (args[0] === "--cleanup") {
 
 const [actId, pixelId, pageId, imageA, imageB] = args.filter((arg) => !arg.startsWith("--"));
 if (!actId || !pixelId || !pageId || !imageA || !imageB) {
-  console.error("Pakai: meta-create-probe.mjs <act_id> <pixel_id> <page_id> <hash1> <hash2> [--run]");
+  console.error(
+    "Pakai: meta-create-probe.mjs <act_id> <pixel_id> <page_id> <hash1> <hash2> [--run]",
+  );
   process.exit(1);
 }
 
@@ -68,7 +71,10 @@ const plan = createPlan({
 
 print("payload campaign", campaignPayload(plan, META_MINOR_UNIT));
 print("payload ad set", adSetPayload(plan, { name: plan.names[0], campaignId: "<menyusul>" }));
-print("payload creative", creativePayload(plan, { name: plan.names[0], variant: plan.variants[0] }));
+print(
+  "payload creative",
+  creativePayload(plan, { name: plan.names[0], variant: plan.variants[0] }),
+);
 
 if (!args.includes("--run")) {
   console.log("\nMode baca saja. Tambahkan --run untuk benar-benar membuat (semuanya PAUSED).");

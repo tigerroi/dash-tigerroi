@@ -54,36 +54,36 @@ const AD_EXCHANGE = "ad-exchanger";
 // ini domain ini memang tidak ditargetkan"), dan tiga baris di bawah memang belum menyatakan apa
 // pun.
 const ROWS = [
-  ["July", "designingaround.com",        ADSENSE,     "Running Iklan",             10000000, "",              ""],
-  ["July", "designingaround.com",        AD_EXCHANGE, "Running Iklan",             50000000, "",              "FOKUS ADX"],
-  ["July", "stylefemale.com",            ADSENSE,     "Running Iklan",              2000000, "",              ""],
-  ["July", "stylefemale.com",            AD_EXCHANGE, "Running Iklan",            200000000, "",              ""],
-  ["July", "dekadeko.com",               ADSENSE,     "Limit Iklan Belum Tayang",  10000000, "IKLAN LIMIT",   ""],
-  ["July", "dekadeko.com",               AD_EXCHANGE, "Review",                           0, "REVIEW GOOGLE", ""],
-  ["July", "psaonlineappointment.com",   ADSENSE,     "Limit Iklan Belum Tayang",         0, "IKLAN LIMIT",   ""],
-  ["July", "psaonlineappointment.com",   AD_EXCHANGE, "Running Iklan",             50000000, "",              "SUDAH TARGET"],
-  ["July", "masseffectstore.com",        ADSENSE,     "Ready",                            0, "",              "FOKUS ADX"],
-  ["July", "masseffectstore.com",        AD_EXCHANGE, "Running Iklan",            100000000, "",              ""],
-  ["July", "petcins.com",                ADSENSE,     "Ready",                            0, "",              "FOKUS ADX"],
-  ["July", "petcins.com",                AD_EXCHANGE, "Running Iklan",            150000000, "",              ""],
+  ["July", "designingaround.com", ADSENSE, "Running Iklan", 10000000, "", ""],
+  ["July", "designingaround.com", AD_EXCHANGE, "Running Iklan", 50000000, "", "FOKUS ADX"],
+  ["July", "stylefemale.com", ADSENSE, "Running Iklan", 2000000, "", ""],
+  ["July", "stylefemale.com", AD_EXCHANGE, "Running Iklan", 200000000, "", ""],
+  ["July", "dekadeko.com", ADSENSE, "Limit Iklan Belum Tayang", 10000000, "IKLAN LIMIT", ""],
+  ["July", "dekadeko.com", AD_EXCHANGE, "Review", 0, "REVIEW GOOGLE", ""],
+  ["July", "psaonlineappointment.com", ADSENSE, "Limit Iklan Belum Tayang", 0, "IKLAN LIMIT", ""],
+  ["July", "psaonlineappointment.com", AD_EXCHANGE, "Running Iklan", 50000000, "", "SUDAH TARGET"],
+  ["July", "masseffectstore.com", ADSENSE, "Ready", 0, "", "FOKUS ADX"],
+  ["July", "masseffectstore.com", AD_EXCHANGE, "Running Iklan", 100000000, "", ""],
+  ["July", "petcins.com", ADSENSE, "Ready", 0, "", "FOKUS ADX"],
+  ["July", "petcins.com", AD_EXCHANGE, "Running Iklan", 150000000, "", ""],
 
-  ["August", "designingaround.com",      ADSENSE,     "Limit",                     10000000, "",              ""],
-  ["August", "designingaround.com",      AD_EXCHANGE, "Limit",                     50000000, "",              ""],
-  ["August", "stylefemale.com",          ADSENSE,     "",                                 0, "",              ""],
-  ["August", "stylefemale.com",          AD_EXCHANGE, "Running Iklan",            200000000, "",              ""],
-  ["August", "dekadeko.com",             ADSENSE,     "Limit",                            0, "",              ""],
-  ["August", "dekadeko.com",             AD_EXCHANGE, "Review",                           0, "",              ""],
-  ["August", "psaonlineappointment.com", ADSENSE,     "",                                 0, "",              ""],
-  ["August", "psaonlineappointment.com", AD_EXCHANGE, "Limit",                     50000000, "",              ""],
-  ["August", "masseffectstore.com",      ADSENSE,     "",                                 0, "",              ""],
-  ["August", "masseffectstore.com",      AD_EXCHANGE, "Limit",                    100000000, "",              ""],
-  ["August", "petcins.com",              ADSENSE,     "",                                 0, "",              ""],
-  ["August", "petcins.com",              AD_EXCHANGE, "Limit",                    150000000, "",              ""],
-  ["August", "bispdailyupdates.pk",      ADSENSE,     "",                                "", "",              ""],
-  ["August", "bispdailyupdates.pk",      AD_EXCHANGE, "Limit",                     50000000, "",              "Menunggu Iklan Stabil"],
-  ["August", "sheetz.us",                ADSENSE,     "",                                "", "",              ""],
-  ["August", "sheetz.us",                AD_EXCHANGE, "Akun Disable Sementara",          "", "",              "26 Hari"],
-  ["August", "theglobesimregistration.ph", AD_EXCHANGE, "Ready",                         "", "",              "Menunggu Iklan Stabil"],
+  ["August", "designingaround.com", ADSENSE, "Limit", 10000000, "", ""],
+  ["August", "designingaround.com", AD_EXCHANGE, "Limit", 50000000, "", ""],
+  ["August", "stylefemale.com", ADSENSE, "", 0, "", ""],
+  ["August", "stylefemale.com", AD_EXCHANGE, "Running Iklan", 200000000, "", ""],
+  ["August", "dekadeko.com", ADSENSE, "Limit", 0, "", ""],
+  ["August", "dekadeko.com", AD_EXCHANGE, "Review", 0, "", ""],
+  ["August", "psaonlineappointment.com", ADSENSE, "", 0, "", ""],
+  ["August", "psaonlineappointment.com", AD_EXCHANGE, "Limit", 50000000, "", ""],
+  ["August", "masseffectstore.com", ADSENSE, "", 0, "", ""],
+  ["August", "masseffectstore.com", AD_EXCHANGE, "Limit", 100000000, "", ""],
+  ["August", "petcins.com", ADSENSE, "", 0, "", ""],
+  ["August", "petcins.com", AD_EXCHANGE, "Limit", 150000000, "", ""],
+  ["August", "bispdailyupdates.pk", ADSENSE, "", "", "", ""],
+  ["August", "bispdailyupdates.pk", AD_EXCHANGE, "Limit", 50000000, "", "Menunggu Iklan Stabil"],
+  ["August", "sheetz.us", ADSENSE, "", "", "", ""],
+  ["August", "sheetz.us", AD_EXCHANGE, "Akun Disable Sementara", "", "", "26 Hari"],
+  ["August", "theglobesimregistration.ph", AD_EXCHANGE, "Ready", "", "", "Menunggu Iklan Stabil"],
 ];
 
 const dry = process.argv.includes("--dry");
@@ -103,7 +103,9 @@ const db = await connect();
 // bisa ditulis sama sekali — berbeda dari seed-invalid-traffic, yang barisnya berdiri sendiri dan
 // cuma kehilangan kolom turunannya. Yang tidak ketemu disebutkan dan dilewati; menebak id-nya
 // berarti target sebuah domain tersimpan di bawah domain lain.
-const domains = Object.entries((await get(ref(db, "domains"))).val() || {}).filter(([, row]) => row);
+const domains = Object.entries((await get(ref(db, "domains"))).val() || {}).filter(
+  ([, row]) => row,
+);
 const idByDomain = new Map(domains.map(([id, row]) => [norm(row.domainUrl), id]));
 
 const existing = (await get(ref(db, "domainTargets"))).val() || {};
@@ -153,7 +155,9 @@ const legacyMonths = [
 ];
 
 if (legacyMonths.length) {
-  console.log(`\n${legacyMonths.length} bulan masih berbentuk LAMA (satu angka, tanpa jenis akun):`);
+  console.log(
+    `\n${legacyMonths.length} bulan masih berbentuk LAMA (satu angka, tanpa jenis akun):`,
+  );
   for (const entry of legacyMonths) {
     const [domainId, month, domain] = entry.split("|");
     console.log(`  ~ ${month} ${domain}: ${rupiah(existing[domainId][month])}`);
@@ -187,13 +191,22 @@ for (const row of wanted) {
   }
 
   const key = `${row.domainId}|${row.month}`;
-  const entry = byMonth.get(key) || { domain: row.domain, month: row.month, domainId: row.domainId, values: {} };
+  const entry = byMonth.get(key) || {
+    domain: row.domain,
+    month: row.month,
+    domainId: row.domainId,
+    values: {},
+  };
 
   // Angka bentuk lama jatuh ke Ad-Exchanger, aturan yang sama dengan `targetMonthRecord` di layar.
   // Yang diketik orang di spreadsheet MENANG atasnya, dan penjaganya adalah `!entry.values[...]`:
   // tanpa itu, urutan baris yang menentukan siapa yang menang — baris Ad-Exchanger yang kebetulan
   // diproses lebih dulu akan ditimpa angka lama saat baris Adsense di sebelahnya menyusul.
-  if (!entry.values[AD_EXCHANGE] && Number.isFinite(Number(stored)) && String(stored).trim() !== "") {
+  if (
+    !entry.values[AD_EXCHANGE] &&
+    Number.isFinite(Number(stored)) &&
+    String(stored).trim() !== ""
+  ) {
     entry.values[AD_EXCHANGE] = { target: Number(stored) };
   }
   entry.values[row.slug] = row.values;

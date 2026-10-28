@@ -441,7 +441,6 @@ export function CampaignFleet({
         title="Campaign"
       />
 
-
       {activeTab === "pekerjaan" && jobs.length === 0 && (
         // Tab yang kosong tanpa satu kalimat pun terbaca seperti halaman yang gagal memuat. Masa
         // simpannya disebutkan: daftar yang kosong karena job-nya sudah dibuang bukan daftar yang

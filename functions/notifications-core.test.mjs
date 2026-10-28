@@ -10,11 +10,11 @@ import {
   notifiableAlerts,
   recoveredNotices,
   rowsOf,
+  scopedAlerts,
   syncIssueAlerts,
   syncIssueMessage,
   syncIssueSummary,
   syncRecoveryMessage,
-  scopedAlerts,
   topicRecipients,
   topicSettings,
   userAlertScope,
@@ -45,7 +45,12 @@ test("daftar topik sama persis dengan yang di src/lib/notifications.js", () => {
 test("saklar orang mengalahkan siaran per role, dua arah", () => {
   const settings = { reminders: { roles: "keuangan" } };
 
-  assert.deepEqual(topicRecipients("reminders", { users: [user({ role: "keuangan" })], settings }).map((e) => e.chatId), ["111"]);
+  assert.deepEqual(
+    topicRecipients("reminders", { users: [user({ role: "keuangan" })], settings }).map(
+      (e) => e.chatId,
+    ),
+    ["111"],
+  );
   assert.deepEqual(
     topicRecipients("reminders", {
       users: [user({ role: "keuangan", notificationTopics: { reminders: false } })],
@@ -102,7 +107,14 @@ const issues = {
   gamAccounts: {
     label: "GAM",
     count: 1,
-    items: { i0: { source: "GAM", target: "Massequality", message: "500", impact: "earning 6 subdomain kosong" } },
+    items: {
+      i0: {
+        source: "GAM",
+        target: "Massequality",
+        message: "500",
+        impact: "earning 6 subdomain kosong",
+      },
+    },
   },
   plugin: { label: "Plugin", count: 0, items: {} },
 };
@@ -158,7 +170,10 @@ test("penanda milik isu yang sudah pulih dihapus", () => {
 test("penanda lama berbentuk teks tetap dibaca sebagai sudah dikabarkan", () => {
   const alerts = syncIssueAlerts(issues);
 
-  assert.deepEqual(noticesToSend(alerts, { gamAccounts__Massequality: "2026-08-26" }, "2026-08-26"), []);
+  assert.deepEqual(
+    noticesToSend(alerts, { gamAccounts__Massequality: "2026-08-26" }, "2026-08-26"),
+    [],
+  );
 });
 
 // --- Asal masalah -------------------------------------------------------------------------------
@@ -232,7 +247,10 @@ test("pesan gagal mengelompokkan per asal masalah", () => {
 test("kelompok yang kepanjangan diringkas, bukan dibiarkan menjatuhkan pesannya", () => {
   const items = {};
   for (let i = 0; i < 12; i++) {
-    items[`i${i}`] = { target: `situs${String(i).padStart(2, "0")}.example.com`, message: "GET -> 503: unavailable" };
+    items[`i${i}`] = {
+      target: `situs${String(i).padStart(2, "0")}.example.com`,
+      message: "GET -> 503: unavailable",
+    };
   }
   const text = syncIssueMessage(syncIssueAlerts({ plugin: { label: "Plugin", items } }), "");
 
@@ -245,7 +263,12 @@ test("kelompok yang kepanjangan diringkas, bukan dibiarkan menjatuhkan pesannya"
 
 test("yang pernah dikabarkan gagal dan sekarang bersih dihitung pulih", () => {
   const notices = {
-    gamAccounts__Massequality: { day: "2026-08-26", state: "failed", label: "GAM", target: "Massequality" },
+    gamAccounts__Massequality: {
+      day: "2026-08-26",
+      state: "failed",
+      label: "GAM",
+      target: "Massequality",
+    },
   };
   const pulih = recoveredNotices([], notices, "2026-08-26");
 
@@ -298,7 +321,13 @@ test("pesan memuat akibatnya dan meng-escape balasan HTML dari situs yang tumban
     syncIssueAlerts({
       plugin: {
         label: "Plugin",
-        items: { i0: { target: "a.example.com", message: "<html>502</html>", impact: "versi tidak terbaca" } },
+        items: {
+          i0: {
+            target: "a.example.com",
+            message: "<html>502</html>",
+            impact: "versi tidak terbaca",
+          },
+        },
       },
     }),
     "https://contoh.web.app/settings?tab=logs",
@@ -436,8 +465,20 @@ test("role gabungan menentukan lingkup penuh per bagian, bukan per potongan teks
 
 test("penerima membawa lingkupnya, dan itu yang dipakai pengirim", () => {
   const users = [
-    { id: "u1", name: "Aca", role: "user", telegramChatId: "111", notificationTopics: { roiAlerts: true } },
-    { id: "u2", name: "Budi", role: "admin", telegramChatId: "222", notificationTopics: { roiAlerts: true } },
+    {
+      id: "u1",
+      name: "Aca",
+      role: "user",
+      telegramChatId: "111",
+      notificationTopics: { roiAlerts: true },
+    },
+    {
+      id: "u2",
+      name: "Budi",
+      role: "admin",
+      telegramChatId: "222",
+      notificationTopics: { roiAlerts: true },
+    },
   ];
   const recipients = topicRecipients("roiAlerts", { users });
   const rowsFor = (chatId) =>

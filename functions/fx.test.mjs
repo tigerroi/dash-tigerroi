@@ -12,7 +12,6 @@ assert.equal(idrPerUnit(RATES, "GBP"), null);
 assert.equal(idrPerUnit({ IDR: 16000, USD: 0 }, "USD"), null);
 assert.equal(idrPerUnit(null, "USD"), null);
 
-
 // fetchUsdRates: hanya menerima result "success" dengan IDR; selain itu melempar.
 const okFetch = async () => ({
   ok: true,
@@ -22,7 +21,10 @@ const okRes = await fetchUsdRates(okFetch);
 assert.equal(okRes.rates.IDR, 16000);
 assert.equal(okRes.asOf, "Wed, 13 Aug 2026");
 
-const badFetch = async () => ({ ok: false, json: async () => ({ "error-type": "unsupported-code" }) });
+const badFetch = async () => ({
+  ok: false,
+  json: async () => ({ "error-type": "unsupported-code" }),
+});
 await assert.rejects(() => fetchUsdRates(badFetch), /FX open.er-api gagal/);
 
 // loadUsdRates: sukses menulis cadangan; gagal jatuh ke cadangan tersimpan.

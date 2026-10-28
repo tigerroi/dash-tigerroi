@@ -170,7 +170,10 @@ const LINE =
 const dry = process.argv.includes("--dry");
 const money = (text) => Number(String(text).replace(/,/g, ""));
 const rupiah = (v) => `Rp ${Math.round(Number(v) || 0).toLocaleString("id-ID")}`;
-const norm = (v) => String(v ?? "").trim().toLowerCase();
+const norm = (v) =>
+  String(v ?? "")
+    .trim()
+    .toLowerCase();
 // Kunci RTDB tidak boleh memuat . # $ [ ] / — nama akun tidak memuatnya, tapi spasinya diganti
 // supaya kuncinya bisa dibaca utuh di konsol Firebase tanpa %20.
 const slug = (v) => String(v).trim().replace(/\s+/g, "-");
@@ -273,7 +276,9 @@ for (const [month, v] of [...byMonth].sort()) {
 }
 
 if (noOwner.size) {
-  console.log("\nAkun yang belum terdaftar di /ad-accounts (atau tanpa User Pemilik) — PIC dikosongkan:");
+  console.log(
+    "\nAkun yang belum terdaftar di /ad-accounts (atau tanpa User Pemilik) — PIC dikosongkan:",
+  );
   for (const [name, v] of noOwner) {
     console.log(`  ${name.padEnd(18)} ${String(v.n).padStart(2)} baris   ${rupiah(v.total)}`);
   }

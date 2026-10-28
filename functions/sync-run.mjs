@@ -224,14 +224,9 @@ async function runAlerts(db, token, { timeZone, alertUrl }) {
   // mencobanya lagi, walau pesan penerima lain di run yang sama berhasil.
   const sent = new Map();
   for (const { entry, rows } of deliveries) {
-    const ok = await deliverToChats(
-      token,
-      [entry.chatId],
-      alertMessage(rows, settings, alertUrl),
-      {
-        label: "sync/roiAlerts",
-      },
-    );
+    const ok = await deliverToChats(token, [entry.chatId], alertMessage(rows, settings, alertUrl), {
+      label: "sync/roiAlerts",
+    });
     if (!ok) continue;
 
     delivered += 1;
@@ -464,7 +459,10 @@ function syncPlan(
     // PALING AKHIR, dan itu satu-satunya urutan yang benar: yang dibacanya adalah daftar isu
     // yang baru saja ditulis seluruh tahap di atas. Dijalankan lebih awal, ia mengabarkan
     // kegagalan run SEBELUMNYA — termasuk yang sudah pulih di run ini.
-    ["Notifikasi kegagalan sync", () => runSyncIssueNotices(db, telegramToken, { timeZone, syncIssueUrl })],
+    [
+      "Notifikasi kegagalan sync",
+      () => runSyncIssueNotices(db, telegramToken, { timeZone, syncIssueUrl }),
+    ],
   );
 
   return plan;

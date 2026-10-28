@@ -116,7 +116,7 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
       }
 
       notifySuccess(
-        `Berhasil mengimpor ${parseResult.dailyStats.length} baris data laporan Keitaro ke daily_stats!`
+        `Berhasil mengimpor ${parseResult.dailyStats.length} baris data laporan Keitaro ke daily_stats!`,
       );
 
       if (onImportSuccess) {
@@ -142,7 +142,10 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
       onClose={onClose}
       busy={uploading}
     >
-      <div className="dialog-body" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      <div
+        className="dialog-body"
+        style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+      >
         {/* Drop zone */}
         <div
           className={`keitaro-dropzone ${dragOver ? "dragover" : ""}`}
@@ -184,14 +187,34 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
         </div>
 
         {/* Opsi Penyesuaian Tanggal dan Situs Target */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", padding: "12px", background: "var(--muted)", borderRadius: "8px", border: "1px solid var(--border)" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "12px",
+            padding: "12px",
+            background: "var(--muted)",
+            borderRadius: "8px",
+            border: "1px solid var(--border)",
+          }}
+        >
           <div>
-            <label style={{ display: "block", fontWeight: 600, fontSize: "12px", marginBottom: "4px" }}>
+            <label
+              style={{ display: "block", fontWeight: 600, fontSize: "12px", marginBottom: "4px" }}
+            >
               Tanggal Laporan (Opsi / Fallback):
             </label>
             <input
               type="date"
-              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--card)", color: "inherit", fontSize: "12px" }}
+              style={{
+                width: "100%",
+                padding: "7px 10px",
+                borderRadius: "6px",
+                border: "1px solid var(--border)",
+                background: "var(--card)",
+                color: "inherit",
+                fontSize: "12px",
+              }}
               value={targetDate}
               onChange={(e) => {
                 setTargetDate(e.target.value);
@@ -204,7 +227,9 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
           </div>
 
           <div>
-            <label style={{ display: "block", fontWeight: 600, fontSize: "12px", marginBottom: "4px" }}>
+            <label
+              style={{ display: "block", fontWeight: 600, fontSize: "12px", marginBottom: "4px" }}
+            >
               Situs Target (Opsi / Fallback):
             </label>
             <SelectField
@@ -229,7 +254,16 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
         </div>
 
         {parsing && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "16px", color: "#3b82f6" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              padding: "16px",
+              color: "#3b82f6",
+            }}
+          >
             <Loader2 className="animate-spin" size={18} />
             <span style={{ fontSize: "13px" }}>Memproses dan memvalidasi file CSV...</span>
           </div>
@@ -239,7 +273,19 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
         {parseResult && (
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             {parseResult.error && (
-              <div style={{ padding: "10px 14px", background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: "6px", color: "#ef4444", fontSize: "13px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <div
+                style={{
+                  padding: "10px 14px",
+                  background: "rgba(239, 68, 68, 0.1)",
+                  border: "1px solid rgba(239, 68, 68, 0.3)",
+                  borderRadius: "6px",
+                  color: "#ef4444",
+                  fontSize: "13px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
                 <AlertCircle size={18} style={{ flexShrink: 0 }} />
                 <span>{parseResult.error}</span>
               </div>
@@ -255,9 +301,7 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
                 </div>
                 <div className="keitaro-stat-card">
                   <div className="keitaro-stat-label">Total Klik</div>
-                  <div className="keitaro-stat-val">
-                    {summary.totalClicks.toLocaleString()}
-                  </div>
+                  <div className="keitaro-stat-val">{summary.totalClicks.toLocaleString()}</div>
                 </div>
                 <div className="keitaro-stat-card">
                   <div className="keitaro-stat-label">Total Biaya (Spend)</div>
@@ -276,8 +320,25 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
 
             {/* Peringatan baris tidak cocok */}
             {parseResult.unmatched?.length > 0 && (
-              <div style={{ padding: "10px 14px", background: "rgba(245, 158, 11, 0.1)", border: "1px solid rgba(245, 158, 11, 0.3)", borderRadius: "6px", color: "#f59e0b", fontSize: "12px" }}>
-                <p style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: "6px", margin: "0 0 6px" }}>
+              <div
+                style={{
+                  padding: "10px 14px",
+                  background: "rgba(245, 158, 11, 0.1)",
+                  border: "1px solid rgba(245, 158, 11, 0.3)",
+                  borderRadius: "6px",
+                  color: "#f59e0b",
+                  fontSize: "12px",
+                }}
+              >
+                <p
+                  style={{
+                    fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    margin: "0 0 6px",
+                  }}
+                >
                   <AlertCircle size={14} />
                   {parseResult.unmatched.length} baris tidak dapat dicocokkan ke site_code:
                 </p>
@@ -297,7 +358,15 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
             {/* Pratinjau Tabel Menggunakan Semantic Table */}
             {parseResult.dailyStats?.length > 0 && (
               <div>
-                <h3 style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", color: "var(--muted-foreground)", margin: "0 0 8px" }}>
+                <h3
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    color: "var(--muted-foreground)",
+                    margin: "0 0 8px",
+                  }}
+                >
                   Pratinjau Data (Sumber: 'keitaro'):
                 </h3>
                 <div className="keitaro-table-scroll">
@@ -318,16 +387,29 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
                           <td style={{ fontFamily: "monospace" }}>{row.date}</td>
                           <td style={{ fontWeight: 600, color: "#3b82f6" }}>{row.site_code}</td>
                           <td style={{ textAlign: "right" }}>{row.clicks.toLocaleString()}</td>
-                          <td style={{ textAlign: "right", color: "#ef4444" }}>${row.spend.toFixed(2)}</td>
-                          <td style={{ textAlign: "right", color: "#22c55e" }}>${row.revenue.toFixed(2)}</td>
-                          <td style={{ textAlign: "right", fontWeight: 600 }}>{row.roi_percent}%</td>
+                          <td style={{ textAlign: "right", color: "#ef4444" }}>
+                            ${row.spend.toFixed(2)}
+                          </td>
+                          <td style={{ textAlign: "right", color: "#22c55e" }}>
+                            ${row.revenue.toFixed(2)}
+                          </td>
+                          <td style={{ textAlign: "right", fontWeight: 600 }}>
+                            {row.roi_percent}%
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
                 {parseResult.dailyStats.length > 15 && (
-                  <p style={{ fontSize: "11px", color: "var(--muted-foreground)", marginTop: "4px", textAlign: "right" }}>
+                  <p
+                    style={{
+                      fontSize: "11px",
+                      color: "var(--muted-foreground)",
+                      marginTop: "4px",
+                      textAlign: "right",
+                    }}
+                  >
                     Menampilkan 15 dari {parseResult.dailyStats.length} baris agregasi
                   </p>
                 )}
@@ -337,13 +419,11 @@ export function KeitaroCsvImportDialog({ isOpen, onClose, onImportSuccess }) {
         )}
       </div>
 
-      <div className="confirm-actions" style={{ marginTop: "16px", borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
-        <button
-          type="button"
-          className="secondary-button"
-          onClick={onClose}
-          disabled={uploading}
-        >
+      <div
+        className="confirm-actions"
+        style={{ marginTop: "16px", borderTop: "1px solid var(--border)", paddingTop: "12px" }}
+      >
+        <button type="button" className="secondary-button" onClick={onClose} disabled={uploading}>
           Batal
         </button>
         <button

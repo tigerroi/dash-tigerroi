@@ -31,7 +31,7 @@ export default {
             "Content-Type": "application/json",
             "Cache-Control": "no-store",
           },
-        }
+        },
       );
     }
 

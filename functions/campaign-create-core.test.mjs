@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { RuleError } from "./campaign-manage-core.js";
 import {
   activeCreateJob,
   adPayload,
@@ -24,6 +23,7 @@ import {
   targetingSpec,
   variantNames,
 } from "./campaign-create-core.js";
+import { RuleError } from "./campaign-manage-core.js";
 import { buildCodeIndex } from "./sync-core.js";
 
 const { byCode } = buildCodeIndex({
@@ -283,7 +283,10 @@ test("payload creative: Halaman di object_story_spec, url_tags terpisah dari ali
   assert.equal(payload.url_tags, "bit=[race]");
   const feed = JSON.parse(payload.asset_feed_spec);
   assert.deepEqual(feed.link_urls, [{ website_url: "https://rabbitracing.live/ZLgYTvH1" }]);
-  assert.deepEqual(feed.images, IMAGES.map((hash) => ({ hash })));
+  assert.deepEqual(
+    feed.images,
+    IMAGES.map((hash) => ({ hash })),
+  );
   assert.deepEqual(feed.titles, [{ text: "Watch Movies in HD" }]);
   assert.deepEqual(feed.ad_formats, ["CAROUSEL_IMAGE"]);
   // Halaman tidak boleh bocor ke bahan kreatifnya.
@@ -324,16 +327,19 @@ test("catatan job memuat tujuan iklannya, supaya panel tidak perlu menebak", () 
 });
 
 test("hasil job: campaign yang lahir tanpa seluruh iklannya PARTIAL, dan ID-nya disebutkan", () => {
-  assert.deepEqual(
-    createOutcome({ campaignId: "120", adSets: [{ adId: "1" }, { adId: "2" }] }),
-    { state: "done", error: "" },
-  );
+  assert.deepEqual(createOutcome({ campaignId: "120", adSets: [{ adId: "1" }, { adId: "2" }] }), {
+    state: "done",
+    error: "",
+  });
   const partial = createOutcome({
     campaignId: "120",
     adSets: [{ adId: "1" }, { adId: "", error: "creative ditolak" }],
   });
   assert.equal(partial.state, "partial");
-  assert.match(partial.error, /1 dari 2 iklan lahir; campaign 120 berdiri PAUSED.*creative ditolak/);
+  assert.match(
+    partial.error,
+    /1 dari 2 iklan lahir; campaign 120 berdiri PAUSED.*creative ditolak/,
+  );
   // Campaign yang tidak lahir sama sekali: gagal, bukan partial.
   assert.equal(createOutcome({ campaignId: "", campaignError: "ditolak" }).state, "failed");
   // Yang tidak pasti tidak boleh berbunyi "gagal": campaign-nya mungkin sudah lahir.

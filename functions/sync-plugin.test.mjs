@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { PLUGIN_ISSUES_BRANCH } from "./plugin-core.js";
-import { nextRetryAt, MAX_SYNC_RETRIES, SYNC_RETRY_PATH } from "./sync-core.js";
+import { MAX_SYNC_RETRIES, nextRetryAt, SYNC_RETRY_PATH } from "./sync-core.js";
 import { retryPluginIssues } from "./sync-plugin.mjs";
 
 // Store palsu seadanya: yang diuji di sini adalah GERBANG-nya — kapan sebuah percobaan ulang TIDAK

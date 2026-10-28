@@ -1,4 +1,5 @@
 import { asStore } from "./store.mjs";
+import { chatsFromUpdates, getTelegramUpdates, sendTelegramMessage } from "./telegram.mjs";
 import {
   greetingMessage,
   inboxChatKey,
@@ -8,7 +9,6 @@ import {
   registeredChatIds,
   TELEGRAM_INBOX_PATH,
 } from "./telegram-inbox-core.js";
-import { chatsFromUpdates, getTelegramUpdates, sendTelegramMessage } from "./telegram.mjs";
 
 /**
  * Satu siklus: baca pesan masuk bot, catat tiap chat yang menyapanya.

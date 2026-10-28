@@ -86,7 +86,9 @@ console.log(
     ".",
 );
 for (const [path, snap, values] of pending.slice(0, 10)) {
-  console.log(`  ${path.split("/").pop()} ${snap.account || "?"}: ${snap.syncedAt} -> ${values.syncedAt}`);
+  console.log(
+    `  ${path.split("/").pop()} ${snap.account || "?"}: ${snap.syncedAt} -> ${values.syncedAt}`,
+  );
 }
 if (pending.length > 10) console.log(`  ... dan ${pending.length - 10} baris lagi.`);
 

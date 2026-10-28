@@ -68,8 +68,7 @@ const ROWS = [
     saldoSebelumnya: 116882,
     realMasuk: 36737889,
     rekening: OCBC,
-    kodePip:
-      "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 36.737.889. GG104DV4Y2",
+    kodePip: "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 36.737.889. GG104DV4Y2",
     status: "Sudah Cair",
     saldoAkhir: 36737889,
   },
@@ -79,8 +78,7 @@ const ROWS = [
     saldoSebelumnya: 410187,
     realMasuk: 3176798,
     rekening: OCBC,
-    kodePip:
-      "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 3.176.798. GG104ED2D4",
+    kodePip: "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 3.176.798. GG104ED2D4",
     status: "Sudah Cair",
     saldoAkhir: 3176798,
   },
@@ -90,8 +88,7 @@ const ROWS = [
     saldoSebelumnya: 487686,
     realMasuk: 2562411,
     rekening: OCBC,
-    kodePip:
-      "Pembayaran otomatis: Rekening bank  • • • •  017 Rp 2.562.411. GG104F8XCG",
+    kodePip: "Pembayaran otomatis: Rekening bank  • • • •  017 Rp 2.562.411. GG104F8XCG",
     status: "Sudah Cair",
     saldoAkhir: 2562411,
   },
@@ -100,8 +97,7 @@ const ROWS = [
     domain: "designingaround.com",
     realMasuk: 4411521,
     rekening: OCBC,
-    kodePip:
-      "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 4.411.521. GG104F25BR",
+    kodePip: "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 4.411.521. GG104F25BR",
     status: "Sudah Cair",
     // Sunat Google (Rp 69.087) dikurangkan dua kali di spreadsheet — lihat catatan di kepala berkas.
     saldoAkhir: 4342434,
@@ -126,8 +122,7 @@ const ROWS = [
     saldoSebelumnya: 711749,
     realMasuk: 41935908,
     rekening: OCBC,
-    kodePip:
-      "Pembayaran otomatis: Rekening bank  • • • •  017 Rp 41.935.908. GG104F2M96",
+    kodePip: "Pembayaran otomatis: Rekening bank  • • • •  017 Rp 41.935.908. GG104F2M96",
     status: "Sudah Cair",
     saldoAkhir: 41935908,
   },
@@ -147,8 +142,7 @@ const ROWS = [
     saldoSebelumnya: 2088656,
     realMasuk: 2065532,
     rekening: OCBC,
-    kodePip:
-      "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 2.065.532. GG104F28XL",
+    kodePip: "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 2.065.532. GG104F28XL",
     status: "Sudah Cair",
     saldoAkhir: 2065532,
   },
@@ -158,8 +152,7 @@ const ROWS = [
     saldoSebelumnya: 1174267,
     realMasuk: 60679245,
     rekening: OCBC,
-    kodePip:
-      "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 60.679.245. GG104GJGNV",
+    kodePip: "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 60.679.245. GG104GJGNV",
     status: "Sudah Cair",
     saldoAkhir: 60679245,
   },
@@ -168,8 +161,7 @@ const ROWS = [
     domain: "masseffectstore.com",
     realMasuk: 41334946,
     rekening: OCBC,
-    kodePip:
-      "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 41.334.946. GG104GK5V0",
+    kodePip: "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 41.334.946. GG104GK5V0",
     status: "Sudah Cair",
     saldoAkhir: 41334946,
   },
@@ -178,8 +170,7 @@ const ROWS = [
     domain: "stylefemale.com",
     realMasuk: 103194238,
     rekening: OCBC,
-    kodePip:
-      "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 103.194.238. GG104GIVOS",
+    kodePip: "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 103.194.238. GG104GIVOS",
     status: "Sudah Cair",
     saldoAkhir: 103194238,
   },
@@ -208,8 +199,7 @@ const ROWS = [
     domain: "designingaround.com",
     realMasuk: 11399996,
     rekening: OCBC,
-    kodePip:
-      "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 11.399.996. GG104GCSCT",
+    kodePip: "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 11.399.996. GG104GCSCT",
     status: "Sudah Cair",
     saldoAkhir: 11431467,
   },
@@ -218,8 +208,7 @@ const ROWS = [
     domain: "dekadeko.com",
     realMasuk: 3690459,
     rekening: OCBC,
-    kodePip:
-      "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 3.690.459. GG104GI0I5",
+    kodePip: "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 3.690.459. GG104GI0I5",
     status: "Sudah Cair",
     saldoAkhir: 3690459,
   },
@@ -238,8 +227,7 @@ const ROWS = [
     domain: "stylefemale.com",
     realMasuk: 160989523,
     rekening: OCBC,
-    kodePip:
-      "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 160.989.523. GG104HWPMX",
+    kodePip: "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 160.989.523. GG104HWPMX",
     status: "Pending Payment",
     saldoAkhir: 160989523,
   },
@@ -261,8 +249,7 @@ const ROWS = [
     domain: "masseffectstore.com",
     realMasuk: 61437700,
     rekening: OCBC,
-    kodePip:
-      "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 61.437.700. GG104HU9DE",
+    kodePip: "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 61.437.700. GG104HU9DE",
     status: "Pending Payment",
     saldoAkhir: 61437700,
   },
@@ -271,8 +258,7 @@ const ROWS = [
     domain: "petcins.com",
     realMasuk: 93106008,
     rekening: OCBC,
-    kodePip:
-      "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 93.106.008. GG104I1EO1",
+    kodePip: "Pembayaran otomatis: Rekening bank  • • • •  017 sebesar Rp 93.106.008. GG104I1EO1",
     status: "Pending Payment",
     saldoAkhir: 93197378,
   },

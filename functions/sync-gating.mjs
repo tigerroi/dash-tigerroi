@@ -3,10 +3,10 @@ import { connect } from "./db.mjs";
 import {
   expiredGateCommandKeys,
   GATE_RUNS_LIMIT,
+  GATING_PATH,
   gateCampaignsMap,
   gateCommandUpdate,
   gateIssue,
-  GATING_PATH,
   gateKey,
   gatePreviewRow,
   gateProblemIssue,
@@ -102,7 +102,9 @@ export async function applyGateCommands(dbOrStore, apiKey, now = new Date()) {
         // kecil, bukan diangkat jadi isu — mengangkatnya berarti ikon peringatan di topbar menyala
         // untuk sesuatu yang selesai sendiri semenit kemudian.
         if (result?.reload?.ok === false) {
-          console.log(`NOTE ${command.campaignId}: gate belum memuat ulang site-nya, akan menyusul.`);
+          console.log(
+            `NOTE ${command.campaignId}: gate belum memuat ulang site-nya, akan menyusul.`,
+          );
         }
         if (result?.verification?.cleanupComplete === false) {
           issues.push({
@@ -356,10 +358,7 @@ export async function syncGating(dbOrStore, apiKey, now = new Date()) {
 // Ditulis walau kosong, sama seperti cabang syncIssues yang lain: perintah yang gagal sepuluh menit
 // lalu tidak boleh terus menyalakan ikon peringatan setelah percobaan berikutnya berhasil.
 function writeIssues(store, issues, now) {
-  return store.replace(
-    `${SYNC_ISSUES_PATH}/gating`,
-    syncIssuesUpdate("VI Control", issues, now),
-  );
+  return store.replace(`${SYNC_ISSUES_PATH}/gating`, syncIssuesUpdate("VI Control", issues, now));
 }
 
 async function clearFinishedCommands(store, commands, now) {

@@ -5,7 +5,7 @@ import test from "node:test";
 // meta.js membaca jedanya saat diimpor.
 process.env.META_MIN_INTERVAL_MS = "0";
 const { runCreateJob, startCreateJob, startResumeCreateJob, sweepCreateJobs } = await import(
-  "./campaign-create-jobs.mjs",
+  "./campaign-create-jobs.mjs"
 );
 const { createPlan } = await import("./campaign-create-core.js");
 const { JobConflict } = await import("./campaign-jobs.mjs");
@@ -50,8 +50,7 @@ function metaStub(overrides = {}) {
   globalThis.fetch = async (url, options) => {
     const u = new URL(String(url));
     const key = `${options?.method || "GET"} ${u.pathname.replace(/^\/v25\.0/, "")}`;
-    const body =
-      options?.body instanceof URLSearchParams ? Object.fromEntries(options.body) : null;
+    const body = options?.body instanceof URLSearchParams ? Object.fromEntries(options.body) : null;
     calls.push({ key, body, params: u.searchParams });
     const route = routes[key];
     if (!route) throw new Error(`panggilan tak terduga: ${key}`);
@@ -125,7 +124,9 @@ test("start: job yang masih berjalan untuk nama yang sama ditolak tanpa menyentu
 test("run: campaign lalu ad set + creative + iklan per variasi, semuanya PAUSED", async () => {
   const store = fakeStore();
   const calls = metaStub({
-    "POST /act_1/adsets": () => [{ id: `set${calls.filter((c) => c.key.endsWith("adsets")).length}` }],
+    "POST /act_1/adsets": () => [
+      { id: `set${calls.filter((c) => c.key.endsWith("adsets")).length}` },
+    ],
   });
   const synced = [];
   const { jobId } = await start(store);
@@ -255,7 +256,8 @@ test("setiap field job yang ditulis disebut aturan database", async () => {
   const { jobId } = await start(store);
   await runCreateJob(store, "tok", { jobId, plan: plan(), account: ACCOUNT });
   const job = jobsOf(store)[jobId];
-  for (const key of Object.keys(job)) assert.ok(jobRule[key], `${key} tidak disebut aturan database`);
+  for (const key of Object.keys(job))
+    assert.ok(jobRule[key], `${key} tidak disebut aturan database`);
   for (const key of Object.keys(job.progress))
     assert.ok(jobRule.progress[key], `progress/${key} tidak disebut`);
   for (const row of job.adSets) {
@@ -280,7 +282,12 @@ test("lanjutkan: yang partial dibuat dari rencana tersimpan, tanpa campaign atau
   const calls = metaStub();
   const { resume } = await startResumeCreateJob(store, jobId);
   assert.equal(jobsOf(store)[jobId].state, "requested");
-  const out = await runCreateJob(store, "tok", { jobId, plan: resume.plan, account: ACCOUNT, resume });
+  const out = await runCreateJob(store, "tok", {
+    jobId,
+    plan: resume.plan,
+    account: ACCOUNT,
+    resume,
+  });
   assert.equal(out.state, "done");
   assert.equal(out.campaignId, "900");
   assert.deepEqual(

@@ -2,8 +2,8 @@ import { pathToFileURL } from "node:url";
 import { get, push, ref, update } from "firebase/database";
 import { ADS_NOT_SERVING } from "./account-status.js";
 import { connect } from "./db.mjs";
-import { loadUsdRates } from "./fx.mjs";
 import { preconditionError, summarizeNetworks } from "./discover-core.js";
+import { loadUsdRates } from "./fx.mjs";
 import { listNetworks } from "./gam.js";
 import { accessTokenFrom } from "./oauth.mjs";
 import { asStore } from "./store.mjs";
@@ -43,7 +43,10 @@ export async function syncAccounts(db, only = []) {
   const results = await Promise.all(
     eligible.map(async ([id, account]) => {
       try {
-        await update(ref(db, `gamAccounts/${id}`), await earningUpdate(account, configs, { rates }));
+        await update(
+          ref(db, `gamAccounts/${id}`),
+          await earningUpdate(account, configs, { rates }),
+        );
         return { id, account };
       } catch (error) {
         return { id, account, error };
@@ -88,7 +91,6 @@ export async function syncAccounts(db, only = []) {
   }
   return { ok, fail: errors.length, errors };
 }
-
 
 // Import GAM accounts from the networks each connected credential can access. Creates
 // one gamAccounts record per new networkCode (skips ones already present). Mirrors the
@@ -169,7 +171,6 @@ export async function discoverNetworks(db, actor = "import") {
     summary: summarizeNetworks(created, perCredential, errors),
   };
 }
-
 
 // Dijalankan langsung sebagai CLI, atau diimpor sebagai modul?
 //

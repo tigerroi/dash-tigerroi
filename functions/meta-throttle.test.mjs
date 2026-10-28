@@ -5,7 +5,8 @@ process.env.META_MINOR_UNIT = "100";
 process.env.META_MIN_INTERVAL_MS = "50";
 process.env.META_MAX_RETRIES = "2";
 process.env.META_RETRY_BASE_MS = "10";
-const { copyCampaignShell, fetchAccount, fetchCampaignSpend, retryDelay, setCampaignStatus } = await import("./meta.js");
+const { copyCampaignShell, fetchAccount, fetchCampaignSpend, retryDelay, setCampaignStatus } =
+  await import("./meta.js");
 
 const ok = (body, headers = {}) => ({
   ok: true,

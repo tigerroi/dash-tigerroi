@@ -57,14 +57,15 @@ async function request(host, path, { method = "GET", apiKey, enrollToken, payloa
     text = await res.text();
   } catch (error) {
     if (error.name === "TimeoutError") {
-      throw new PluginError(
-        `${host} tidak menjawab dalam ${Math.round(limit / 1000)} detik.`,
-        { code: "timeout" },
-      );
+      throw new PluginError(`${host} tidak menjawab dalam ${Math.round(limit / 1000)} detik.`, {
+        code: "timeout",
+      });
     }
     // DNS mati, TLS ditolak, koneksi ditutup. Dibedakan dari jawaban yang isinya error, karena yang
     // ini tidak mengabarkan apa pun tentang plugin — situsnya sendiri yang tidak bisa dihubungi.
-    throw new PluginError(`${host} tidak bisa dihubungi: ${error.message}`, { code: "unreachable" });
+    throw new PluginError(`${host} tidak bisa dihubungi: ${error.message}`, {
+      code: "unreachable",
+    });
   }
 
   // Amplopnya yang diurai, bukan `res.ok` yang dipercaya: kedua bentuk gagal plugin datang dengan

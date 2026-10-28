@@ -29,7 +29,10 @@ test("alamatnya DI LUAR /manage/ — kalau tidak, tiap permintaan menjawab rest_
 
   // Penormal hostname-nya dipakai bersama dengan plugin-core: bentuk yang ditolak di sana ditolak
   // di sini juga, dan yang dibersihkan di sana dibersihkan di sini.
-  assert.equal(autopostBaseUrl("https://Sub.Domain.com/"), `https://sub.domain.com${AUTOPOST_NAMESPACE}`);
+  assert.equal(
+    autopostBaseUrl("https://Sub.Domain.com/"),
+    `https://sub.domain.com${AUTOPOST_NAMESPACE}`,
+  );
   assert.throws(() => autopostBaseUrl("bukan host"), PluginError);
   assert.throws(() => autopostBaseUrl(""), PluginError);
 });
@@ -52,7 +55,10 @@ test("unwrapAutopost: pesan gagal di AKAR, bukan di error.code", () => {
   // `body.error?.message` dan menemukan `undefined`, jadi sebab yang benar-benar berguna hilang.
   const failure = (() => {
     try {
-      unwrapAutopost({ success: false, message: "Error Gemini: API key not valid", logs: ["a", ""] }, 502);
+      unwrapAutopost(
+        { success: false, message: "Error Gemini: API key not valid", logs: ["a", ""] },
+        502,
+      );
       return null;
     } catch (error) {
       return error;
@@ -92,19 +98,28 @@ test("unwrapAutopost: rest_no_route berarti PLUGINNYA yang lama, bukan kunci yan
 });
 
 test("toKeywordPayload: kunci AI dan kata dasar wajib, batas atas ditolak di sini", () => {
-  assert.deepEqual(toKeywordPayload("AIzaSy", { base_keyword: " seo plugin ", total_keyword: 30 }), {
-    base_keyword: " seo plugin ",
-    total_keyword: 30,
-    bahasa: "English",
-    ai_key: "AIzaSy",
-  });
+  assert.deepEqual(
+    toKeywordPayload("AIzaSy", { base_keyword: " seo plugin ", total_keyword: 30 }),
+    {
+      base_keyword: " seo plugin ",
+      total_keyword: 30,
+      bahasa: "English",
+      ai_key: "AIzaSy",
+    },
+  );
 
   assert.throws(() => toKeywordPayload("", { base_keyword: "x" }), /Kunci API AI/);
   assert.throws(() => toKeywordPayload("AIzaSy", {}), /Kata kunci dasar/);
   // Plugin menjepit 1-100 DIAM-DIAM: yang meminta 500 menerima 100 dengan `success: true`, dan
   // selisihnya tidak berbunyi sebagai kesalahan di mana pun.
-  assert.throws(() => toKeywordPayload("AIzaSy", { base_keyword: "x", total_keyword: 500 }), /maksimal 100/);
-  assert.throws(() => toKeywordPayload("AIzaSy", { base_keyword: "x", total_keyword: 0 }), /minimal 1/);
+  assert.throws(
+    () => toKeywordPayload("AIzaSy", { base_keyword: "x", total_keyword: 500 }),
+    /maksimal 100/,
+  );
+  assert.throws(
+    () => toKeywordPayload("AIzaSy", { base_keyword: "x", total_keyword: 0 }),
+    /minimal 1/,
+  );
 });
 
 /**
@@ -158,12 +173,18 @@ test("bawaan payload = Default REST, kecuali tag_otomatis yang ikut layar plugin
 
   // Yang DIKOSONGKAN orang tidak jatuh kembali ke bawaannya — mengosongkan prompt itu disengaja.
   assert.equal(toAutopostPayload("x", "k", { custom_prompt: "" }).custom_prompt, "");
-  assert.equal(toAutopostPayload("x", "k", { custom_prompt: "pakai tabel" }).custom_prompt, "pakai tabel");
+  assert.equal(
+    toAutopostPayload("x", "k", { custom_prompt: "pakai tabel" }).custom_prompt,
+    "pakai tabel",
+  );
 
   assert.throws(() => toAutopostPayload("", "k", {}), /Kata kunci/);
   assert.throws(() => toAutopostPayload("x", "", {}), /Kunci API AI/);
   // Enum yang tidak sah ditolak SEBELUM menyentuh jaringan, sepola dengan `normalizeField`.
-  assert.throws(() => toAutopostPayload("x", "k", { bypass_ai: "entah" }), /bukan pilihan yang sah/);
+  assert.throws(
+    () => toAutopostPayload("x", "k", { bypass_ai: "entah" }),
+    /bukan pilihan yang sah/,
+  );
   assert.throws(() => toAutopostPayload("x", "k", { author_id: "dua" }), /angka bulat/);
 });
 

@@ -21,8 +21,8 @@
 // dolar) dianggap sudah dibetulkan dan dilewati.
 
 import { get, ref, update } from "firebase/database";
-import { connect } from "../db.mjs";
 import { runAccountReportByDimensions } from "../adsense.js";
+import { connect } from "../db.mjs";
 import { accessTokenFrom } from "../oauth.mjs";
 import { adsenseAccountName, earningAccounts, resolveCredential } from "../sync-core.js";
 

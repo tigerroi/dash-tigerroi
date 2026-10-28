@@ -40,14 +40,20 @@ export async function applyCampaignCommands(dbOrStore, token, now = new Date()) 
     // keputusan enam jam lalu berarti membelanjakan uang tanpa ada yang memutuskannya sekarang.
     if (command.expired) {
       const error = "Perintah kedaluwarsa sebelum sempat diterapkan. Coba lagi kalau masih perlu.";
-      await store.update(`users/${command.userId}`, campaignCommandUpdate(user, command, { ok: false, error }, now));
+      await store.update(
+        `users/${command.userId}`,
+        campaignCommandUpdate(user, command, { ok: false, error }, now),
+      );
       errors.push({ command, message: error });
       continue;
     }
 
     try {
       await setCampaignStatus(command.campaignId, token, command.desiredStatus);
-      await store.update(`users/${command.userId}`, campaignCommandUpdate(user, command, { ok: true }, now));
+      await store.update(
+        `users/${command.userId}`,
+        campaignCommandUpdate(user, command, { ok: true }, now),
+      );
       applied++;
       console.log(`OK   ${command.desiredStatus} ${label}`);
     } catch (error) {
@@ -85,17 +91,31 @@ export async function applyCampaignCommands(dbOrStore, token, now = new Date()) 
 
 // Satu perintah, dieksekusi sekarang juga. Dipakai callable: ia sudah tahu perintah mana yang baru
 // saja ditulis, jadi tidak perlu menyapu seluruh antrean untuk menemukannya.
-export async function applyOneCampaignCommand(dbOrStore, token, userId, campaignId, now = new Date()) {
+export async function applyOneCampaignCommand(
+  dbOrStore,
+  token,
+  userId,
+  campaignId,
+  now = new Date(),
+) {
   const store = asStore(dbOrStore);
   const user = (await store.read(`users/${userId}`)) || {};
   const stored = user.campaignCommands?.[campaignId];
   if (!stored) throw new Error("Perintah campaign tidak ditemukan.");
 
-  const command = { userId, campaignId, campaign: stored.campaign || "", desiredStatus: stored.desiredStatus };
+  const command = {
+    userId,
+    campaignId,
+    campaign: stored.campaign || "",
+    desiredStatus: stored.desiredStatus,
+  };
   try {
     await setCampaignStatus(campaignId, token, stored.desiredStatus);
   } catch (error) {
-    await store.update(`users/${userId}`, campaignCommandUpdate(user, command, { ok: false, error: error.message }, now));
+    await store.update(
+      `users/${userId}`,
+      campaignCommandUpdate(user, command, { ok: false, error: error.message }, now),
+    );
     throw error;
   }
   await store.update(`users/${userId}`, campaignCommandUpdate(user, command, { ok: true }, now));

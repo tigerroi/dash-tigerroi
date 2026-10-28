@@ -123,7 +123,9 @@ for (const node of [...OWNERSHIP, ...HISTORY]) {
   const keys = Object.entries(rows)
     .filter(([, row]) => normalizeName(row?.[node.field]) === normalizeName(from))
     .map(([key]) => key);
-  const days = [...new Set(keys.map((k) => k.slice(0, 10)))].filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+  const days = [...new Set(keys.map((k) => k.slice(0, 10)))]
+    .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))
+    .sort();
   console.log(
     `\n${node.label.padEnd(20)} ${String(keys.length).padStart(5)} baris  (${node.path}.${node.field})` +
       (days.length ? `\n${" ".repeat(21)}${days[0]} s/d ${days.at(-1)}` : ""),
@@ -154,7 +156,8 @@ const REPORT_BRANCHES = ["campaignHistory", "dailySpend", "balanceSnapshots", "c
 const USER_BRANCHES = ["campaignCommands"];
 const fromReports = await read(userReportsPath(fromId));
 const toReports = await read(userReportsPath(toId));
-const sourceOf = (key) => (REPORT_BRANCHES.includes(key) ? [fromReports, toReports] : [fromUser, toUser]);
+const sourceOf = (key) =>
+  REPORT_BRANCHES.includes(key) ? [fromReports, toReports] : [fromUser, toUser];
 
 const merged = {};
 let skipped = 0;
@@ -177,7 +180,8 @@ for (const key of [...REPORT_BRANCHES, ...USER_BRANCHES]) {
 // Disebutkan di sini karena yang kehilangan kedalaman riwayatnya adalah panel yang sudah dibaca
 // orang, dan angkanya menyusut BEBERAPA JAM setelah migrasi — bukan saat migrasi jalan.
 const snapshotsAfter =
-  Object.keys(merged.balanceSnapshots).length + Object.keys(toReports.balanceSnapshots || {}).length;
+  Object.keys(merged.balanceSnapshots).length +
+  Object.keys(toReports.balanceSnapshots || {}).length;
 if (snapshotsAfter > snapshotKeep()) {
   console.log(
     `\n  ⚠ Snapshot saldo digabung jadi ${snapshotsAfter}, jatah simpannya ${snapshotKeep()}.` +
@@ -190,7 +194,9 @@ if (snapshotsAfter > snapshotKeep()) {
 const campaignId = (row) => String(row?.campaignId || "") || `name:${normalizeName(row?.campaign)}`;
 const existingCampaigns = toArray(toUser.campaigns);
 const seen = new Set(existingCampaigns.map(campaignId));
-const incoming = toArray(fromUser.campaigns).filter((row) => row?.campaign && !seen.has(campaignId(row)));
+const incoming = toArray(fromUser.campaigns).filter(
+  (row) => row?.campaign && !seen.has(campaignId(row)),
+);
 console.log(
   `campaigns${" ".repeat(12)} ${String(incoming.length).padStart(5)} baris pindah  ` +
     `(${to} sudah punya ${existingCampaigns.length}, ${toArray(fromUser.campaigns).length - incoming.length} sudah ada di sana)`,
@@ -202,7 +208,9 @@ if (dry) {
     `\n--dry: ${totalRows} baris AKAN berganti pemilik "${from}" → "${to}", ` +
       `${Object.values(merged).reduce((n, m) => n + Object.keys(m).length, 0) + incoming.length} baris riwayat AKAN pindah, ` +
       `baris user "${from}" AKAN diarsipkan. Tidak ada yang ditulis.` +
-      (skipped ? `\n       ${skipped} baris riwayat dilewati karena kuncinya sudah ada di ${to} (baris ${to} yang dipertahankan).` : ""),
+      (skipped
+        ? `\n       ${skipped} baris riwayat dilewati karena kuncinya sudah ada di ${to} (baris ${to} yang dipertahankan).`
+        : ""),
   );
   process.exit(0);
 }

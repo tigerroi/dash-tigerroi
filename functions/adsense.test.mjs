@@ -87,10 +87,7 @@ console.log("adsense.test ok");
 assert.equal(rows[0].reportCurrency, "IDR");
 const usdRows = parseReport(
   {
-    headers: [
-      { name: "DOMAIN_NAME" },
-      { name: "ESTIMATED_EARNINGS", currencyCode: "USD" },
-    ],
+    headers: [{ name: "DOMAIN_NAME" }, { name: "ESTIMATED_EARNINGS", currencyCode: "USD" }],
     rows: [{ cells: [{ value: "marriage.psaonlineappointment.com" }, { value: "0.76" }] }],
   },
   1,
@@ -116,7 +113,10 @@ globalThis.fetch = async (url) => {
   urls.push(String(url));
   return { ok: true, text: async () => JSON.stringify({ headers: [], rows: [] }) };
 };
-const day = { startDate: { year: 2026, month: 8, day: 21 }, endDate: { year: 2026, month: 8, day: 21 } };
+const day = {
+  startDate: { year: 2026, month: 8, day: 21 },
+  endDate: { year: 2026, month: 8, day: 21 },
+};
 await runAccountReportByDimensions("pub-1", day, "t", ["SITE"]);
 assert.ok(urls.at(-1).includes("currencyCode=IDR"), urls.at(-1));
 process.env.ADSENSE_CURRENCY = "";

@@ -10,7 +10,6 @@ const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/+$/, "");
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const GLOBAL_META_TOKEN = process.env.META_ACCESS_TOKEN || "";
 
-
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.error("❌ SUPABASE_URL dan SUPABASE_SERVICE_ROLE_KEY wajib diisi.");
   process.exit(1);
@@ -82,7 +81,6 @@ async function sendTelegramAlert(message) {
   console.warn(`[Alert] ${message}`);
 }
 
-
 export async function runSyncMeta() {
   const startedAt = new Date().toISOString();
   console.log(`[${startedAt}] Memulai Sinkronisasi Meta Ads ke Supabase...`);
@@ -113,7 +111,8 @@ export async function runSyncMeta() {
       .single();
 
     if (runRecord) runId = runRecord.id;
-    if (startError) console.warn("Peringatan: Gagal mencatat start ke sync_runs:", startError.message);
+    if (startError)
+      console.warn("Peringatan: Gagal mencatat start ke sync_runs:", startError.message);
 
     // 3. Ambil daftar pemetaan sites
     const { data: sitesList, error: sitesError } = await supabase
@@ -131,11 +130,14 @@ export async function runSyncMeta() {
       .select("id, account_id, name, access_token, currency, is_active")
       .eq("is_active", true);
 
-    if (accountsError) throw new Error(`Gagal membaca tabel meta_accounts: ${accountsError.message}`);
+    if (accountsError)
+      throw new Error(`Gagal membaca tabel meta_accounts: ${accountsError.message}`);
 
     const accounts = accountsList || [];
     if (accounts.length === 0) {
-      console.log("ℹ️ Tidak ada akun aktif di meta_accounts. Memeriksa META_ACCOUNT_ID dari environment...");
+      console.log(
+        "ℹ️ Tidak ada akun aktif di meta_accounts. Memeriksa META_ACCOUNT_ID dari environment...",
+      );
       if (process.env.META_ACCOUNT_ID && GLOBAL_META_TOKEN) {
         accounts.push({
           id: "env-account",
@@ -153,7 +155,9 @@ export async function runSyncMeta() {
     const dateToday = getJakartaDate(0);
     const dateSince = getJakartaDate(daysBack);
     const dateRange = { since: dateSince, until: dateToday };
-    console.log(`Rentang Penarikan Meta Ads: ${dateRange.since} s/d ${dateRange.until} (${daysBack} hari ke belakang)...`);
+    console.log(
+      `Rentang Penarikan Meta Ads: ${dateRange.since} s/d ${dateRange.until} (${daysBack} hari ke belakang)...`,
+    );
 
     let totalSyncedRows = 0;
     const errors = [];
@@ -175,7 +179,9 @@ export async function runSyncMeta() {
       try {
         // A. Ambil status dan saldo akun
         const overview = await fetchAccountOverview(account.account_id, token);
-        console.log(`    Saldo/Limit: ${overview.currency} ${overview.remainingBudget.toLocaleString()} | Spent: ${overview.amountSpent}`);
+        console.log(
+          `    Saldo/Limit: ${overview.currency} ${overview.remainingBudget.toLocaleString()} | Spent: ${overview.amountSpent}`,
+        );
 
         // Update informasi saldo di meta_accounts jika baris ada di database
         if (account.id !== "env-account") {
@@ -283,7 +289,9 @@ export async function runSyncMeta() {
         .eq("id", runId);
     }
 
-    console.log(`\n[${finishedAt}] Selesai. Status: ${status}, Baris Disinkronkan: ${totalSyncedRows}`);
+    console.log(
+      `\n[${finishedAt}] Selesai. Status: ${status}, Baris Disinkronkan: ${totalSyncedRows}`,
+    );
 
     if (errors.length && !isSuccess) {
       const alertText = `Sync Meta Gagal:\n${errors.join("\n")}`;

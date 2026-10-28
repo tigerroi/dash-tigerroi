@@ -3,20 +3,20 @@ import { connect } from "./db.mjs";
 import { loadUsdRates } from "./fx.mjs";
 import { fetchDailySpend } from "./meta.js";
 import { asStore } from "./store.mjs";
-import { loadUnreadableEarning, loadUnreadableSpend } from "./unreadable-spend.mjs";
 import {
   adTaxRate,
   convertRowsToIdr,
   dateKeyFrom,
   earningAccounts,
   earningRowsByDimension,
-  financialWrite,
   financialWindow,
+  financialWrite,
   mergeFinancialSeries,
   resolveCurrencies,
   SYNC_ISSUES_PATH,
   syncIssuesUpdate,
 } from "./sync-core.js";
+import { loadUnreadableEarning, loadUnreadableSpend } from "./unreadable-spend.mjs";
 
 // The Overview "Pendapatan vs Pengeluaran" chart: revenue per day from every earning account
 // (GAM networks and standalone AdSense alike), spend per day from Meta, merged on the date. Both APIs keep history, so this backfills the whole window on every
@@ -115,7 +115,8 @@ export async function syncFinancials(dbOrStore, metaToken = "", { unreadableRows
       source: "Earning akun nonaktif",
       target: "dashboard/roiReports",
       message: error.message,
-      impact: "Garis Pendapatan pada grafik Overview kehilangan akun GAM/AdSense yang sync-nya dimatikan.",
+      impact:
+        "Garis Pendapatan pada grafik Overview kehilangan akun GAM/AdSense yang sync-nya dimatikan.",
     });
   }
 
@@ -173,7 +174,8 @@ export async function syncFinancials(dbOrStore, metaToken = "", { unreadableRows
         source: "Riwayat spend akun nonaktif",
         target: "userReports/*/campaignHistory",
         message: error.message,
-        impact: "Garis Pengeluaran pada grafik Overview kehilangan ad account yang sync-nya dimatikan.",
+        impact:
+          "Garis Pengeluaran pada grafik Overview kehilangan ad account yang sync-nya dimatikan.",
       });
     }
   }
@@ -209,7 +211,10 @@ export async function syncFinancials(dbOrStore, metaToken = "", { unreadableRows
     }
   }
 
-  await store.replace(`${SYNC_ISSUES_PATH}/financials`, syncIssuesUpdate("Grafik Overview", issues));
+  await store.replace(
+    `${SYNC_ISSUES_PATH}/financials`,
+    syncIssuesUpdate("Grafik Overview", issues),
+  );
 
   const summary =
     `${series.length} hari terisi (${window.since} s/d ${window.until}).` +
@@ -222,7 +227,9 @@ export async function syncFinancials(dbOrStore, metaToken = "", { unreadableRows
     (metaToken ? "" : " META_ACCESS_TOKEN kosong, garis pengeluaran tidak diisi.") +
     (errors.length ? ` ${errors.length} sumber gagal dibaca.` : "") +
     (revenueComplete ? "" : " Pendapatan tidak ditulis ulang (ada akun yang gagal dibaca).") +
-    (spendComplete || !metaToken ? "" : " Pengeluaran tidak ditulis ulang (ada ad account yang gagal dibaca).");
+    (spendComplete || !metaToken
+      ? ""
+      : " Pengeluaran tidak ditulis ulang (ada ad account yang gagal dibaca).");
   return { days: series.length, pruned, window, errors, issues, summary };
 }
 

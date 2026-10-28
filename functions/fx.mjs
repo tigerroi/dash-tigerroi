@@ -36,7 +36,11 @@ export async function loadUsdRates(store, { fetchImpl = fetch } = {}) {
     const fresh = await fetchUsdRates(fetchImpl);
     cache = { ...fresh, stale: false };
     if (store) {
-      await store.update(FX_PATH, { USD: fresh.rates, asOf: fresh.asOf, source: "open.er-api.com" });
+      await store.update(FX_PATH, {
+        USD: fresh.rates,
+        asOf: fresh.asOf,
+        source: "open.er-api.com",
+      });
     }
   } catch (error) {
     const saved = store ? await store.read(FX_PATH) : null;

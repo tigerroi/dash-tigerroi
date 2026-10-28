@@ -46,8 +46,8 @@
 
 import { get, ref, update } from "firebase/database";
 import { connect } from "../db.mjs";
-import { clientStore } from "../store.mjs";
 import { fetchCampaignResultGoals, fetchCampaignSpend } from "../meta.js";
+import { clientStore } from "../store.mjs";
 import {
   adTaxRate,
   buildCampaignResolver,
@@ -165,15 +165,21 @@ for (const [, acct] of Object.entries(adAccounts)) {
   try {
     goals = await fetchCampaignResultGoals(acct.actId, token);
   } catch (e) {
-    console.error(`  tujuan ad set ${label} gagal (kolom Hasil jatuh ke daftar cadangan): ${e.message}`);
+    console.error(
+      `  tujuan ad set ${label} gagal (kolom Hasil jatuh ke daftar cadangan): ${e.message}`,
+    );
   }
   let dayRows;
   try {
     dayRows = await fetchCampaignSpend(acct.actId, token, period, goals);
   } catch (e) {
     console.error(`\nGAGAL membaca ${label}: ${e.message}`);
-    console.error("Run dihentikan: spend yang tidak lengkap akan mengosongkan kolom uang subdomain");
-    console.error("yang campaign-nya tinggal di akun ini. Jalankan lagi setelah akunnya bisa dibaca.");
+    console.error(
+      "Run dihentikan: spend yang tidak lengkap akan mengosongkan kolom uang subdomain",
+    );
+    console.error(
+      "yang campaign-nya tinggal di akun ini. Jalankan lagi setelah akunnya bisa dibaca.",
+    );
     process.exit(1);
   }
   accounts++;
@@ -259,7 +265,9 @@ for (const day of days) {
 }
 
 // --- Laporan -----------------------------------------------------------------------------------
-console.log(`Rentang ${since} s/d ${until} · ${days.length} hari · ${accounts} ad account dibaca.\n`);
+console.log(
+  `Rentang ${since} s/d ${until} · ${days.length} hari · ${accounts} ad account dibaca.\n`,
+);
 
 const byMonth = new Map();
 for (const w of [...writes, ...created]) {
@@ -290,7 +298,9 @@ for (const w of shown.slice(0, 25)) {
 }
 if (shown.length > 25) console.log(`  … dan ${shown.length - 25} baris lagi.`);
 for (const c of created) {
-  console.log(`+ ${c.day} ${c.name}: Rp ${rupiah(c.report.totalSpending)} (baris BARU, earning belum diketahui)`);
+  console.log(
+    `+ ${c.day} ${c.name}: Rp ${rupiah(c.report.totalSpending)} (baris BARU, earning belum diketahui)`,
+  );
 }
 if (unmatched.size) {
   console.log("\nCampaign yang MASIH tidak ketempel ke subdomain mana pun:");
@@ -304,7 +314,9 @@ if (!writes.length && !created.length) {
   process.exit(0);
 }
 if (dry) {
-  console.log(`\n--dry: tidak ada yang ditulis. ${writes.length} baris disunting, ${created.length} baris dibuat.`);
+  console.log(
+    `\n--dry: tidak ada yang ditulis. ${writes.length} baris disunting, ${created.length} baris dibuat.`,
+  );
   process.exit(0);
 }
 

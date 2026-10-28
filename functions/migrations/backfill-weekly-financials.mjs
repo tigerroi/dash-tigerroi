@@ -107,9 +107,7 @@ function spread(total, days, weights) {
   const raw = share.map((s) => total * s);
   const floors = raw.map((v) => Math.floor(v * 100) / 100);
   let rest = round2(total - floors.reduce((a, b) => a + b, 0));
-  const order = raw
-    .map((v, i) => ({ i, frac: v - floors[i] }))
-    .sort((a, b) => b.frac - a.frac);
+  const order = raw.map((v, i) => ({ i, frac: v - floors[i] })).sort((a, b) => b.frac - a.frac);
   const out = [...floors];
   for (const { i } of order) {
     if (rest <= 0) break;
@@ -162,14 +160,28 @@ for (const [month, sheet] of Object.entries(SHEET)) {
     const factor = closedSpendNow > 0 ? closedSpend / closedSpendNow : 0;
     for (const row of rows) {
       const before = Number(row.totalSpending) || 0;
-      closeEdits.push({ id: row.id, month, subDomain: row.subDomain, before, after: round2(before * factor) });
+      closeEdits.push({
+        id: row.id,
+        month,
+        subDomain: row.subDomain,
+        before,
+        after: round2(before * factor),
+      });
     }
   }
 
   const earning = round2(sheet.earning - closedEarning);
   const spending = round2(sheet.totalSpending - closedSpend);
-  const earningPerDay = spread(earning, days, days.map((d) => daily.get(d)?.earning || 0));
-  const spendPerDay = spread(spending, days, days.map((d) => daily.get(d)?.spending || 0));
+  const earningPerDay = spread(
+    earning,
+    days,
+    days.map((d) => daily.get(d)?.earning || 0),
+  );
+  const spendPerDay = spread(
+    spending,
+    days,
+    days.map((d) => daily.get(d)?.spending || 0),
+  );
 
   days.forEach((date, i) => {
     const totalSpending = spendPerDay[i];
@@ -206,7 +218,9 @@ for (const [month, sheet] of Object.entries(SHEET)) {
   });
 }
 
-console.log("bulan | titik lama | pendapatan ditulis | belanja ditulis | akun tutup (belanja) | bentuk harian\n");
+console.log(
+  "bulan | titik lama | pendapatan ditulis | belanja ditulis | akun tutup (belanja) | bentuk harian\n",
+);
 for (const s of summary) {
   const closed =
     s.closedSpend === s.closedSpendNow
@@ -234,12 +248,15 @@ for (const s of summary) {
 
 if (closeEdits.length) {
   console.log("\nBaris accountCloses yang belanjanya diturunkan:");
-  for (const e of closeEdits) console.log(`  ${e.month} ${e.subDomain}: ${rp(e.before)} -> ${rp(e.after)}`);
+  for (const e of closeEdits)
+    console.log(`  ${e.month} ${e.subDomain}: ${rp(e.before)} -> ${rp(e.after)}`);
 }
 
 const wrote = Object.keys(points).length;
 if (dry) {
-  console.log(`\n--dry: tidak ada yang ditulis. ${wrote} titik harian, ${closeEdits.length} baris accountCloses.`);
+  console.log(
+    `\n--dry: tidak ada yang ditulis. ${wrote} titik harian, ${closeEdits.length} baris accountCloses.`,
+  );
   process.exit(0);
 }
 
@@ -255,5 +272,7 @@ for (const edit of closeEdits) {
   });
 }
 
-console.log(`\nSelesai. ${wrote} titik harian ditulis, ${closeEdits.length} baris accountCloses disunting.`);
+console.log(
+  `\nSelesai. ${wrote} titik harian ditulis, ${closeEdits.length} baris accountCloses disunting.`,
+);
 process.exit(0);

@@ -41,15 +41,49 @@ const jobsOf = (store) => store.state.dashboard?.campaignCopyJobs || {};
 function metaStub(overrides = {}) {
   const calls = [];
   const routes = {
-    "GET /act_1/campaigns": () => [{ data: [{ id: "120210", name: "TvH1-06 Pros" }, { id: "120300", name: "TvH1-08 Pros" }] }],
-    "GET /120210/adsets": () => [{ data: [{ id: "s1", name: "Adset 1", status: "ACTIVE" }, { id: "s2", name: "Adset 2", status: "PAUSED" }] }],
-    "GET /120210/ads": () => [{ data: [
-      { id: "a1", name: "Iklan 1", adset_id: "s1", status: "ACTIVE", creative: { id: "cr1", object_story_spec: { page_id: "p1" } } },
-      { id: "a2", name: "Iklan 2", adset_id: "s2", status: "PAUSED", creative: { id: "cr2", object_story_spec: { page_id: "p2" } } },
-    ] }],
+    "GET /act_1/campaigns": () => [
+      {
+        data: [
+          { id: "120210", name: "TvH1-06 Pros" },
+          { id: "120300", name: "TvH1-08 Pros" },
+        ],
+      },
+    ],
+    "GET /120210/adsets": () => [
+      {
+        data: [
+          { id: "s1", name: "Adset 1", status: "ACTIVE" },
+          { id: "s2", name: "Adset 2", status: "PAUSED" },
+        ],
+      },
+    ],
+    "GET /120210/ads": () => [
+      {
+        data: [
+          {
+            id: "a1",
+            name: "Iklan 1",
+            adset_id: "s1",
+            status: "ACTIVE",
+            creative: { id: "cr1", object_story_spec: { page_id: "p1" } },
+          },
+          {
+            id: "a2",
+            name: "Iklan 2",
+            adset_id: "s2",
+            status: "PAUSED",
+            creative: { id: "cr2", object_story_spec: { page_id: "p2" } },
+          },
+        ],
+      },
+    ],
     "POST /120210/copies": () => [{ copied_campaign_id: "900" }],
-    "POST /s1/copies": () => [{ copied_adset_id: "901", ad_object_ids: [{ ad_object_type: "ad", copied_id: "911" }] }],
-    "POST /s2/copies": () => [{ copied_adset_id: "902", ad_object_ids: [{ ad_object_type: "ad", copied_id: "912" }] }],
+    "POST /s1/copies": () => [
+      { copied_adset_id: "901", ad_object_ids: [{ ad_object_type: "ad", copied_id: "911" }] },
+    ],
+    "POST /s2/copies": () => [
+      { copied_adset_id: "902", ad_object_ids: [{ ad_object_type: "ad", copied_id: "912" }] },
+    ],
     "POST /900": () => [{ success: true }],
     // Iklan yang dibuatkan ulang dari creative sumbernya (pemulihan salinan).
     "POST /act_1/ads": () => [{ id: "ad_baru" }],
@@ -71,7 +105,13 @@ function metaStub(overrides = {}) {
 }
 
 async function started(store, calls, names = ["TvH1-07 Pros"]) {
-  const { jobId, plan } = await startCopyJob(store, "tok", { userId: "u_nur", row: ROW, account: ACCOUNT, names, requestedBy: "super@r.live" });
+  const { jobId, plan } = await startCopyJob(store, "tok", {
+    userId: "u_nur",
+    row: ROW,
+    account: ACCOUNT,
+    names,
+    requestedBy: "super@r.live",
+  });
   return { jobId, plan, calls };
 }
 
@@ -79,8 +119,15 @@ test("start: job requested ditulis sebelum satu pun tulisan ke Meta", async () =
   const store = fakeStore();
   const calls = metaStub();
   const { jobId, plan } = await started(store, calls);
-  assert.equal(calls.some((call) => call.key.startsWith("POST")), false, "start tidak menulis ke Meta");
-  assert.deepEqual(plan.adSets.map((set) => set.id), ["s1", "s2"]);
+  assert.equal(
+    calls.some((call) => call.key.startsWith("POST")),
+    false,
+    "start tidak menulis ke Meta",
+  );
+  assert.deepEqual(
+    plan.adSets.map((set) => set.id),
+    ["s1", "s2"],
+  );
   const job = jobsOf(store)[jobId];
   assert.equal(job.state, "requested");
   assert.equal(job.adSetCount, 2);
@@ -88,7 +135,9 @@ test("start: job requested ditulis sebelum satu pun tulisan ke Meta", async () =
 });
 
 test("start: salinan yang masih berjalan untuk sumber yang sama ditolak tanpa menyentuh Meta", async () => {
-  const store = fakeStore({ dashboard: { campaignCopyJobs: { jold: { sourceCampaignId: "120210", state: "running" } } } });
+  const store = fakeStore({
+    dashboard: { campaignCopyJobs: { jold: { sourceCampaignId: "120210", state: "running" } } },
+  });
   const calls = metaStub();
   await assert.rejects(() => started(store, calls), JobConflict);
   assert.equal(calls.length, 0);
@@ -97,7 +146,15 @@ test("start: salinan yang masih berjalan untuk sumber yang sama ditolak tanpa me
 test("start: ad set di atas 3 iklan ditolak dan tidak ada job yang ditulis", async () => {
   const store = fakeStore();
   metaStub({
-    "GET /120210/ads": () => [{ data: Array.from({ length: 4 }, (_, i) => ({ id: `a${i}`, adset_id: "s1", status: "ACTIVE" })) }],
+    "GET /120210/ads": () => [
+      {
+        data: Array.from({ length: 4 }, (_, i) => ({
+          id: `a${i}`,
+          adset_id: "s1",
+          status: "ACTIVE",
+        })),
+      },
+    ],
   });
   await assert.rejects(() => started(store, []), RuleError);
   assert.deepEqual(jobsOf(store), {});
@@ -107,16 +164,34 @@ test("start: nama yang sudah dipakai campaign lain di akun itu ditolak sebelum j
   const store = fakeStore();
   const calls = metaStub();
   // Nama sumbernya sendiri: sync akan melebur sumber dan salinannya jadi satu baris.
-  await assert.rejects(() => started(store, calls, ["tvh1-06 pros "]), /Nama "tvh1-06 pros" sudah dipakai campaign lain.*melebur/);
-  await assert.rejects(() => started(store, calls, ["TvH1-07 Pros #1", "TvH1-08 Pros"]), /"TvH1-08 Pros"/);
+  await assert.rejects(
+    () => started(store, calls, ["tvh1-06 pros "]),
+    /Nama "tvh1-06 pros" sudah dipakai campaign lain.*melebur/,
+  );
+  await assert.rejects(
+    () => started(store, calls, ["TvH1-07 Pros #1", "TvH1-08 Pros"]),
+    /"TvH1-08 Pros"/,
+  );
   assert.deepEqual(jobsOf(store), {});
-  assert.equal(calls.some((call) => call.key.startsWith("POST")), false);
-  assert.equal(calls.some((call) => call.key === "GET /120210/adsets"), false, "diperiksa sebelum rencana salin");
+  assert.equal(
+    calls.some((call) => call.key.startsWith("POST")),
+    false,
+  );
+  assert.equal(
+    calls.some((call) => call.key === "GET /120210/adsets"),
+    false,
+    "diperiksa sebelum rencana salin",
+  );
 });
 
 test("start: nama yang akan lahir dari job lain yang masih berjalan di akun itu ikut dihitung", async () => {
   const jobs = {
-    jother: { sourceCampaignId: "120300", accountId: "k1", state: "running", names: ["TvH1-07 Pros"] },
+    jother: {
+      sourceCampaignId: "120300",
+      accountId: "k1",
+      state: "running",
+      names: ["TvH1-07 Pros"],
+    },
     jdone: { sourceCampaignId: "120300", accountId: "k1", state: "done", names: ["TvH1-09 Pros"] },
     jelse: { sourceCampaignId: "5", accountId: "k2", state: "running", names: ["TvH1-10 Pros"] },
   };
@@ -129,7 +204,12 @@ test("start: nama yang akan lahir dari job lain yang masih berjalan di akun itu 
 
 test("start: daftar campaign akun gagal dibaca — melempar, bukan diloloskan", async () => {
   const store = fakeStore();
-  metaStub({ "GET /act_1/campaigns": () => [{ error: { message: "Invalid OAuth access token", code: 190 } }, false] });
+  metaStub({
+    "GET /act_1/campaigns": () => [
+      { error: { message: "Invalid OAuth access token", code: 190 } },
+      false,
+    ],
+  });
   await assert.rejects(
     () => started(store, []),
     (error) => !(error instanceof RuleError) && /act_1\/campaigns.*#190/.test(error.message),
@@ -142,17 +222,32 @@ test("run: campaign kosong bernama sementara, langsung ganti nama, lalu tiap ad 
   const calls = metaStub();
   const { jobId, plan } = await started(store, calls);
   const synced = [];
-  const result = await runCopyJob(store, "tok", { jobId, row: ROW, account: ACCOUNT, names: ["TvH1-07 Pros"], plan, enqueueSync: (id) => synced.push(id) });
+  const result = await runCopyJob(store, "tok", {
+    jobId,
+    row: ROW,
+    account: ACCOUNT,
+    names: ["TvH1-07 Pros"],
+    plan,
+    enqueueSync: (id) => synced.push(id),
+  });
   assert.equal(result.state, "done");
   const posts = calls.filter((call) => call.key.startsWith("POST")).map((call) => call.key);
-  assert.deepEqual(posts, ["POST /120210/copies", "POST /900", "POST /s1/copies", "POST /s2/copies"]);
+  assert.deepEqual(posts, [
+    "POST /120210/copies",
+    "POST /900",
+    "POST /s1/copies",
+    "POST /s2/copies",
+  ]);
   const shell = calls.find((call) => call.key === "POST /120210/copies").params;
   assert.equal(shell.get("deep_copy"), "false");
   assert.deepEqual(JSON.parse(shell.get("rename_options")), {
     rename_strategy: "ONLY_TOP_LEVEL_RENAME",
     rename_suffix: ` (salinan ${jobId}-1)`,
   });
-  assert.equal(calls.find((call) => call.key === "POST /s1/copies").params.get("campaign_id"), "900");
+  assert.equal(
+    calls.find((call) => call.key === "POST /s1/copies").params.get("campaign_id"),
+    "900",
+  );
   assert.equal(calls.find((call) => call.key === "POST /900").params.get("name"), "TvH1-07 Pros");
   const job = jobsOf(store)[jobId];
   assert.equal(job.state, "done");
@@ -172,10 +267,19 @@ test("run: campaign kosong bernama sementara, langsung ganti nama, lalu tiap ad 
 
 test("run: iklan yang dilewati Meta dibuatkan ulang dari creative iklan SUMBERNYA", async () => {
   const store = fakeStore();
-  const calls = metaStub({ "POST /s2/copies": () => [{ copied_adset_id: "902", ad_object_ids: [] }] });
+  const calls = metaStub({
+    "POST /s2/copies": () => [{ copied_adset_id: "902", ad_object_ids: [] }],
+  });
   const { jobId, plan } = await started(store, calls);
   const synced = [];
-  const result = await runCopyJob(store, "tok", { jobId, row: ROW, account: ACCOUNT, names: ["A"], plan, enqueueSync: (id) => synced.push(id) });
+  const result = await runCopyJob(store, "tok", {
+    jobId,
+    row: ROW,
+    account: ACCOUNT,
+    names: ["A"],
+    plan,
+    enqueueSync: (id) => synced.push(id),
+  });
   // Deep copy melewatkan iklannya (app Development Mode menolak tiap creative baru), tapi salinannya
   // tetap utuh: iklannya dibuatkan sendiri dengan creative yang sudah ada.
   assert.equal(result.state, "done");
@@ -189,7 +293,10 @@ test("run: iklan yang dilewati Meta dibuatkan ulang dari creative iklan SUMBERNY
   // di dalam ad set yang menyala adalah "ad set aktif tapi Rp 0" yang tidak menyebut sebabnya.
   assert.equal(made[0].body.get("status"), "PAUSED");
   // Salinan yang kosong tidak perlu ditanyai nama iklannya — tidak ada yang bisa kembar.
-  assert.equal(calls.some((call) => call.key === "GET /902/ads"), false);
+  assert.equal(
+    calls.some((call) => call.key === "GET /902/ads"),
+    false,
+  );
   assert.deepEqual(synced, ["k1"], "salinannya tetap ada, jadi akunnya tetap disync");
 });
 
@@ -203,7 +310,13 @@ test("run: pemulihan yang ditolak izin Halaman menyebut Halamannya, bukan App Mo
     ],
   });
   const { jobId, plan } = await started(store, calls);
-  const result = await runCopyJob(store, "tok", { jobId, row: ROW, account: ACCOUNT, names: ["A"], plan });
+  const result = await runCopyJob(store, "tok", {
+    jobId,
+    row: ROW,
+    account: ACCOUNT,
+    names: ["A"],
+    plan,
+  });
   assert.equal(result.state, "partial");
   const { error } = jobsOf(store)[jobId].copies[0];
   assert.match(error, /Iklan 2.*Halaman p2/, "menyebut iklan dan Halaman yang harus diberi izin");
@@ -216,15 +329,27 @@ test("run: salinan yang melahirkan SEBAGIAN iklannya tidak dibuatkan kembarannya
   const calls = metaStub({
     // Ad set sumber s1 punya satu iklan dan salinannya melahirkannya; s2 tidak melahirkan apa pun.
     "GET /120210/adsets": () => [{ data: [{ id: "s1", name: "Adset 1", status: "ACTIVE" }] }],
-    "GET /120210/ads": () => [{ data: [
-      { id: "a1", name: "Iklan 1", adset_id: "s1", status: "ACTIVE", creative: { id: "cr1" } },
-      { id: "a2", name: "Iklan 2", adset_id: "s1", status: "ACTIVE", creative: { id: "cr2" } },
-    ] }],
-    "POST /s1/copies": () => [{ copied_adset_id: "901", ad_object_ids: [{ ad_object_type: "ad", copied_id: "911" }] }],
+    "GET /120210/ads": () => [
+      {
+        data: [
+          { id: "a1", name: "Iklan 1", adset_id: "s1", status: "ACTIVE", creative: { id: "cr1" } },
+          { id: "a2", name: "Iklan 2", adset_id: "s1", status: "ACTIVE", creative: { id: "cr2" } },
+        ],
+      },
+    ],
+    "POST /s1/copies": () => [
+      { copied_adset_id: "901", ad_object_ids: [{ ad_object_type: "ad", copied_id: "911" }] },
+    ],
     "GET /901/ads": () => [{ data: [{ id: "911", name: "Iklan 1" }] }],
   });
   const { jobId, plan } = await started(store, calls);
-  const result = await runCopyJob(store, "tok", { jobId, row: ROW, account: ACCOUNT, names: ["A"], plan });
+  const result = await runCopyJob(store, "tok", {
+    jobId,
+    row: ROW,
+    account: ACCOUNT,
+    names: ["A"],
+    plan,
+  });
   assert.equal(result.state, "done");
   const made = calls.filter((call) => call.key === "POST /act_1/ads");
   assert.equal(made.length, 1, "yang sudah berdiri tidak dibuat ulang");
@@ -234,27 +359,56 @@ test("run: salinan yang melahirkan SEBAGIAN iklannya tidak dibuatkan kembarannya
 test("run: iklan lebih di satu ad set tidak menutupi iklan yang hilang di ad set lain", async () => {
   const store = fakeStore();
   const calls = metaStub({
-    "POST /s1/copies": () => [{ copied_adset_id: "901", ad_object_ids: [{ ad_object_type: "ad", copied_id: "911" }, { ad_object_type: "ad", copied_id: "913" }] }],
+    "POST /s1/copies": () => [
+      {
+        copied_adset_id: "901",
+        ad_object_ids: [
+          { ad_object_type: "ad", copied_id: "911" },
+          { ad_object_type: "ad", copied_id: "913" },
+        ],
+      },
+    ],
     "POST /s2/copies": () => [{ copied_adset_id: "902", ad_object_ids: [] }],
   });
   const { jobId, plan } = await started(store, calls);
-  const result = await runCopyJob(store, "tok", { jobId, row: ROW, account: ACCOUNT, names: ["A"], plan });
+  const result = await runCopyJob(store, "tok", {
+    jobId,
+    row: ROW,
+    account: ACCOUNT,
+    names: ["A"],
+    plan,
+  });
   // s1 melahirkan dua iklan untuk satu iklan sumber; kelebihan itu TIDAK dihitung sebagai iklan s2,
   // jadi s2 tetap dipulihkan sendiri.
   assert.equal(result.state, "done");
   assert.equal(jobsOf(store)[jobId].copies[0].ads, 2);
   const made = calls.filter((call) => call.key === "POST /act_1/ads");
-  assert.deepEqual(made.map((call) => call.body.get("adset_id")), ["902"]);
+  assert.deepEqual(
+    made.map((call) => call.body.get("adset_id")),
+    ["902"],
+  );
 });
 
 test("run: ganti nama yang gagal membuat salinan partial, ad set tetap disalin", async () => {
   const store = fakeStore();
-  const calls = metaStub({ "POST /900": () => [{ error: { message: "Invalid name", code: 100 } }, false] });
+  const calls = metaStub({
+    "POST /900": () => [{ error: { message: "Invalid name", code: 100 } }, false],
+  });
   const { jobId, plan } = await started(store, calls);
   const synced = [];
-  const result = await runCopyJob(store, "tok", { jobId, row: ROW, account: ACCOUNT, names: ["TvH1-07 Pros"], plan, enqueueSync: (id) => synced.push(id) });
+  const result = await runCopyJob(store, "tok", {
+    jobId,
+    row: ROW,
+    account: ACCOUNT,
+    names: ["TvH1-07 Pros"],
+    plan,
+    enqueueSync: (id) => synced.push(id),
+  });
   assert.equal(result.state, "partial");
-  assert.ok(calls.some((call) => call.key === "POST /s2/copies"), "ad set tetap disalin sesudah ganti nama gagal");
+  assert.ok(
+    calls.some((call) => call.key === "POST /s2/copies"),
+    "ad set tetap disalin sesudah ganti nama gagal",
+  );
   const job = jobsOf(store)[jobId];
   assert.match(job.copies[0].renameError, /Invalid name/);
   assert.equal(job.copies[0].adSets, 2);
@@ -268,11 +422,19 @@ test("run: salinan dicatat di job begitu lahir, sebelum ad set pertama disalin",
   const calls = metaStub({
     "POST /s1/copies": () => {
       recorded = structuredClone(Object.values(jobsOf(store))[0].copies?.[0]);
-      return [{ copied_adset_id: "901", ad_object_ids: [{ ad_object_type: "ad", copied_id: "911" }] }];
+      return [
+        { copied_adset_id: "901", ad_object_ids: [{ ad_object_type: "ad", copied_id: "911" }] },
+      ];
     },
   });
   const { jobId, plan } = await started(store, calls);
-  await runCopyJob(store, "tok", { jobId, row: ROW, account: ACCOUNT, names: ["TvH1-07 Pros"], plan });
+  await runCopyJob(store, "tok", {
+    jobId,
+    row: ROW,
+    account: ACCOUNT,
+    names: ["TvH1-07 Pros"],
+    plan,
+  });
   assert.equal(recorded?.campaignId, "900");
   assert.equal(recorded?.name, "TvH1-07 Pros");
   assert.equal(recorded?.adSetsExpected, 2);
@@ -289,7 +451,14 @@ test("run: tulisan progres yang gagal tidak menghilangkan salinan yang sudah lah
     return update(path, values);
   };
   const errors = [];
-  const result = await runCopyJob(store, "tok", { jobId, row: ROW, account: ACCOUNT, names: ["TvH1-07 Pros"], plan, log: { error: (text) => errors.push(text) } });
+  const result = await runCopyJob(store, "tok", {
+    jobId,
+    row: ROW,
+    account: ACCOUNT,
+    names: ["TvH1-07 Pros"],
+    plan,
+    log: { error: (text) => errors.push(text) },
+  });
   assert.equal(result.state, "done");
   assert.equal(jobsOf(store)[jobId].copies[0].campaignId, "900");
   assert.equal(errors.length, 2, "tiap tulisan progres yang gagal dicatat");
@@ -297,7 +466,10 @@ test("run: tulisan progres yang gagal tidak menghilangkan salinan yang sudah lah
 
 for (const [label, route] of [
   ["kode 1", () => [{ error: { message: "An unknown error occurred", code: 1 } }, false, 500]],
-  ["kode 2", () => [{ error: { message: "Service temporarily unavailable", code: 2 } }, false, 503]],
+  [
+    "kode 2",
+    () => [{ error: { message: "Service temporarily unavailable", code: 2 } }, false, 503],
+  ],
   ["halaman HTML", () => ["<!DOCTYPE html><html><body>502 Bad Gateway</body></html>", false, 502]],
   ["HTTP 5xx tanpa badan", () => ["", false, 504]],
   [
@@ -312,13 +484,24 @@ for (const [label, route] of [
     const calls = metaStub({ "POST /120210/copies": route });
     const { jobId, plan } = await started(store, calls, ["A #1", "A #2"]);
     const synced = [];
-    const result = await runCopyJob(store, "tok", { jobId, row: ROW, account: ACCOUNT, names: ["A #1", "A #2"], plan, enqueueSync: (id) => synced.push(id) });
+    const result = await runCopyJob(store, "tok", {
+      jobId,
+      row: ROW,
+      account: ACCOUNT,
+      names: ["A #1", "A #2"],
+      plan,
+      enqueueSync: (id) => synced.push(id),
+    });
     assert.equal(result.state, "unknown");
     const job = jobsOf(store)[jobId];
     assert.equal(job.copies[0].uncertain, true);
     assert.match(job.copies[0].error, /periksa Ads Manager\.$/);
     assert.match(job.error, /periksa Ads Manager\.$/);
-    assert.equal(calls.filter((call) => call.key === "POST /120210/copies").length, 1, "tidak dicoba lagi");
+    assert.equal(
+      calls.filter((call) => call.key === "POST /120210/copies").length,
+      1,
+      "tidak dicoba lagi",
+    );
     assert.deepEqual(synced, ["k1"], "kalau ternyata lahir, sync memunculkannya");
   });
 }
@@ -326,24 +509,52 @@ for (const [label, route] of [
 test("run: ad set yang ditolak Meta tidak menghentikan ad set lain", async () => {
   const store = fakeStore();
   const calls = metaStub({
-    "POST /s1/copies": () => [{ error: { message: "Application does not have permission for this action", code: 10 } }, false],
+    "POST /s1/copies": () => [
+      { error: { message: "Application does not have permission for this action", code: 10 } },
+      false,
+    ],
   });
   const { jobId, plan } = await started(store, calls);
-  const result = await runCopyJob(store, "tok", { jobId, row: ROW, account: ACCOUNT, names: ["A"], plan });
+  const result = await runCopyJob(store, "tok", {
+    jobId,
+    row: ROW,
+    account: ACCOUNT,
+    names: ["A"],
+    plan,
+  });
   assert.equal(result.state, "partial");
-  assert.ok(calls.some((call) => call.key === "POST /s2/copies"), "ad set berikutnya tetap dicoba");
+  assert.ok(
+    calls.some((call) => call.key === "POST /s2/copies"),
+    "ad set berikutnya tetap dicoba",
+  );
   assert.match(jobsOf(store)[jobId].copies[0].error, /^Adset 1: /);
 });
 
 test("run: campaign yang gagal disalin menghentikan salinan berikutnya, tanpa sync", async () => {
   const store = fakeStore();
-  const calls = metaStub({ "POST /120210/copies": () => [{ error: { message: "Invalid parameter", code: 100 } }, false] });
+  const calls = metaStub({
+    "POST /120210/copies": () => [{ error: { message: "Invalid parameter", code: 100 } }, false],
+  });
   const { jobId, plan } = await started(store, calls, ["A #1", "A #2"]);
   const synced = [];
-  const result = await runCopyJob(store, "tok", { jobId, row: ROW, account: ACCOUNT, names: ["A #1", "A #2"], plan, enqueueSync: (id) => synced.push(id) });
+  const result = await runCopyJob(store, "tok", {
+    jobId,
+    row: ROW,
+    account: ACCOUNT,
+    names: ["A #1", "A #2"],
+    plan,
+    enqueueSync: (id) => synced.push(id),
+  });
   assert.equal(result.state, "failed");
-  assert.equal(calls.filter((call) => call.key === "POST /120210/copies").length, 1, "tidak diulang untuk salinan kedua");
-  assert.equal(jobsOf(store)[jobId].copies[1].error, "Tidak dicoba karena salinan sebelumnya gagal.");
+  assert.equal(
+    calls.filter((call) => call.key === "POST /120210/copies").length,
+    1,
+    "tidak diulang untuk salinan kedua",
+  );
+  assert.equal(
+    jobsOf(store)[jobId].copies[1].error,
+    "Tidak dicoba karena salinan sebelumnya gagal.",
+  );
   assert.deepEqual(synced, []);
 });
 
@@ -353,10 +564,23 @@ test("sweep: yang menggantung jadi unknown, yang lama dibuang", async () => {
     dashboard: {
       campaignCopyJobs: {
         jreq: { state: "requested", requestedAt: "2026-09-11T09:45:00.000Z" },
-        jrun: { state: "running", requestedAt: "2026-09-11T09:00:00.000Z", startedAt: "2026-09-11T09:00:05.000Z" },
-        jnew: { state: "running", requestedAt: "2026-09-11T09:55:00.000Z", startedAt: "2026-09-11T09:55:00.000Z" },
+        jrun: {
+          state: "running",
+          requestedAt: "2026-09-11T09:00:00.000Z",
+          startedAt: "2026-09-11T09:00:05.000Z",
+        },
+        jnew: {
+          state: "running",
+          requestedAt: "2026-09-11T09:55:00.000Z",
+          startedAt: "2026-09-11T09:55:00.000Z",
+        },
         // Mulai 50 menit lalu tapi masih bergerak: bukan job yang mati.
-        jbig: { state: "running", requestedAt: "2026-09-11T09:10:00.000Z", startedAt: "2026-09-11T09:10:00.000Z", updatedAt: "2026-09-11T09:58:00.000Z" },
+        jbig: {
+          state: "running",
+          requestedAt: "2026-09-11T09:10:00.000Z",
+          startedAt: "2026-09-11T09:10:00.000Z",
+          updatedAt: "2026-09-11T09:58:00.000Z",
+        },
         jold: { state: "done", requestedAt: "2026-09-01T00:00:00.000Z" },
       },
     },
@@ -375,7 +599,12 @@ test("sweep: hanya path yang berubah ditulis — tulisan akhir yang datang bersa
   const store = fakeStore({
     dashboard: {
       campaignCopyJobs: {
-        jrun: { state: "running", sourceCampaignId: "1", requestedAt: "2026-09-11T09:00:00.000Z", startedAt: "2026-09-11T09:00:05.000Z" },
+        jrun: {
+          state: "running",
+          sourceCampaignId: "1",
+          requestedAt: "2026-09-11T09:00:00.000Z",
+          startedAt: "2026-09-11T09:00:05.000Z",
+        },
         jold: { state: "done", requestedAt: "2026-09-01T00:00:00.000Z" },
       },
     },
@@ -394,7 +623,9 @@ test("sweep: hanya path yang berubah ditulis — tulisan akhir yang datang bersa
     return update(path, values);
   };
   assert.deepEqual(await sweepCopyJobs(store, { now }), { changed: 2 });
-  assert.deepEqual(writes, [["jold", "jrun/error", "jrun/finishedAt", "jrun/state", "jrun/updatedAt"]]);
+  assert.deepEqual(writes, [
+    ["jold", "jrun/error", "jrun/finishedAt", "jrun/state", "jrun/updatedAt"],
+  ]);
   const job = jobsOf(store).jrun;
   assert.equal(job.state, "unknown");
   assert.equal(job.copies[0].campaignId, "900", "salinan yang ditulis bersamaan tetap ada");
@@ -402,29 +633,44 @@ test("sweep: hanya path yang berubah ditulis — tulisan akhir yang datang bersa
 });
 
 test("setiap field job yang ditulis disebut aturan database", async () => {
-  const { rules } = JSON.parse(await readFile(new URL("../database.rules.json", import.meta.url), "utf8"));
+  const { rules } = JSON.parse(
+    await readFile(new URL("../database.rules.json", import.meta.url), "utf8"),
+  );
   const jobRule = rules.dashboard.campaignCopyJobs.$jobId;
   assert.match(jobRule[".validate"], /j\[0-9a-z\]\{5,20\}/);
 
   const check = (job) => {
-    for (const key of Object.keys(job)) assert.ok(jobRule[key], `${key} tidak disebut aturan database`);
-    for (const key of Object.keys(job.progress)) assert.ok(jobRule.progress[key], `progress/${key} tidak disebut`);
+    for (const key of Object.keys(job))
+      assert.ok(jobRule[key], `${key} tidak disebut aturan database`);
+    for (const key of Object.keys(job.progress))
+      assert.ok(jobRule.progress[key], `progress/${key} tidak disebut`);
     for (const copy of job.copies) {
-      for (const key of Object.keys(copy)) assert.ok(jobRule.copies.$i[key], `copies/${key} tidak disebut`);
+      for (const key of Object.keys(copy))
+        assert.ok(jobRule.copies.$i[key], `copies/${key} tidak disebut`);
     }
   };
 
   const store = fakeStore();
-  const calls = metaStub({ "POST /s2/copies": () => [{ error: { message: "x", code: 10 } }, false] });
+  const calls = metaStub({
+    "POST /s2/copies": () => [{ error: { message: "x", code: 10 } }, false],
+  });
   const { jobId, plan } = await started(store, calls);
   await runCopyJob(store, "tok", { jobId, row: ROW, account: ACCOUNT, names: ["A"], plan });
   check(jobsOf(store)[jobId]);
 
   // Salinan yang hasilnya tidak pasti membawa `uncertain`.
   const unsure = fakeStore();
-  const unsureCalls = metaStub({ "POST /120210/copies": () => [{ error: { message: "x", code: 2 } }, false] });
+  const unsureCalls = metaStub({
+    "POST /120210/copies": () => [{ error: { message: "x", code: 2 } }, false],
+  });
   const second = await started(unsure, unsureCalls, ["A #1", "A #2"]);
-  await runCopyJob(unsure, "tok", { jobId: second.jobId, row: ROW, account: ACCOUNT, names: ["A #1", "A #2"], plan: second.plan });
+  await runCopyJob(unsure, "tok", {
+    jobId: second.jobId,
+    row: ROW,
+    account: ACCOUNT,
+    names: ["A #1", "A #2"],
+    plan: second.plan,
+  });
   const job = jobsOf(unsure)[second.jobId];
   assert.equal(job.copies[0].uncertain, true);
   check(job);

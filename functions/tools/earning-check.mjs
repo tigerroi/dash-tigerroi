@@ -43,8 +43,7 @@ const norm = (value) =>
   String(value ?? "")
     .trim()
     .toLowerCase();
-const rupiah = (value) =>
-  `Rp ${Math.round(Number(value) || 0).toLocaleString("id-ID")}`;
+const rupiah = (value) => `Rp ${Math.round(Number(value) || 0).toLocaleString("id-ID")}`;
 const pad = (text, width) => String(text).padEnd(width);
 const padLeft = (text, width) => String(text).padStart(width);
 const hasAmount = (value) => value !== null && value !== undefined && value !== "" && value !== "-";
@@ -62,7 +61,9 @@ const domains = Object.values(domainsSnap.val() || {}).filter(Boolean);
 
 const domain = norm(domainArg);
 if (!domains.some((row) => norm(row.domainUrl) === domain)) {
-  console.log(`! ${domainArg} tidak terdaftar di /domains — pencocokan akhiran tidak akan bekerja.`);
+  console.log(
+    `! ${domainArg} tidak terdaftar di /domains — pencocokan akhiran tidak akan bekerja.`,
+  );
 }
 
 // Subdomain milik domain ini menurut /sub-domains. Inilah daftar yang benar-benar bisa jadi baris
@@ -103,7 +104,14 @@ for (const month of months) {
   let unknownEarning = 0;
   for (const row of rows) {
     const host = norm(row.subDomain);
-    const entry = byHost.get(host) || { earning: 0, adx: 0, adsense: 0, adServer: 0, days: 0, unknown: 0 };
+    const entry = byHost.get(host) || {
+      earning: 0,
+      adx: 0,
+      adsense: 0,
+      adServer: 0,
+      days: 0,
+      unknown: 0,
+    };
     if (hasAmount(row.earning)) {
       entry.earning += Number(row.earning) || 0;
       entry.adx += Number(row.adxRevenue) || 0;
@@ -168,7 +176,10 @@ for (const month of months) {
     const byDay = new Map();
     for (const row of rows) {
       const day = String(row.date).slice(0, 10);
-      byDay.set(day, (byDay.get(day) || 0) + (hasAmount(row.earning) ? Number(row.earning) || 0 : 0));
+      byDay.set(
+        day,
+        (byDay.get(day) || 0) + (hasAmount(row.earning) ? Number(row.earning) || 0 : 0),
+      );
     }
     for (const day of allDays) {
       const value = byDay.has(day) ? rupiah(byDay.get(day)) : "(tidak ada baris)";

@@ -8,13 +8,20 @@
   "files": {
     "ignoreUnknown": false,
     "includes": [
-      "**/*.js",
-      "**/*.jsx",
+      "src/**/*.js",
+      "src/**/*.jsx",
+      "functions/**/*.js",
+      "functions/**/*.mjs",
+      "server/**/*.js",
       "**/*.json",
       "!dist",
       "!**/node_modules",
       "!sample-imports",
-      "!**/.agents"
+      "!**/.agents",
+      "!jobs",
+      "!tigerroi-gateway",
+      "!scripts",
+      "!supabase"
     ]
   },
   "formatter": {

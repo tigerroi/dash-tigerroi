@@ -119,7 +119,6 @@ test("keterangan 'tidak bisa dicek' dipotong satu kalimat", () => {
   assert.equal(statusCheckNote(""), "Tidak bisa dicek: sebabnya tidak disebutkan.");
 });
 
-
 // --- Status yang dipegang orang ------------------------------------------------------------
 
 test("dipegang orang begitu kolom Status berbeda dari yang dibaca sync", () => {
@@ -155,10 +154,13 @@ test("yang tidak dipegang menerima ketiga kolomnya", () => {
 });
 
 test("keterangan DIHAPUS, bukan ditulis kosong, begitu akunnya berhasil dicek", () => {
-  const out = accountStatusFields({ status: "Ready", statusAuto: "Ready" }, {
-    status: "Ready",
-    detail: "",
-  });
+  const out = accountStatusFields(
+    { status: "Ready", statusAuto: "Ready" },
+    {
+      status: "Ready",
+      detail: "",
+    },
+  );
   assert.equal(out.statusDetail, null);
 });
 

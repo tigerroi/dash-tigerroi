@@ -56,7 +56,11 @@ test("consent penuh: token baru tersimpan dan statusnya Connected", () => {
 test("scope kurang TIDAK boleh berbunyi seperti berhasil", () => {
   const res = credentialAuthResult({ refresh_token: "baru", scope: GAM });
   assert.equal(res.outcome, "partial");
-  assert.equal(res.update.refreshToken, "baru", "tokennya tetap tersimpan — ia memang yang terbaru");
+  assert.equal(
+    res.update.refreshToken,
+    "baru",
+    "tokennya tetap tersimpan — ia memang yang terbaru",
+  );
   assert.notEqual(res.update.status, "Connected");
   assert.deepEqual(res.missing, [ADSENSE]);
   assert.match(res.update.authMessage, /AdSense/);
@@ -104,8 +108,16 @@ test("seluruh akun satu kredensial ditolak karena izin: statusnya turun", () => 
   const updates = credentialHealthUpdates(
     configs,
     [
-      { credential: "petcins", ok: false, message: "GAM POST /v1/networks/2094/reports:run -> 401: Invalid Credentials" },
-      { credential: "petcins", ok: false, message: "GAM POST /v1/networks/3011/reports:run -> 401: Invalid Credentials" },
+      {
+        credential: "petcins",
+        ok: false,
+        message: "GAM POST /v1/networks/2094/reports:run -> 401: Invalid Credentials",
+      },
+      {
+        credential: "petcins",
+        ok: false,
+        message: "GAM POST /v1/networks/3011/reports:run -> 401: Invalid Credentials",
+      },
     ],
     "2026-09-01T02:00:00.000Z",
   );
@@ -131,7 +143,11 @@ test("gangguan di sisi Google tidak menurunkan status siapa pun", () => {
     "GAM POST /v1/networks/2094/reports:run -> 500: An internal error occurred.",
     "fetch failed",
   ]) {
-    assert.deepEqual(credentialHealthUpdates(configs, [{ credential: "petcins", ok: false, message }]), {}, message);
+    assert.deepEqual(
+      credentialHealthUpdates(configs, [{ credential: "petcins", ok: false, message }]),
+      {},
+      message,
+    );
   }
 });
 
@@ -147,7 +163,9 @@ test("kegagalan izin yang bercampur dengan kegagalan lain tidak cukup jadi bukti
 test("yang sudah turun tidak ditulis ulang tiap jam", () => {
   const configs = { k1: { name: "petcins", status: REVOKED_STATUS } };
   assert.deepEqual(
-    credentialHealthUpdates(configs, [{ credential: "petcins", ok: false, message: "invalid_grant" }]),
+    credentialHealthUpdates(configs, [
+      { credential: "petcins", ok: false, message: "invalid_grant" },
+    ]),
     {},
   );
 });

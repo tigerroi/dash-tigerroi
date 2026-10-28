@@ -1,3 +1,5 @@
+import { adPayload } from "./campaign-create-core.js";
+import { clip, JobConflict, noteJob, sweepJobsAt } from "./campaign-jobs.mjs";
 import {
   activeCopyJob,
   activeJobNames,
@@ -13,8 +15,6 @@ import {
   newCopyJobId,
   uncertainCopyError,
 } from "./campaign-manage-core.js";
-import { adPayload } from "./campaign-create-core.js";
-import { clip, JobConflict, noteJob, sweepJobsAt } from "./campaign-jobs.mjs";
 import {
   copyAdSetInto,
   copyCampaignShell,
@@ -36,7 +36,6 @@ import {
  * SEBELUM Meta disentuh, dan tidak ada satu pun salinan yang diulang otomatis — yang sudah lahir
  * tidak bisa ditarik kembali.
  */
-
 
 /**
  * Nama baru belum dipakai campaign mana pun di ad account itu (lihat `assertNamesFree`).
@@ -63,7 +62,8 @@ export async function startCopyJob(
   { userId, row, account, names, requestedBy = "", now = new Date() },
 ) {
   const jobs = (await store.read(COPY_JOBS_PATH)) || {};
-  if (activeCopyJob(jobs, row.campaignId)) throw new JobConflict(
+  if (activeCopyJob(jobs, row.campaignId))
+    throw new JobConflict(
       "Salinan campaign ini masih berjalan — tunggu sampai selesai sebelum menyalin lagi.",
     );
   await assertCampaignNamesFree(store, token, { account, names, jobs });
@@ -137,7 +137,11 @@ async function repairCopiedAds(token, { account, set, adSetId, copied }) {
   return { born, error: failure };
 }
 
-async function copyOne(store, token, { jobPath, jobId, index, row, name, plan, progress, log, account }) {
+async function copyOne(
+  store,
+  token,
+  { jobPath, jobId, index, row, name, plan, progress, log, account },
+) {
   let campaignId;
   try {
     ({ campaignId } = await copyCampaignShell(row.campaignId, token, {
@@ -214,7 +218,11 @@ export async function runCopyJob(
       // Sesudah satu campaign gagal (atau tidak pasti) disalin, sisanya tidak dicoba: penolakan yang
       // sama akan berulang, dan yang kebetulan lolos menghasilkan salinan yang tidak diharapkan.
       if (copies.some((copy) => !copy.campaignId)) {
-        copies.push({ name, campaignId: "", error: "Tidak dicoba karena salinan sebelumnya gagal." });
+        copies.push({
+          name,
+          campaignId: "",
+          error: "Tidak dicoba karena salinan sebelumnya gagal.",
+        });
         continue;
       }
       copies.push(

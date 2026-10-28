@@ -43,7 +43,9 @@ export async function getGoogleServiceAccountToken({ clientEmail, privateKey }) 
 
   const data = await res.json();
   if (!res.ok || !data.access_token) {
-    throw new Error(`Gagal mendapatkan OAuth token dari Google: ${data.error_description || data.error || res.statusText}`);
+    throw new Error(
+      `Gagal mendapatkan OAuth token dari Google: ${data.error_description || data.error || res.statusText}`,
+    );
   }
 
   return data.access_token;
@@ -63,7 +65,9 @@ export async function getGamNetwork(networkCode, accessToken) {
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(`GAM API Error (${res.status}): ${data.error?.message || JSON.stringify(data)}`);
+    throw new Error(
+      `GAM API Error (${res.status}): ${data.error?.message || JSON.stringify(data)}`,
+    );
   }
 
   return {
@@ -119,7 +123,9 @@ export async function fetchGamDailyRevenue(networkCode, accessToken, dateRange) 
 
   const reportData = await createRes.json();
   if (!createRes.ok) {
-    throw new Error(`GAM Create Report Error (${createRes.status}): ${reportData.error?.message || JSON.stringify(reportData)}`);
+    throw new Error(
+      `GAM Create Report Error (${createRes.status}): ${reportData.error?.message || JSON.stringify(reportData)}`,
+    );
   }
 
   const reportName = reportData.name; // format: networks/{code}/reports/{reportId}
@@ -136,7 +142,9 @@ export async function fetchGamDailyRevenue(networkCode, accessToken, dateRange) 
 
   const runData = await runRes.json();
   if (!runRes.ok) {
-    throw new Error(`GAM Run Report Error (${runRes.status}): ${runData.error?.message || JSON.stringify(runData)}`);
+    throw new Error(
+      `GAM Run Report Error (${runRes.status}): ${runData.error?.message || JSON.stringify(runData)}`,
+    );
   }
 
   const operationName = runData.name; // format: networks/{code}/operations/reports/{operationId}
@@ -158,7 +166,7 @@ export async function fetchGamDailyRevenue(networkCode, accessToken, dateRange) 
       if (pollData.error) {
         throw new Error(`GAM Report Execution Failed: ${pollData.error.message}`);
       }
-      
+
       const resultPath =
         pollData.response?.reportResult ||
         pollData.response?.name ||
@@ -184,23 +192,30 @@ export async function fetchGamDailyRevenue(networkCode, accessToken, dateRange) 
 
   const resultData = await rowsRes.json();
   if (!rowsRes.ok) {
-    throw new Error(`GAM Fetch Rows Error: ${resultData.error?.message || JSON.stringify(resultData)}`);
+    throw new Error(
+      `GAM Fetch Rows Error: ${resultData.error?.message || JSON.stringify(resultData)}`,
+    );
   }
 
   const rows = [];
   for (const r of resultData.rows || []) {
     const dValues = (r.dimensionValues || []).map((v) =>
-      v?.stringValue != null ? v.stringValue : String(v?.intValue ?? v?.value ?? "")
+      v?.stringValue != null ? v.stringValue : String(v?.intValue ?? v?.value ?? ""),
     );
-    const mValues =
-      r.metricValueGroups?.[0]?.primaryValues || r.metricValues || [];
+    const mValues = r.metricValueGroups?.[0]?.primaryValues || r.metricValues || [];
 
     const dateStr = dValues[0] || "";
     const siteName = dValues[1] || "";
     const adUnitName = dValues[2] || "";
 
     const parseNum = (v) =>
-      Number(v?.doubleValue != null ? v.doubleValue : v?.integerValue != null ? v.integerValue : v?.value ?? 0);
+      Number(
+        v?.doubleValue != null
+          ? v.doubleValue
+          : v?.integerValue != null
+            ? v.integerValue
+            : (v?.value ?? 0),
+      );
 
     const impressions = parseNum(mValues[0]);
     const clicks = parseNum(mValues[1]);

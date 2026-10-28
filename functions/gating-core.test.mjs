@@ -70,7 +70,11 @@ assert.deepEqual(Object.keys(gateCampaignsMap([{ id: 1 }, { id: 44 }, { name: "x
 // Pratinjau hanya untuk kandidat: yang sudah di-gate tidak punya tombol Gate, dan yang tidak
 // diketahui tidak boleh ditebak.
 assert.deepEqual(
-  previewTargets([{ id: 1, gated: false }, { id: 2, gated: true }, { id: 3, gated: null }]),
+  previewTargets([
+    { id: 1, gated: false },
+    { id: 2, gated: true },
+    { id: 3, gated: null },
+  ]),
   ["1"],
 );
 
@@ -139,8 +143,11 @@ assert.equal(okRun.beforeState, undefined);
 // Ungate memakai bentuk verifikasi yang berbeda (decoy/restoredTo). Dibaca dengan aturan gate, ia
 // akan tampil sebagai "tidak terverifikasi" untuk setiap ungate yang sebenarnya berhasil.
 assert.equal(
-  gateRunRow({ id: "a", action: "ungate", verification: { restoredTo: "https://x", decoy: "https://y" } })
-    .verified,
+  gateRunRow({
+    id: "a",
+    action: "ungate",
+    verification: { restoredTo: "https://x", decoy: "https://y" },
+  }).verified,
   true,
 );
 
@@ -160,7 +167,12 @@ assert.deepEqual(Object.keys(gateRunsMap([{ id: "a" }, { id: "b" }, {}])), ["a",
 // --- antrean perintah ---------------------------------------------------------------------------
 
 // Bentuknya harus sama persis dengan yang ditulis browser (src/lib/gating.js).
-const command = gateCommandEntry({ campaignId: "36", name: "NUR T2" }, "gate", "dev@rabbit", new Date("2026-08-17T10:00:00Z"));
+const command = gateCommandEntry(
+  { campaignId: "36", name: "NUR T2" },
+  "gate",
+  "dev@rabbit",
+  new Date("2026-08-17T10:00:00Z"),
+);
 assert.deepEqual(command, {
   campaignId: "36",
   campaign: "NUR T2",
@@ -176,21 +188,33 @@ assert.throws(() => gateCommandEntry({ campaignId: "" }, "gate"), /ID Keitaro/);
 const now = new Date("2026-08-17T10:00:00Z");
 const queue = {
   c36: { campaignId: "36", action: "gate", state: "pending", requestedAt: "2026-08-17T09:59:00Z" },
-  c35: { campaignId: "35", action: "ungate", state: "pending", requestedAt: "2026-08-17T09:58:00Z" },
+  c35: {
+    campaignId: "35",
+    action: "ungate",
+    state: "pending",
+    requestedAt: "2026-08-17T09:58:00Z",
+  },
   c44: { campaignId: "44", action: "gate", state: "applied", requestedAt: "2026-08-17T09:00:00Z" },
   c99: { campaignId: "99", action: "gate", state: "pending", requestedAt: "2026-08-17T08:00:00Z" },
   bad: { campaignId: "x", action: "gate", state: "pending", requestedAt: "2026-08-17T09:59:00Z" },
 };
 const pending = pendingGateCommands(queue, now);
 // Urut permintaan, bukan urut kunci; yang selesai dan yang bentuknya rusak tidak ikut.
-assert.deepEqual(pending.map((c) => c.campaignId), ["99", "35", "36"]);
+assert.deepEqual(
+  pending.map((c) => c.campaignId),
+  ["99", "35", "36"],
+);
 // Yang basi tetap dikembalikan, ditandai — dilewati diam-diam ia menggantung "Menunggu" selamanya.
 assert.equal(pending.find((c) => c.campaignId === "99").expired, true);
 assert.equal(pending.find((c) => c.campaignId === "36").expired, false);
 
 // Berhasil: perintah ditandai applied DAN baris cerminnya ikut berubah, supaya tabel tidak
 // menyangkal apa yang baru saja terjadi sampai penyegaran berikutnya.
-const okUpdate = gateCommandUpdate({ key: "c36", campaignId: "36", action: "gate" }, { status: "ok", runId: "r1" }, now);
+const okUpdate = gateCommandUpdate(
+  { key: "c36", campaignId: "36", action: "gate" },
+  { status: "ok", runId: "r1" },
+  now,
+);
 assert.equal(okUpdate["commands/c36/state"], "applied");
 assert.equal(okUpdate["commands/c36/runId"], "r1");
 assert.equal(okUpdate["campaigns/c36/gated"], true);
@@ -215,7 +239,11 @@ assert.equal(abortedUpdate["campaigns/c44/gated"], undefined);
 // Pesan panjang dipotong: aturan database membatasi `error` pada 500 karakter, dan tulisan yang
 // melanggar .validate ditolak SELURUHNYA — perintahnya akan tetap "pending" dan dicoba lagi tiap
 // dua menit selamanya, atas kegagalan yang tidak pernah bisa ia catat.
-const longUpdate = gateCommandUpdate({ key: "c1", campaignId: "1", action: "gate" }, { error: "x".repeat(900) }, now);
+const longUpdate = gateCommandUpdate(
+  { key: "c1", campaignId: "1", action: "gate" },
+  { error: "x".repeat(900) },
+  now,
+);
 assert.ok(longUpdate["commands/c1/error"].length <= 480);
 
 assert.deepEqual(
@@ -298,7 +326,12 @@ function fakeStore(data = {}) {
     dashboard: {
       gating: {
         commands: {
-          c57: { campaignId: "57", action: "gate", state: "pending", requestedAt: now.toISOString() },
+          c57: {
+            campaignId: "57",
+            action: "gate",
+            state: "pending",
+            requestedAt: now.toISOString(),
+          },
         },
       },
     },
@@ -321,12 +354,18 @@ function fakeStore(data = {}) {
     dashboard: {
       gating: {
         commands: {
-          c36: { campaignId: "36", action: "gate", state: "pending", requestedAt: now.toISOString() },
+          c36: {
+            campaignId: "36",
+            action: "gate",
+            state: "pending",
+            requestedAt: now.toISOString(),
+          },
         },
       },
     },
   });
-  globalThis.fetch = async () => new Response(JSON.stringify({ error: "bad gateway" }), { status: 502 });
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify({ error: "bad gateway" }), { status: 502 });
   const res = await applyGateCommands(store, "key", now);
   assert.equal(res.failed, 0);
   assert.equal(store.state.dashboard.gating.commands.c36.state, "pending");
@@ -340,7 +379,12 @@ function fakeStore(data = {}) {
       gating: {
         campaigns: { c36: { campaignId: "36", gated: false } },
         commands: {
-          c36: { campaignId: "36", action: "gate", state: "pending", requestedAt: now.toISOString() },
+          c36: {
+            campaignId: "36",
+            action: "gate",
+            state: "pending",
+            requestedAt: now.toISOString(),
+          },
         },
       },
     },
@@ -351,9 +395,12 @@ function fakeStore(data = {}) {
     }
     assert.equal(options.method, "POST");
     assert.ok(url.endsWith("/campaigns/36/gate"));
-    return new Response(JSON.stringify({ runId: "r9", status: "ok", verification: { cleanupComplete: true } }), {
-      status: 200,
-    });
+    return new Response(
+      JSON.stringify({ runId: "r9", status: "ok", verification: { cleanupComplete: true } }),
+      {
+        status: 200,
+      },
+    );
   };
   const res = await applyGateCommands(store, "key", now);
   assert.equal(res.applied, 1);
@@ -369,7 +416,12 @@ function fakeStore(data = {}) {
     dashboard: {
       gating: {
         commands: {
-          c36: { campaignId: "36", action: "gate", state: "pending", requestedAt: now.toISOString() },
+          c36: {
+            campaignId: "36",
+            action: "gate",
+            state: "pending",
+            requestedAt: now.toISOString(),
+          },
         },
       },
     },
@@ -401,11 +453,23 @@ function fakeStore(data = {}) {
     // Nama yang menyebut subdomain yang sama tanpa TLD-nya: dicocokkan sebagai awalan.
     { id: 40, name: "NURTZ T2 1238 HLCZ Prospek (dogtraining.petcins)", campaignUrl: url("b") },
     // Kurung yang tidak ditutup — hostname-nya tetap utuh.
-    { id: 10, name: "NURTH T2 1238 5rx7 Prospek (cosplay.masseffectstore.com(Visint))", campaignUrl: url("c") },
+    {
+      id: 10,
+      name: "NURTH T2 1238 5rx7 Prospek (cosplay.masseffectstore.com(Visint))",
+      campaignUrl: url("c"),
+    },
     // TLD hilang, satu-satunya yang cocok.
-    { id: 21, name: "FIR T2 (WL) tSZh Prospek (marriage.psaonlineappointment)", campaignUrl: url("d") },
+    {
+      id: 21,
+      name: "FIR T2 (WL) tSZh Prospek (marriage.psaonlineappointment)",
+      campaignUrl: url("d"),
+    },
     // Catatan sesudah kurung tidak ikut terbaca.
-    { id: 22, name: "IBNU T2 1236 mxcb Prospek (seniorpet.petcins.com) BLACKLIST", campaignUrl: url("e") },
+    {
+      id: 22,
+      name: "IBNU T2 1236 mxcb Prospek (seniorpet.petcins.com) BLACKLIST",
+      campaignUrl: url("e"),
+    },
     // Nama salah ketik ("fitnes"), tapi kodenya terdaftar — cadangan yang menangkapnya.
     { id: 23, name: "ALDI T2 TBZ 1221 P5bH Prospek (fitnes.stylefemale)", campaignUrl: url("f") },
     // Bukan hostname sama sekali, dan tidak ada kode terdaftar: tidak mendarat di baris mana pun.
@@ -435,11 +499,19 @@ function fakeStore(data = {}) {
   ]);
   const none = new Map();
   assert.equal(
-    subDomainOfCampaign("NUR T2 (WL) 3NSD Prospek (belum-terdaftar.bispdailyupdates.pk)", keyByHost, none),
+    subDomainOfCampaign(
+      "NUR T2 (WL) 3NSD Prospek (belum-terdaftar.bispdailyupdates.pk)",
+      keyByHost,
+      none,
+    ),
     "",
   );
   assert.equal(
-    subDomainOfCampaign("dari health.bispdailyupdates.pk ke (news.bispdailyupdates.pk)", keyByHost, none),
+    subDomainOfCampaign(
+      "dari health.bispdailyupdates.pk ke (news.bispdailyupdates.pk)",
+      keyByHost,
+      none,
+    ),
     "k2",
   );
   // TLD hilang DAN lebih dari satu yang cocok: memilih salah satunya berarti link sebuah campaign
@@ -453,7 +525,8 @@ function fakeStore(data = {}) {
 
 // Cermin membawa campaignUrl. Tanpa itu, join di atas tidak punya apa pun untuk ditulis.
 assert.equal(
-  gateCampaignRow({ id: 91, campaignUrl: "https://rabbitracing.live/JsFTQbDw?bit=[race]" }).campaignUrl,
+  gateCampaignRow({ id: 91, campaignUrl: "https://rabbitracing.live/JsFTQbDw?bit=[race]" })
+    .campaignUrl,
   "https://rabbitracing.live/JsFTQbDw?bit=[race]",
 );
 

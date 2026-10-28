@@ -1,25 +1,21 @@
 import assert from "node:assert";
 import {
+  accountKeys,
   accountKeysByOwner,
   accountLabel,
-  accountKeys,
+  adsenseCountryDimensions,
   adTaxRate,
   advertiserSpendRows,
   balanceSnapshotEntry,
   buildCampaignMap,
   buildCampaignResolver,
   buildCodeIndex,
+  CAMPAIGN_GONE_STATUS,
   campaignHistoryEntries,
   campaignHistoryPruneBefore,
-  expiredCampaignHistoryKeys,
   campaignRowBelongsTo,
   campaignStatusLabel,
   campaignStatusRefresh,
-  permanentAccountError,
-  CAMPAIGN_GONE_STATUS,
-  missingCampaignExpired,
-  missingCampaignRow,
-  adsenseCountryDimensions,
   collectCountryEarning,
   collectCountrySpend,
   costPerResult,
@@ -27,66 +23,70 @@ import {
   countryRoiRows,
   countryRoiStatus,
   dailySpendEntries,
-  parseCampaignCodes,
+  dailySpendPruneBefore,
   dashboardStatsFrom,
   dateKeyFrom,
   dateKeysBetween,
-  gamRowsByDay,
-  metaRowsByDay,
-  unreadableActIds,
-  unreadableEarningByDate,
-  unreadableEarningDomains,
-  unreadableSpendRows,
-  reportDayKey,
-  runningDayKey,
-  reportPeriod,
-  reportRange,
-  shiftDateKey,
-  syncIssuesUpdate,
-  retrySeed,
   dueRetries,
-  retryOutcome,
-  nextRetryAt,
-  MAX_SYNC_RETRIES,
-  retryRunning,
-  zonedClock,
-  zonedDateKey,
   excessSnapshotKeys,
   excessSyncRunKeys,
-  dailySpendPruneBefore,
+  expiredCampaignHistoryKeys,
   expiredDailySpendKeys,
   expiredRoiReportKeys,
-  roiHistoryDays,
   expiredRoiSnapshotKeys,
+  financialPoint,
   financialWindow,
+  financialWrite,
   futureRoiReportKeys,
-  leftoverRunningIds,
+  gamRowsByDay,
   historyKey,
+  LEGACY_ROI_KEY_BOUND,
   latestSnapshotFor,
+  leftoverRunningIds,
+  MAX_SYNC_RETRIES,
   matchCode,
   mergeFinancialSeries,
-  financialPoint,
-  financialWrite,
+  metaRowsByDay,
+  missingCampaignExpired,
+  missingCampaignRow,
+  nextRetryAt,
+  nextRunAfter,
+  parseCampaignCodes,
+  permanentAccountError,
   previousRoiReport,
   previousRoiSnapshot,
-  LEGACY_ROI_KEY_BOUND,
+  reportDayKey,
+  reportPeriod,
+  reportRange,
+  retryOutcome,
+  retryRunning,
+  retrySeed,
+  roiHistoryDays,
   roiPreviousLookbackDays,
   roiReportKey,
   roiReportPruneBefore,
+  roiReportUpdate,
   roiReportWindowStart,
+  roiSnapshotKey,
   roiSnapshotPruneBefore,
   roiSnapshotWindowStart,
-  roiSnapshotKey,
-  nextRunAfter,
+  runningDayKey,
   scheduleIntervalMs,
-  roiReportUpdate,
+  shiftDateKey,
   subdomainUpdate,
   supersededRoiReportKeys,
+  syncIssuesUpdate,
   syncRunEntry,
   syncRunKey,
   syncStatusUpdate,
   USER_REPORTS_PATH,
+  unreadableActIds,
+  unreadableEarningByDate,
+  unreadableEarningDomains,
+  unreadableSpendRows,
   userReportsPath,
+  zonedClock,
+  zonedDateKey,
 } from "./sync-core.js";
 
 // buildCampaignMap: normalized campaign name -> normalized subdomain, from users' campaigns[].
@@ -103,7 +103,10 @@ assert.equal(map.size, 2, "blank campaign name skipped");
 // barisnya menyebut sebabnya. null, bukan sekadar tidak ditulis: update() menggabung, jadi angka
 // sync sebelumnya di hari yang sama akan menempel pada baris yang campaign-nya sudah tidak
 // teratribusi lagi.
-const noSpend = roiReportUpdate({ name: "s", pic: "p" }, { earning: 100, impressions: 1000, clicks: 10 });
+const noSpend = roiReportUpdate(
+  { name: "s", pic: "p" },
+  { earning: 100, impressions: 1000, clicks: 10 },
+);
 assert.equal(noSpend.earning, 100);
 assert.equal(noSpend.ecpm, 100, "100/1000*1000");
 assert.equal(noSpend.spending, null);
@@ -111,7 +114,11 @@ assert.equal(noSpend.adTax, null);
 assert.equal(noSpend.totalSpending, null);
 assert.equal(noSpend.roi, null, "tanpa spend tidak ada ROI — bukan 0%");
 assert.equal(noSpend.profit, null, "earning dikurangi nol adalah klaim yang tidak kita punya");
-assert.equal(noSpend.metaMissing, "unmapped", "sebabnya ditulis, bukan disimpulkan dari sel kosong");
+assert.equal(
+  noSpend.metaMissing,
+  "unmapped",
+  "sebabnya ditulis, bukan disimpulkan dari sel kosong",
+);
 
 // roiReportUpdate with spend: ROI + profit dihitung dari total spending (spend + ad tax), tarif
 // yang sama dengan ROI per negara — kalau tidak, satu subdomain dan baris-baris negaranya akan
@@ -248,7 +255,10 @@ assert.equal(spendRow.userId, "u1");
 
 // dashboardStatsFrom: totals across accounts and campaigns.
 const stats = dashboardStatsFrom(
-  { u1: { campaigns: [{ campaign: "a" }, { campaign: "b" }] }, u2: { campaigns: { x: { campaign: "c" } } } },
+  {
+    u1: { campaigns: [{ campaign: "a" }, { campaign: "b" }] },
+    u2: { campaigns: { x: { campaign: "c" } } },
+  },
   { a1: { spendToday: 10.5 }, a2: { spendToday: 4.5 }, a3: { spendToday: 100, deletedAt: "x" } },
 );
 assert.equal(stats.totalSpend, 15);
@@ -325,8 +335,14 @@ delete process.env.SYNC_INCLUDE_TODAY;
 // Titik hari berjalan ditandai, titik hari selesai tidak. Grafik menggambar yang partial dengan
 // garis putus-putus, dan tanpa penanda ini ujung yang belum selesai terbaca sebagai margin jatuh.
 const marked = mergeFinancialSeries(
-  new Map([["2026-08-07", 100], ["2026-08-08", 20]]),
-  new Map([["2026-08-07", 50], ["2026-08-08", 40]]),
+  new Map([
+    ["2026-08-07", 100],
+    ["2026-08-08", 20],
+  ]),
+  new Map([
+    ["2026-08-07", 50],
+    ["2026-08-08", 40],
+  ]),
   0.05,
   "2026-08-08",
 );
@@ -480,7 +496,10 @@ assert.equal(dinihari[0][1].note, "Sync Meta 02:00");
 
 // Meta memberi angka akun tanpa merinci campaign-nya. Spend-nya nyata, jadi barisnya tetap ada.
 const noDetail = dailySpendEntries("acc2", { name: "Ads B", spendToday: 12.5 }, [], runAt);
-assert.deepEqual(noDetail.map(([key]) => key), ["2026-08-07__acc2"]);
+assert.deepEqual(
+  noDetail.map(([key]) => key),
+  ["2026-08-07__acc2"],
+);
 assert.equal(noDetail[0][1].campaign, "Tanpa rincian campaign");
 assert.equal(noDetail[0][1].amount, 12.5);
 assert.deepEqual(
@@ -527,7 +546,9 @@ for (const snap of [firstSnap, dropped, toppedUp]) {
 // Berbeda dari dailySpendEntries: tanggalnya dari Meta (date_start), bukan jam run, dan tiap
 // campaign bisa punya banyak baris (satu per hari). Kuncinya tanggal__akun__campaign.
 const resolveCode = (name) =>
-  /^tvh1/i.test(name) ? { subDomain: "puppy.petcins.com", code: "TvH1" } : { subDomain: "", code: "" };
+  /^tvh1/i.test(name)
+    ? { subDomain: "puppy.petcins.com", code: "TvH1" }
+    : { subDomain: "", code: "" };
 const historyRows = campaignHistoryEntries(
   "acc1",
   { name: "Ads Nurjaman", actId: "act_1" },
@@ -818,7 +839,11 @@ assert.equal(idTrafficRow.ctr, 20, "200 / 1000 — dalam persen, seperti kolom R
 assert.equal(idTrafficRow.cpc, 0.75, "150 / 200");
 assert.equal(idTrafficRow.ecpm, 150, "150 / 1000 × 1000");
 assert.equal(idTrafficRow.adxRevenue, 130);
-assert.equal(idTrafficRow.adsenseRevenue, 0, "akun ini memang tidak dilayani AdSense — 0, bukan '-'");
+assert.equal(
+  idTrafficRow.adsenseRevenue,
+  0,
+  "akun ini memang tidak dilayani AdSense — 0, bukan '-'",
+);
 
 const myTrafficRow = trafficRows["2026-08-07__puppy-petcins-com__MY"];
 assert.equal(myTrafficRow.clicks, 0);
@@ -945,7 +970,11 @@ const roiHistory = {
 
 // Pembandingnya baris hari lain, bukan baris hari ini: membandingkan hari ini dengan dirinya
 // sendiri membuat fluktuasi selalu 0 setelah sync kedua di hari yang sama.
-assert.equal(previousRoiReport(roiHistory, "-Nsub1", runCountryAt).roi, 20, "kemarin, bukan hari ini");
+assert.equal(
+  previousRoiReport(roiHistory, "-Nsub1", runCountryAt).roi,
+  20,
+  "kemarin, bukan hari ini",
+);
 assert.equal(previousRoiReport(roiHistory, "-Nsub2", runCountryAt).roi, 99);
 assert.equal(
   previousRoiReport(roiHistory, "-Nsub3", runCountryAt).roi,
@@ -961,12 +990,20 @@ assert.deepEqual(
   ["2026-08-05__-Nsub1"],
   "yang lewat batas simpan saja; kunci asing (input tangan) tidak disentuh",
 );
-assert.deepEqual(expiredRoiReportKeys(roiHistory, runCountryAt, 90), [], "masih di dalam masa simpan");
+assert.deepEqual(
+  expiredRoiReportKeys(roiHistory, runCountryAt, 90),
+  [],
+  "masih di dalam masa simpan",
+);
 // Tanpa batas (bawaan): tidak ada satu baris pun yang dibuang, sekalipun bertahun-tahun lalu — bukan
 // cutoff "hari ini" yang justru menghapus segalanya. Riwayat harian ini satu-satunya sumber Kalender
 // untuk bulan yang snapshot per sync-nya sudah lewat.
 assert.deepEqual(expiredRoiReportKeys(roiHistory, runCountryAt, 0), [], "0 = simpan selamanya");
-assert.deepEqual(expiredRoiReportKeys(roiHistory, runCountryAt, -1), [], "negatif ikut dibaca tanpa batas");
+assert.deepEqual(
+  expiredRoiReportKeys(roiHistory, runCountryAt, -1),
+  [],
+  "negatif ikut dibaca tanpa batas",
+);
 
 // --- Jendela baca: apa yang DIMINTA, bukan apa yang dibuang -------------------------------------
 //
@@ -1042,7 +1079,11 @@ assert.deepEqual(expiredRoiReportKeys(roiHistory, runCountryAt, -1), [], "negati
 // yang dilaporkan, jadi yang tersaring tinggal tanggal masa depan: sisa run yang zonanya keliru,
 // dan baris hari berjalan yang tertinggal setelah SYNC_INCLUDE_TODAY dimatikan.
 assert.deepEqual(futureRoiReportKeys(roiHistory, "2026-08-06"), ["2026-08-07__-Nsub1"]);
-assert.deepEqual(futureRoiReportKeys(roiHistory, "2026-08-07"), [], "hari yang dilaporkan ikut disimpan");
+assert.deepEqual(
+  futureRoiReportKeys(roiHistory, "2026-08-07"),
+  [],
+  "hari yang dilaporkan ikut disimpan",
+);
 
 // Sisa hari berjalan: baris yang masih bertanda partial di hari yang sudah selesai. Hanya hari
 // yang diminta, hanya yang bertanda, dan id-nya bisa memuat "_" maupun "-" (push key RTDB).
@@ -1108,7 +1149,10 @@ assert.equal(previousRoiSnapshot(snapshotHistory, "-Nsub1", "2026-08-08"), null)
 assert.equal(previousRoiSnapshot(snapshotHistory, "-Nsub2", "2026-08-07").roi, 99);
 assert.equal(previousRoiSnapshot(snapshotHistory, "-Nbaru", "2026-08-07"), null);
 // Baris harian (tanpa jam) bukan snapshot dan tidak pernah jadi pembandingnya.
-assert.equal(previousRoiSnapshot({ "2026-08-07__-Nsub1": { roi: 77 } }, "-Nsub1", "2026-08-07"), null);
+assert.equal(
+  previousRoiSnapshot({ "2026-08-07__-Nsub1": { roi: 77 } }, "-Nsub1", "2026-08-07"),
+  null,
+);
 
 // Masa simpan snapshot dihitung terpisah dari riwayat harian — dan hanya kunci berbentuk snapshot
 // yang disentuh, jadi baris harian di pohon yang sama tidak pernah ikut terhapus.
@@ -1132,12 +1176,20 @@ const subuh = new Date("2026-08-07T23:50:00Z"); // 08 Agu 06:50 WIB
 const sore = new Date("2026-08-08T08:00:00Z"); // 08 Agu 15:00 WIB
 
 assert.equal(zonedDateKey(pagi), "2026-08-08");
-assert.equal(zonedDateKey(subuh), "2026-08-08", "06:50 WIB masih tanggal 8, walau UTC-nya tanggal 7");
+assert.equal(
+  zonedDateKey(subuh),
+  "2026-08-08",
+  "06:50 WIB masih tanggal 8, walau UTC-nya tanggal 7",
+);
 assert.equal(zonedClock(pagi), "07:35");
 assert.equal(zonedClock(subuh), "06:50");
 assert.equal(shiftDateKey("2026-08-01", -1), "2026-07-31", "menyeberang bulan");
 
-for (const [label, at] of [["pagi", pagi], ["subuh", subuh], ["sore", sore]]) {
+for (const [label, at] of [
+  ["pagi", pagi],
+  ["subuh", subuh],
+  ["sore", sore],
+]) {
   assert.equal(reportDayKey(at), "2026-08-07", `hari yang dilaporkan sama sepanjang ${label}`);
 }
 
@@ -1172,12 +1224,7 @@ delete process.env.SYNC_INCLUDE_TODAY;
 // GAM_RANGE_DAYS memundurkan awal rentang dari hari SELESAI, bukan dari hari berjalan: mengisi
 // ulang tiga hari ke belakang tidak boleh berarti kehilangan salah satunya.
 process.env.GAM_RANGE_DAYS = "3";
-assert.deepEqual(reportPeriod(pagi).keys, [
-  "2026-08-05",
-  "2026-08-06",
-  "2026-08-07",
-  "2026-08-08",
-]);
+assert.deepEqual(reportPeriod(pagi).keys, ["2026-08-05", "2026-08-06", "2026-08-07", "2026-08-08"]);
 // ...tapi kolom yang hasilnya SATU angka tidak ikut melebar. `settledRange` melebar bersamanya —
 // itu gunanya — sementara `settledDayRange` tetap satu hari: kolom Earning di /gam-accounts diberi
 // label `lastSyncReportDate` (hari selesai), dan kolom Status memutuskan "Iklan Belum Tayang" dari
@@ -1195,7 +1242,11 @@ assert.deepEqual(dateKeysBetween("2026-07-30", "2026-08-02"), [
   "2026-08-01",
   "2026-08-02",
 ]);
-assert.deepEqual(dateKeysBetween("2026-08-02", "2026-08-01"), [], "rentang terbalik bukan 400 hari");
+assert.deepEqual(
+  dateKeysBetween("2026-08-02", "2026-08-01"),
+  [],
+  "rentang terbalik bukan 400 hari",
+);
 
 // Baris memakai tanggal datanya, bukan tanggal sync-nya.
 const aligned = roiReportUpdate({ name: "s" }, { earning: 100, impressions: 10, clicks: 2 }, 50, {
@@ -1311,7 +1362,11 @@ const negaraGagal = countryRoiRows(
 assert.equal(negaraGagal.length, 1);
 assert.equal(negaraGagal[0][1].earning, null);
 assert.equal(negaraGagal[0][1].roi, null);
-assert.equal(negaraGagal[0][1].status, "Unknown", "bukan Review — belum tentu ia tidak menghasilkan");
+assert.equal(
+  negaraGagal[0][1].status,
+  "Unknown",
+  "bukan Review — belum tentu ia tidak menghasilkan",
+);
 assert.equal(negaraGagal[0][1].spending, 100, "spend-nya diketahui, jadi tetap ditulis");
 assert.equal(negaraGagal[0][1].date, "2026-08-07");
 
@@ -1326,7 +1381,12 @@ console.log("sync-core earning tidak diketahui tests ok");
 // --- Daftar isu yang dibaca ikon alert ---------------------------------------------------------
 
 const issues = syncIssuesUpdate("ROI subdomain", [
-  { source: "Laporan earning GAM", target: "masseffectstore.com", message: "GAM 500", impact: "Earning kosong." },
+  {
+    source: "Laporan earning GAM",
+    target: "masseffectstore.com",
+    message: "GAM 500",
+    impact: "Earning kosong.",
+  },
 ]);
 assert.equal(issues.count, 1);
 assert.equal(issues.items.i0.target, "masseffectstore.com");
@@ -1368,19 +1428,33 @@ assert.equal(retryOutcome(seed.a, false, "", t1), null, "pulih dihapus dari antr
 const after1 = retryOutcome(seed.a, true, "GAM 503", t1);
 assert.equal(after1.attempts, 1);
 assert.equal(after1.message, "GAM 503");
-assert.equal(after1.nextAt, new Date("2026-08-21T00:03:00.000Z").toISOString(), "jeda ke-2 = 2 menit");
+assert.equal(
+  after1.nextAt,
+  new Date("2026-08-21T00:03:00.000Z").toISOString(),
+  "jeda ke-2 = 2 menit",
+);
 
 // Jatah habis di percobaan ke-5: dari attempts 4 yang masih gagal -> null (berhenti mencoba).
-let entry = { name: "Akun A", message: "x", attempts: 4, nextAt: t0.toISOString() };
-assert.equal(retryOutcome(entry, true, "masih gagal", t1), null, `berhenti di ${MAX_SYNC_RETRIES}×`);
+const entry = { name: "Akun A", message: "x", attempts: 4, nextAt: t0.toISOString() };
+assert.equal(
+  retryOutcome(entry, true, "masih gagal", t1),
+  null,
+  `berhenti di ${MAX_SYNC_RETRIES}×`,
+);
 // attempts >= maks tidak lagi jatuh tempo walau waktunya lewat.
-assert.deepEqual(dueRetries({ z: { attempts: MAX_SYNC_RETRIES, nextAt: t0.toISOString() } }, t1), []);
+assert.deepEqual(
+  dueRetries({ z: { attempts: MAX_SYNC_RETRIES, nextAt: t0.toISOString() } }, t1),
+  [],
+);
 // Benih kosong (semua pulih) menghasilkan objek kosong -> pemanggil menuliskannya sebagai null.
 assert.deepEqual(retrySeed([], t0), {});
 
 console.log("sync-core retry tests ok");
 // Penanda "sedang dicoba lagi" — yang dibaca indikator di topbar.
-const retryBerjalan = retryRunning({ name: "fitness.stylefemale.com", attempts: 1, nextAt: "" }, t0);
+const retryBerjalan = retryRunning(
+  { name: "fitness.stylefemale.com", attempts: 1, nextAt: "" },
+  t0,
+);
 assert.equal(retryBerjalan.running, true);
 assert.equal(retryBerjalan.startedAt, t0.toISOString());
 // Penandanya TIDAK ikut ke percobaan berikutnya: yang terbawa akan membuat indikatornya berputar
@@ -1461,14 +1535,29 @@ const at = (iso) => new Date(iso);
 const iso = (date) => (date ? date.toISOString() : null);
 
 // Cron dibaca di zona operasi (Asia/Jakarta, +07:00), bukan UTC.
-assert.equal(iso(nextRunAfter("5 * * * *", at("2026-08-07T14:34:40Z"))), "2026-08-07T15:05:00.000Z");
+assert.equal(
+  iso(nextRunAfter("5 * * * *", at("2026-08-07T14:34:40Z"))),
+  "2026-08-07T15:05:00.000Z",
+);
 // Menit yang sedang berjalan sudah lewat tembakannya — yang berikutnya sejam lagi, bukan detik ini.
-assert.equal(iso(nextRunAfter("5 * * * *", at("2026-08-07T15:05:00Z"))), "2026-08-07T16:05:00.000Z");
+assert.equal(
+  iso(nextRunAfter("5 * * * *", at("2026-08-07T15:05:00Z"))),
+  "2026-08-07T16:05:00.000Z",
+);
 // Beberapa menit dalam satu jam, dan step pada field jam (23:00 WIB = 16:00 UTC).
-assert.equal(iso(nextRunAfter("0,30 * * * *", at("2026-08-07T15:05:00Z"))), "2026-08-07T15:30:00.000Z");
-assert.equal(iso(nextRunAfter("0 */2 * * *", at("2026-08-07T15:05:00Z"))), "2026-08-07T17:00:00.000Z");
+assert.equal(
+  iso(nextRunAfter("0,30 * * * *", at("2026-08-07T15:05:00Z"))),
+  "2026-08-07T15:30:00.000Z",
+);
+assert.equal(
+  iso(nextRunAfter("0 */2 * * *", at("2026-08-07T15:05:00Z"))),
+  "2026-08-07T17:00:00.000Z",
+);
 // Interval tetap dihitung dari titik yang diberikan.
-assert.equal(iso(nextRunAfter("every 15 minutes", at("2026-08-07T15:05:00Z"))), "2026-08-07T15:20:00.000Z");
+assert.equal(
+  iso(nextRunAfter("every 15 minutes", at("2026-08-07T15:05:00Z"))),
+  "2026-08-07T15:20:00.000Z",
+);
 // Yang lebih jarang dari harian, dan bentuk yang tidak dikenali: null, bukan tebakan.
 assert.equal(nextRunAfter("5 * * * 1", at("2026-08-07T15:05:00Z")), null);
 assert.equal(nextRunAfter("5 * 1 * *", at("2026-08-07T15:05:00Z")), null);
@@ -1477,9 +1566,9 @@ assert.equal(nextRunAfter("", at("2026-08-07T15:05:00Z")), null);
 
 // Log dipangkas seperti riwayat lain; kunci asing tidak disentuh.
 const runs = {
-  "20260807100000": {},
-  "20260807110000": {},
-  "20260807120000": {},
+  20260807100000: {},
+  20260807110000: {},
+  20260807120000: {},
   catatan_manual: {},
 };
 assert.deepEqual(excessSyncRunKeys(runs, 2), ["20260807100000"]);
@@ -1505,7 +1594,12 @@ console.log("adsense country dimensions tests ok");
 const campaignAccounts = {
   a1: { actId: "act_951641072800026", name: "TBZ 1233", userOwner: "Nurjaman" },
   a2: { actId: "act_250080654510501", name: "TBZ 1247", userOwner: "Lightman" },
-  a3: { actId: "act_111", name: "TBZ 0001", userOwner: "Nurjaman", deletedAt: "2026-08-07T00:00:00Z" },
+  a3: {
+    actId: "act_111",
+    name: "TBZ 0001",
+    userOwner: "Nurjaman",
+    deletedAt: "2026-08-07T00:00:00Z",
+  },
   a4: { actId: "", name: "Belum dihubungkan", userOwner: "Nurjaman" },
 };
 const campaignUserIds = new Map([
@@ -1579,13 +1673,34 @@ const refreshUser = {
       dailyBudget: 50000,
       statusAppliedAt: "2026-08-17T09:00:00.000Z",
     },
-    { campaign: "B", campaignId: "2", adAccount: "act_1", status: "Aktif", configuredStatus: "ACTIVE" },
-    { campaign: "C", campaignId: "3", adAccount: "act_1", status: "Aktif", configuredStatus: "ACTIVE" },
-    { campaign: "D", campaignId: "4", adAccount: "act_2", status: "Aktif", configuredStatus: "ACTIVE" },
+    {
+      campaign: "B",
+      campaignId: "2",
+      adAccount: "act_1",
+      status: "Aktif",
+      configuredStatus: "ACTIVE",
+    },
+    {
+      campaign: "C",
+      campaignId: "3",
+      adAccount: "act_1",
+      status: "Aktif",
+      configuredStatus: "ACTIVE",
+    },
+    {
+      campaign: "D",
+      campaignId: "4",
+      adAccount: "act_2",
+      status: "Aktif",
+      configuredStatus: "ACTIVE",
+    },
   ],
 };
 const live = new Map([
-  ["1", { id: "1", status: "PAUSED", effectiveStatus: "PAUSED", startTime: "", dailyBudget: 50000 }],
+  [
+    "1",
+    { id: "1", status: "PAUSED", effectiveStatus: "PAUSED", startTime: "", dailyBudget: 50000 },
+  ],
   ["3", { id: "3", status: "ACTIVE", effectiveStatus: "ACTIVE", startTime: "", dailyBudget: null }],
 ]);
 const refreshed = campaignStatusRefresh(refreshUser, live, new Set(["id:act_1"]), goneNow);
@@ -1608,7 +1723,19 @@ assert.deepEqual(
   "tidak ada akun yang terbaca berarti tidak ada kabar apa pun — bukan semua campaign hilang",
 );
 const returned = campaignStatusRefresh(
-  { campaigns: { k9: { campaign: "A", campaignId: "1", adAccount: "act_1", status: CAMPAIGN_GONE_STATUS, configuredStatus: "", metaMissing: true, missingSince: "2026-08-10T00:00:00.000Z" } } },
+  {
+    campaigns: {
+      k9: {
+        campaign: "A",
+        campaignId: "1",
+        adAccount: "act_1",
+        status: CAMPAIGN_GONE_STATUS,
+        configuredStatus: "",
+        metaMissing: true,
+        missingSince: "2026-08-10T00:00:00.000Z",
+      },
+    },
+  },
   live,
   new Set(["id:act_1"]),
   goneNow,
@@ -1698,7 +1825,15 @@ console.log("sync-core permanentAccountError tests ok");
   );
   // Bentuknya bisa langsung dipecah per hari seperti laporan Meta.
   assert.equal(metaRowsByDay(rows).get("2026-08-21").length, 2);
-  assert.deepEqual(unreadableSpendRows([{ x: row("2026-08-21", "act_dead", "A", 5) }], new Set(), "2026-08-01", "2026-08-31"), []);
+  assert.deepEqual(
+    unreadableSpendRows(
+      [{ x: row("2026-08-21", "act_dead", "A", 5) }],
+      new Set(),
+      "2026-08-01",
+      "2026-08-31",
+    ),
+    [],
+  );
 }
 
 // accountLabel membuang spasi ekor nama yang diketik orang.
@@ -1752,7 +1887,16 @@ console.log("# sync-core accountLabel tests ok");
     ["2026-08-30", 7111770],
     ["2026-08-31", 4480199],
   ]);
-  assert.equal(unreadableEarningByDate({ a: { date: "2026-08-30", subDomain: "a.b.com", earning: 1 } }, {}, new Set(), "2026-08-01", "2026-08-31").size, 0);
+  assert.equal(
+    unreadableEarningByDate(
+      { a: { date: "2026-08-30", subDomain: "a.b.com", earning: 1 } },
+      {},
+      new Set(),
+      "2026-08-01",
+      "2026-08-31",
+    ).size,
+    0,
+  );
   console.log("sync-core unreadable earning tests ok");
 }
 

@@ -31,7 +31,9 @@ test("menulis daun berubah, status, dan cabang isu kosong", async () => {
   const res = await syncFillRate(store, { now: NOW, fetchHourly, tokenOf });
 
   assert.deepEqual(res, { networks: 2, failed: 0, written: 2 });
-  const [update] = store.writes.filter(([kind, path]) => kind === "update" && path === "dashboard/fillRate");
+  const [update] = store.writes.filter(
+    ([kind, path]) => kind === "update" && path === "dashboard/fillRate",
+  );
   assert.deepEqual(update[2], {
     "2026-09-24/a,x,com/h11": { req: 10, imp: 4, partial: true },
     "2026-09-24/b,y,com/h10": { req: 5, imp: 5, partial: true },
@@ -74,7 +76,9 @@ test("tanpa perubahan: tidak ada update ke dashboard/fillRate", async () => {
       "2026-09-24": { "a,x,com": { h11: { req: 10, imp: 4, partial: true } } },
     },
   });
-  const fetchHourly = async () => [{ date: "2026-09-24", hour: "11", site: "a.x.com", req: 10, imp: 4 }];
+  const fetchHourly = async () => [
+    { date: "2026-09-24", hour: "11", site: "a.x.com", req: 10, imp: 4 },
+  ];
 
   const res = await syncFillRate(store, { now: NOW, fetchHourly, tokenOf });
 

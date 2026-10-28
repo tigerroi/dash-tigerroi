@@ -131,7 +131,7 @@ export function subscribeResource(key, callback, onError) {
 
         if (active) {
           const byDate = new Map();
-          for (const item of (roiData || [])) {
+          for (const item of roiData || []) {
             const row = toCamelCaseRow(item);
             const d = row.date;
             if (!d) continue;
@@ -180,7 +180,12 @@ export function subscribeResource(key, callback, onError) {
     try {
       let query = supabase.from(table).select("*");
       // Urutkan berdasarkan kolom waktu jika ada
-      if (table === "view_daily_roi" || table === "daily_roi_reports" || table === "expenses" || table === "whitelist_topup") {
+      if (
+        table === "view_daily_roi" ||
+        table === "daily_roi_reports" ||
+        table === "expenses" ||
+        table === "whitelist_topup"
+      ) {
         query = query.order("date", { ascending: false });
       } else if (table === "sync_runs") {
         query = query.order("started_at", { ascending: false }).limit(50);
@@ -235,7 +240,11 @@ export function subscribeValue(key, callback, onError) {
         for (let idx = 0; idx < (data || []).length; idx++) {
           const item = data[idx];
           const row = toCamelCaseRow(item);
-          const keyId = row.id || row.code || row.name || (row.date && row.siteCode ? `${row.date}_${row.siteCode}` : String(idx));
+          const keyId =
+            row.id ||
+            row.code ||
+            row.name ||
+            (row.date && row.siteCode ? `${row.date}_${row.siteCode}` : String(idx));
           result[keyId] = { ...row, id: keyId };
         }
         callback(result);

@@ -127,11 +127,7 @@ test("label status memakai kosakata yang sama dengan baris campaign", () => {
  * sendiri, aturan yang sama dengan baris campaign — dan yang menyebut sebabnya penanda ini.
  */
 test("CAMPAIGN_PAUSED ditandai, tanpa mengubah label saklarnya sendiri", () => {
-  const [row] = mergeAdSetRows(
-    [{ ...CBO_SET, effectiveStatus: "CAMPAIGN_PAUSED" }],
-    [],
-    { now },
-  );
+  const [row] = mergeAdSetRows([{ ...CBO_SET, effectiveStatus: "CAMPAIGN_PAUSED" }], [], { now });
   assert.equal(row.status, "Aktif");
   assert.equal(row.pausedByCampaign, true);
 
@@ -144,7 +140,13 @@ test("anggaran: CBO tidak punya angka di ad set, dan itu bukan nol", () => {
     [
       CBO_SET,
       { id: "2", name: "ABO harian", status: "ACTIVE", dailyBudget: 100000, lifetimeBudget: null },
-      { id: "3", name: "ABO seumur hidup", status: "ACTIVE", dailyBudget: null, lifetimeBudget: 5000000 },
+      {
+        id: "3",
+        name: "ABO seumur hidup",
+        status: "ACTIVE",
+        dailyBudget: null,
+        lifetimeBudget: 5000000,
+      },
     ],
     [],
     { now },

@@ -5,7 +5,17 @@ const rates = { IDR: 16000, USD: 1 };
 
 // convertRowsToIdr: metrik uang dikali kurs; keys/impressions/clicks dibiarkan; currency+kurs ditempel.
 const [usd] = convertRowsToIdr(
-  [{ keys: ["s"], earning: 56.71, adx: 56.71, adsense: 0, adServer: 0, impressions: 1000, clicks: 5 }],
+  [
+    {
+      keys: ["s"],
+      earning: 56.71,
+      adx: 56.71,
+      adsense: 0,
+      adServer: 0,
+      impressions: 1000,
+      clicks: 5,
+    },
+  ],
   "USD",
   rates,
 );
@@ -51,7 +61,11 @@ assert.equal(report.fxRate, 16000);
 // mata uang sama sekali, jadi argumen ketiganya selalu jatuh ke "IDR" — dan earning USD yang
 // dikira rupiah adalah ROI -99,96% untuk subdomain yang justru untung (marriage.psaonline...,
 // 21 Agu 2026: IDR 13.521 di layar AdSense tersimpan sebagai Rp 1).
-const [fromReport] = convertRowsToIdr([{ earning: 0.76, adsense: 0.76, reportCurrency: "USD" }], "IDR", rates);
+const [fromReport] = convertRowsToIdr(
+  [{ earning: 0.76, adsense: 0.76, reportCurrency: "USD" }],
+  "IDR",
+  rates,
+);
 assert.equal(fromReport.currency, "USD");
 assert.equal(fromReport.fxRate, 16000);
 assert.equal(fromReport.earning, 0.76 * 16000);

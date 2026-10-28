@@ -7,11 +7,7 @@ export async function roleOf(db, uid) {
 
   // Jika db adalah instance Supabase Client
   if (db && typeof db.from === "function") {
-    const { data, error } = await db
-      .from("profiles")
-      .select("role")
-      .eq("id", uid)
-      .maybeSingle();
+    const { data, error } = await db.from("profiles").select("role").eq("id", uid).maybeSingle();
 
     if (error || !data) return null;
     return data.role;

@@ -54,7 +54,9 @@ const toPercent = (value) => {
 
 const db = await connect();
 
-const domains = Object.entries((await get(ref(db, "domains"))).val() || {}).filter(([, row]) => row);
+const domains = Object.entries((await get(ref(db, "domains"))).val() || {}).filter(
+  ([, row]) => row,
+);
 const existing = Object.values((await get(ref(db, "companyPercents"))).val() || {}).filter(Boolean);
 const seen = new Set(existing.map(identityOf));
 

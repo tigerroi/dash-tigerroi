@@ -6,14 +6,8 @@ import {
   fetchCampaignSpend,
   fetchCampaignSpendByCountry,
 } from "./meta.js";
-import {
-  collectSiteApprovals,
-  fetchSiteApprovals,
-  siteApprovalUpdates,
-} from "./site-approval.js";
+import { collectSiteApprovals, fetchSiteApprovals, siteApprovalUpdates } from "./site-approval.js";
 import { asStore } from "./store.mjs";
-import { syncFinancials } from "./sync-financials.mjs";
-import { loadUnreadableSpend } from "./unreadable-spend.mjs";
 import {
   adsenseCountryDimensions,
   adTaxRate,
@@ -27,18 +21,18 @@ import {
   earningAccounts,
   earningRowsByDimensions,
   expiredRoiReportKeys,
-  financialWindow,
   expiredRoiSnapshotKeys,
+  financialWindow,
   futureRoiReportKeys,
-  leftoverRunningIds,
   gamRowsByDay,
+  leftoverRunningIds,
   metaRowsByDay,
   normalizeName,
   previousRoiReport,
   previousRoiSnapshot,
+  ROI_SNAPSHOTS_PATH,
   reportPeriod,
   resolveCurrencies,
-  ROI_SNAPSHOTS_PATH,
   roiReportKey,
   roiReportPruneBefore,
   roiReportUpdate,
@@ -46,13 +40,15 @@ import {
   roiSnapshotKey,
   roiSnapshotPruneBefore,
   roiSnapshotWindowStart,
+  SYNC_ISSUES_PATH,
   subdomainUpdate,
   supersededRoiReportKeys,
-  SYNC_ISSUES_PATH,
   syncIssuesUpdate,
   userReportsPath,
   zonedClock,
 } from "./sync-core.js";
+import { syncFinancials } from "./sync-financials.mjs";
+import { loadUnreadableSpend } from "./unreadable-spend.mjs";
 
 // Sync ROI subdomain — satu implementasi untuk semua jalur (CLI, cron, dan
 // callable di index.js). Yang membedakan pemanggilnya cuma SDK-nya, dan itu diurus `asStore`.
@@ -124,7 +120,8 @@ export async function syncSubdomains(dbOrStore, { metaToken = "", dimension } = 
       source: "Kurs FX",
       target: "open.er-api.com",
       message: e.message,
-      impact: "Earning network USD tidak dikonversi ke IDR — ROI dan totalnya salah sampai kurs tersedia.",
+      impact:
+        "Earning network USD tidak dikonversi ke IDR — ROI dan totalnya salah sampai kurs tersedia.",
     });
   }
   // Mata uang tiap akun earning (network GAM lewat listNetworks, AdSense default IDR).
@@ -209,7 +206,11 @@ export async function syncSubdomains(dbOrStore, { metaToken = "", dimension } = 
   // maupun `running: false`, jadi topbar menggantung di "Syncing... ROI" sampai run berikutnya.
   const countryDimsOf = (provider) =>
     provider === "adsense" ? adsenseCountryDimensions() : countryDimensions();
-  const settled = (promise) => promise.then((value) => ({ value }), (error) => ({ error }));
+  const settled = (promise) =>
+    promise.then(
+      (value) => ({ value }),
+      (error) => ({ error }),
+    );
   const unwrap = (result) => {
     if (result.error) throw result.error;
     return result.value;
@@ -586,8 +587,7 @@ export async function syncSubdomains(dbOrStore, { metaToken = "", dimension } = 
   const removals = {};
   // Yang perlu dibuang ada di LUAR jendela di atas, jadi ia diminta terpisah — dan permintaannya
   // berbatas juga: normalnya ia menjawab kosong, dan itu memang yang diharapkan tiap jam.
-  const stale =
-    (await store.readBefore("dashboard/roiReports", roiReportPruneBefore(now))) || {};
+  const stale = (await store.readBefore("dashboard/roiReports", roiReportPruneBefore(now))) || {};
   for (const key of expiredRoiReportKeys(stale, now)) removals[key] = null;
   for (const key of supersededRoiReportKeys(stale, allIds)) removals[key] = null;
   // Baris bertanggal setelah hari terakhir yang dilaporkan run ini: sisa run yang zonanya keliru,
@@ -676,13 +676,26 @@ export async function syncSubdomains(dbOrStore, { metaToken = "", dimension } = 
     (snapshots ? ` ${snapshots} snapshot realtime (jam ${zonedClock(now)}).` : "") +
     (missing ? ` ${missing} baris tanpa earning (laporan GAM gagal), tidak ditulis 0.` : "") +
     ` ${countryRows} baris ROI negara ke ${countryRowsByUser.size} user.` +
-    (gam.length ? ` ${gam.length} nama GAM tak cocok: ${gam.slice(0, 3).join(", ")}${gam.length > 3 ? "…" : ""}.` : "") +
+    (gam.length
+      ? ` ${gam.length} nama GAM tak cocok: ${gam.slice(0, 3).join(", ")}${gam.length > 3 ? "…" : ""}.`
+      : "") +
     (restoredSpend ? ` ${restoredSpend} baris spend dari riwayat ad account nonaktif.` : "") +
-    (camp.length ? ` ${camp.length} campaign tak terpetakan: ${camp.slice(0, 3).join(", ")}${camp.length > 3 ? "…" : ""}.` : "") +
-    (unowned.length ? ` ${unowned.length} subdomain tanpa PIC, ROI negaranya tidak punya halaman: ${unowned.slice(0, 3).join(", ")}.` : "") +
+    (camp.length
+      ? ` ${camp.length} campaign tak terpetakan: ${camp.slice(0, 3).join(", ")}${camp.length > 3 ? "…" : ""}.`
+      : "") +
+    (unowned.length
+      ? ` ${unowned.length} subdomain tanpa PIC, ROI negaranya tidak punya halaman: ${unowned.slice(0, 3).join(", ")}.`
+      : "") +
     (approvals ? ` ${approvals} domain diperbarui status persetujuan Google-nya.` : "") +
-    (countryErrors.length ? ` Laporan negara gagal untuk ${countryErrors.length} akun: ${countryErrors[0].message}` : "") +
-    (conflicts.length ? ` ${conflicts.length} kode campaign dipakai lebih dari satu subdomain: ${conflicts.map((c) => c.code).slice(0, 3).join(", ")}.` : "");
+    (countryErrors.length
+      ? ` Laporan negara gagal untuk ${countryErrors.length} akun: ${countryErrors[0].message}`
+      : "") +
+    (conflicts.length
+      ? ` ${conflicts.length} kode campaign dipakai lebih dari satu subdomain: ${conflicts
+          .map((c) => c.code)
+          .slice(0, 3)
+          .join(", ")}.`
+      : "");
   return {
     reportDate: period.key,
     runningDate: period.running,
@@ -715,6 +728,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const db = await connect();
   const res = await syncSubdomains(db, { metaToken: process.env.META_ACCESS_TOKEN });
   console.log(res.summary);
-  for (const issue of res.issues) console.error(`  ! ${issue.source} — ${issue.target}: ${issue.message}`);
+  for (const issue of res.issues)
+    console.error(`  ! ${issue.source} — ${issue.target}: ${issue.message}`);
   process.exit(0);
 }

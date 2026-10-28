@@ -46,7 +46,14 @@ async function check() {
     console.error("Error membaca subdomains:", subErr.message);
   } else {
     console.log(`Jumlah baris subdomains: ${subdomains?.length || 0}`);
-    console.table(subdomains?.map((s) => ({ id: s.id, name: s.name, site_code: s.site_code, status: s.status })));
+    console.table(
+      subdomains?.map((s) => ({
+        id: s.id,
+        name: s.name,
+        site_code: s.site_code,
+        status: s.status,
+      })),
+    );
   }
 
   console.log("\n--- Memeriksa Tabel public.profiles ---");

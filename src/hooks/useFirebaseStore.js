@@ -295,11 +295,16 @@ export function useFirebaseStore(navigate, resources, user, enabled = true, rout
         });
         if (uid) {
           try {
-            await updateResource("users", uid, {
-              name: profile.name,
-              username: profile.username,
-              role: profile.role,
-            }, actor);
+            await updateResource(
+              "users",
+              uid,
+              {
+                name: profile.name,
+                username: profile.username,
+                role: profile.role,
+              },
+              actor,
+            );
           } catch {
             // Profil sudah dibuat oleh trigger handle_new_user
           }
@@ -602,16 +607,13 @@ export function useFirebaseStore(navigate, resources, user, enabled = true, rout
     try {
       const callable = DISCOVER_CALLABLE[key];
       if (!callable) throw new Error("Data ini belum bisa diimpor dari Google.");
-      let res = CONTROL_API_ENABLED ? await runViaControl() : null;
+      const res = CONTROL_API_ENABLED ? await runViaControl() : null;
       if (!res) {
-        if (!FUNCTIONS_ENABLED) {
-          throw new Error(
-            CONTROL_API_ENABLED
-              ? "Server kontrol tidak menjawab — impor ini hanya bisa lewat server. Coba lagi nanti."
-              : "Server kontrol belum dikonfigurasi (VITE_CONTROL_API_URL).",
-          );
-        }
-        res = (await httpsCallable(functions, callable)({})).data;
+        throw new Error(
+          CONTROL_API_ENABLED
+            ? "Server kontrol tidak menjawab — impor ini hanya bisa lewat server. Coba lagi nanti."
+            : "Server kontrol belum dikonfigurasi (VITE_CONTROL_API_URL).",
+        );
       }
       const created = res?.created ?? 0;
       const message =
@@ -712,15 +714,6 @@ export function useFirebaseStore(navigate, resources, user, enabled = true, rout
           }
           console.info("[RabbitROI] Server kontrol tak terjangkau, jatuh ke antrean.", error);
         }
-      }
-
-      if (FUNCTIONS_ENABLED) {
-        await httpsCallable(
-          functions,
-          "setCampaignStatus",
-        )({ userId, campaignId: command.campaignId, status });
-        notifySuccess(active ? `${name} dinyalakan.` : `${name} dimatikan.`);
-        return;
       }
 
       await writeCampaignCommand(userId, command.campaignId, command);

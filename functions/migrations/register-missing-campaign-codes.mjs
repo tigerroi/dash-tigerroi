@@ -171,7 +171,9 @@ for (const item of PLAN) {
 console.log(`${PLAN.length} kode direncanakan.\n`);
 for (const item of creates) {
   console.log(`+ subdomain BARU ${item.subDomain}`);
-  console.log(`    kode ${item.code} · domain induk ${item.create.parentDomain} · PIC ${item.create.pic || "(kosong)"}`);
+  console.log(
+    `    kode ${item.code} · domain induk ${item.create.parentDomain} · PIC ${item.create.pic || "(kosong)"}`,
+  );
   console.log(`    dasar: ${item.evidence}`);
 }
 for (const item of patches) {
@@ -186,7 +188,9 @@ if (!creates.length && !patches.length) {
 }
 
 if (dry) {
-  console.log(`\n--dry: tidak ada yang ditulis. ${creates.length} subdomain baru, ${patches.length} baris disunting.`);
+  console.log(
+    `\n--dry: tidak ada yang ditulis. ${creates.length} subdomain baru, ${patches.length} baris disunting.`,
+  );
   process.exit(0);
 }
 

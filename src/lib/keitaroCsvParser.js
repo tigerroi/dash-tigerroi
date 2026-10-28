@@ -84,7 +84,7 @@ export function parseCsvRows(text, delimiter = ",") {
 function cleanKey(header) {
   return String(header || "")
     .toLowerCase()
-    .replace(/[\s_\-]/g, "")
+    .replace(/[\s_-]/g, "")
     .trim();
 }
 
@@ -109,11 +109,17 @@ export function detectColumnIndices(headers) {
     const k = cleanKey(h);
 
     // Tanggal
-    if (map.date === -1 && (k === "date" || k === "datetime" || k === "day" || k === "tanggal" || k === "dayofmonth")) {
+    if (
+      map.date === -1 &&
+      (k === "date" || k === "datetime" || k === "day" || k === "tanggal" || k === "dayofmonth")
+    ) {
       map.date = index;
     }
     // Kolom Situs Eksplisit
-    else if (map.site === -1 && (k === "site" || k === "sitecode" || k === "kodesitus" || k === "domain" || k === "hostname")) {
+    else if (
+      map.site === -1 &&
+      (k === "site" || k === "sitecode" || k === "kodesitus" || k === "domain" || k === "hostname")
+    ) {
       map.site = index;
     }
     // Sub ID 1 (umumnya berisi site_code di parameter URL Keitaro)
@@ -125,27 +131,50 @@ export function detectColumnIndices(headers) {
       map.sub_id_2 = index;
     }
     // Campaign Name
-    else if (map.campaign === -1 && (k === "campaign" || k === "campaignname" || k === "kampanye" || k === "namakampanye")) {
+    else if (
+      map.campaign === -1 &&
+      (k === "campaign" || k === "campaignname" || k === "kampanye" || k === "namakampanye")
+    ) {
       map.campaign = index;
     }
     // Clicks
-    else if (map.clicks === -1 && (k === "clicks" || k === "rawclicks" || k === "uniqueclicks" || k === "klik")) {
+    else if (
+      map.clicks === -1 &&
+      (k === "clicks" || k === "rawclicks" || k === "uniqueclicks" || k === "klik")
+    ) {
       map.clicks = index;
     }
     // Impressions
-    else if (map.impressions === -1 && (k === "impressions" || k === "penayangan" || k === "impresi" || k === "views")) {
+    else if (
+      map.impressions === -1 &&
+      (k === "impressions" || k === "penayangan" || k === "impresi" || k === "views")
+    ) {
       map.impressions = index;
     }
     // Cost / Spend
-    else if (map.cost === -1 && (k === "cost" || k === "spend" || k === "biaya" || k === "pengeluaran" || k === "adspend")) {
+    else if (
+      map.cost === -1 &&
+      (k === "cost" || k === "spend" || k === "biaya" || k === "pengeluaran" || k === "adspend")
+    ) {
       map.cost = index;
     }
     // Revenue
-    else if (map.revenue === -1 && (k === "revenue" || k === "pendapatan" || k === "income" || k === "omset")) {
+    else if (
+      map.revenue === -1 &&
+      (k === "revenue" || k === "pendapatan" || k === "income" || k === "omset")
+    ) {
       map.revenue = index;
     }
     // Conversions
-    else if (map.conversions === -1 && (k === "conversions" || k === "conv" || k === "conv." || k === "leads" || k === "sales" || k === "konversi")) {
+    else if (
+      map.conversions === -1 &&
+      (k === "conversions" ||
+        k === "conv" ||
+        k === "conv." ||
+        k === "leads" ||
+        k === "sales" ||
+        k === "konversi")
+    ) {
       map.conversions = index;
     }
     // Unique Clicks (fallback jika kolom clicks belum ketemu)
@@ -235,9 +264,7 @@ export function matchSiteCode(candidates, sitesList = []) {
     candidates = [candidates].filter(Boolean);
   }
 
-  const cleanCandidates = candidates
-    .map((c) => String(c || "").trim())
-    .filter(Boolean);
+  const cleanCandidates = candidates.map((c) => String(c || "").trim()).filter(Boolean);
 
   if (cleanCandidates.length === 0 || !sitesList || sitesList.length === 0) {
     return null;
@@ -246,12 +273,12 @@ export function matchSiteCode(candidates, sitesList = []) {
   // 1. Prioritas Utama: Pencocokan Langsung (Exact Match) ke site_code
   for (const cand of cleanCandidates) {
     const candLower = cand.toLowerCase();
-    const candNormalized = candLower.replace(/[\s_\-]/g, "");
+    const candNormalized = candLower.replace(/[\s_-]/g, "");
 
     for (const site of sitesList) {
       if (!site.site_code) continue;
       const codeLower = site.site_code.toLowerCase();
-      const codeNormalized = codeLower.replace(/[\s_\-]/g, "");
+      const codeNormalized = codeLower.replace(/[\s_-]/g, "");
 
       if (candLower === codeLower || candNormalized === codeNormalized) {
         return site.site_code;
@@ -266,7 +293,10 @@ export function matchSiteCode(candidates, sitesList = []) {
       for (const site of sitesList) {
         if (!site.site_code) continue;
         const codeLower = site.site_code.toLowerCase();
-        if (paramVal === codeLower || paramVal.replace(/[\s_\-]/g, "") === codeLower.replace(/[\s_\-]/g, "")) {
+        if (
+          paramVal === codeLower ||
+          paramVal.replace(/[\s_-]/g, "") === codeLower.replace(/[\s_-]/g, "")
+        ) {
           return site.site_code;
         }
       }
@@ -394,7 +424,9 @@ export function processKeitaroCsv(csvText, sitesList = [], options = {}) {
   let totalCost = 0;
   let totalRevenue = 0;
 
-  const todayJakarta = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(new Date());
+  const todayJakarta = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(
+    new Date(),
+  );
 
   // Baca baris data (mulai dari index 1)
   for (let r = 1; r < rows.length; r++) {
@@ -440,7 +472,8 @@ export function processKeitaroCsv(csvText, sitesList = [], options = {}) {
       col.impressions !== -1 ? Math.round(parseNumeric(row[col.impressions], clicks)) : clicks;
     const cost = col.cost !== -1 ? parseNumeric(row[col.cost], 0) : 0;
     const revenue = col.revenue !== -1 ? parseNumeric(row[col.revenue], 0) : 0;
-    const conversions = col.conversions !== -1 ? Math.round(parseNumeric(row[col.conversions], 0)) : 0;
+    const conversions =
+      col.conversions !== -1 ? Math.round(parseNumeric(row[col.conversions], 0)) : 0;
 
     totalClicks += clicks;
     totalCost += cost;

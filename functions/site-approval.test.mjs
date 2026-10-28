@@ -1,9 +1,5 @@
 import assert from "node:assert/strict";
-import {
-  collectSiteApprovals,
-  siteApprovalLabel,
-  siteApprovalUpdates,
-} from "./site-approval.js";
+import { collectSiteApprovals, siteApprovalLabel, siteApprovalUpdates } from "./site-approval.js";
 
 // --- Label ------------------------------------------------------------------------------------
 // Kosakata tiap konsol dipertahankan: "Disetujui" milik Ad Manager, "Siap" milik AdSense.

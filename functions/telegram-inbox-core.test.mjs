@@ -22,8 +22,10 @@ test("kunci chat sama persis dengan yang di src/lib/telegramInbox.js", () => {
   // `\r` dibuang dulu: repo ini dikerjakan di Windows, dan checkout ber-CRLF membuat pencocokan
   // sumber gagal untuk berkas yang isinya identik — tes cerminan yang menyala karena akhir baris
   // adalah tes yang akan dimatikan orang, dan yang ikut mati adalah penjagaan yang sebenarnya.
-  const source = readFileSync(new URL("../src/lib/telegramInbox.js", import.meta.url), "utf8")
-    .replace(/\r/g, "");
+  const source = readFileSync(
+    new URL("../src/lib/telegramInbox.js", import.meta.url),
+    "utf8",
+  ).replace(/\r/g, "");
   const body = source.match(/export function inboxChatKey\(chatId\) \{\n([\s\S]*?)\n\}/)?.[1];
 
   assert.ok(body, "inboxChatKey tidak ditemukan di src/lib/telegramInbox.js");

@@ -157,7 +157,11 @@ test("sekali sehari per aturan per subdomain", () => {
 
 test("penanda yang sudah pulih disapu, yang hari ini dipertahankan", () => {
   const alerts = evaluateAlerts([row({ roi: -80 })], on);
-  const update = alertNoticeUpdate(alerts, { "lowRoi__sudah-pulih.com": "2026-08-20" }, "2026-08-25");
+  const update = alertNoticeUpdate(
+    alerts,
+    { "lowRoi__sudah-pulih.com": "2026-08-20" },
+    "2026-08-25",
+  );
 
   assert.equal(update[alerts[0].id], "2026-08-25");
   assert.equal(update["lowRoi__sudah-pulih.com"], null);

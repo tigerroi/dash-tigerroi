@@ -58,7 +58,9 @@ await update(ref(db, "gamAccounts"), payload);
 // Verifikasi sebelum menghapus. Sumber yang dihapus atas dasar "update tidak melempar error"
 // adalah cara data hilang tanpa ada yang tahu kapan.
 const written = (await get(ref(db, "gamAccounts"))).val() || {};
-const missing = moving.filter(([id, a]) => String(written[id]?.networkCode || "") !== String(a.networkCode));
+const missing = moving.filter(
+  ([id, a]) => String(written[id]?.networkCode || "") !== String(a.networkCode),
+);
 if (missing.length) {
   console.error(`\n${missing.length} record tidak sampai di /gamAccounts. Sumber TIDAK dihapus.`);
   for (const [id, a] of missing) console.error(`  ! ${a.name || id}`);
@@ -68,7 +70,9 @@ console.log(`\n${moving.length} record ada di /gamAccounts.`);
 
 if (keepSource) {
   console.log("--keep-source: /adsenseAccounts dibiarkan apa adanya.");
-  console.log("Ingat: selama keduanya terisi, tiap network akan tersync dua kali dan ROI-nya dobel.");
+  console.log(
+    "Ingat: selama keduanya terisi, tiap network akan tersync dua kali dan ROI-nya dobel.",
+  );
   process.exit(0);
 }
 

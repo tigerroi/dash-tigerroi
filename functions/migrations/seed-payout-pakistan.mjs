@@ -31,7 +31,11 @@ import { get, push, ref, set } from "firebase/database";
 import { connect } from "../db.mjs";
 
 const MONTH = "2026-08";
-const MEEZAN = { bank: "Meezan bank", namaRekening: "Imran Aslam", noRekening: "PK88MEZN0026010114310624" };
+const MEEZAN = {
+  bank: "Meezan bank",
+  namaRekening: "Imran Aslam",
+  noRekening: "PK88MEZN0026010114310624",
+};
 const TAX_PERCENT = 5;
 const FEE_PERCENT = 5;
 
@@ -87,12 +91,16 @@ for (const item of ROWS) {
   const fee = Math.round(((item.google - govTax) * FEE_PERCENT) / 100);
   const potonganKonversi = item.google - govTax - fee - item.binance;
   if (potonganKonversi < 0) {
-    console.error(`${item.domain}: pajak + fee melebihi yang hilang (${fmt(item.loss)}) — dihentikan.`);
+    console.error(
+      `${item.domain}: pajak + fee melebihi yang hilang (${fmt(item.loss)}) — dihentikan.`,
+    );
     process.exit(1);
   }
   const saldoAkhir = item.google - govTax - fee - potonganKonversi;
   if (Math.abs(saldoAkhir - item.binance) > 1) {
-    console.error(`${item.domain}: Saldo Akhir ${saldoAkhir} != Binance ${item.binance} — dihentikan.`);
+    console.error(
+      `${item.domain}: Saldo Akhir ${saldoAkhir} != Binance ${item.binance} — dihentikan.`,
+    );
     process.exit(1);
   }
 

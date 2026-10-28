@@ -1,7 +1,7 @@
 import {
-  listZones,
-  listDnsRecords,
   createDnsRecord,
+  listDnsRecords,
+  listZones,
   updateDnsRecord,
 } from "../functions/cloudflare.js";
 import { CloudflareError } from "../functions/cloudflare-core.js";
@@ -22,13 +22,15 @@ import { CloudflareError } from "../functions/cloudflare-core.js";
  * @returns {Promise<string>} Zone ID
  */
 export async function resolveZoneId(apiKey, zoneName) {
-  const cleanZone = String(zoneName || "").trim().toLowerCase();
+  const cleanZone = String(zoneName || "")
+    .trim()
+    .toLowerCase();
   const zones = await listZones(apiKey);
   const matched = zones.find((z) => z.name.toLowerCase() === cleanZone);
   if (!matched) {
     throw new CloudflareError(
       `Zona '${cleanZone}' tidak ditemukan pada akun Cloudflare ini. Pastikan domain sudah terdaftar di Cloudflare.`,
-      { status: 404 }
+      { status: 404 },
     );
   }
   return matched.id;
@@ -72,16 +74,16 @@ export async function syncSubdomainRecord({
   const zoneId = await resolveZoneId(apiKey, zoneName);
   const { records } = await getZoneDnsRecords(apiKey, zoneId);
 
-  const cleanSub = String(subdomain || "").trim().toLowerCase();
-  const cleanZone = String(zoneName || "").trim().toLowerCase();
-  const fqdn = cleanSub.endsWith(`.${cleanZone}`)
-    ? cleanSub
-    : `${cleanSub}.${cleanZone}`;
+  const cleanSub = String(subdomain || "")
+    .trim()
+    .toLowerCase();
+  const cleanZone = String(zoneName || "")
+    .trim()
+    .toLowerCase();
+  const fqdn = cleanSub.endsWith(`.${cleanZone}`) ? cleanSub : `${cleanSub}.${cleanZone}`;
 
   const existing = records.find(
-    (r) =>
-      r.name.toLowerCase() === fqdn &&
-      r.type.toUpperCase() === type.toUpperCase()
+    (r) => r.name.toLowerCase() === fqdn && r.type.toUpperCase() === type.toUpperCase(),
   );
 
   const recordPayload = {
@@ -106,13 +108,7 @@ export async function syncSubdomainRecord({
     return { action: "unchanged", record: existing };
   }
 
-  const updated = await updateDnsRecord(
-    apiKey,
-    zoneId,
-    cleanZone,
-    existing.id,
-    recordPayload
-  );
+  const updated = await updateDnsRecord(apiKey, zoneId, cleanZone, existing.id, recordPayload);
   return { action: "updated", record: updated };
 }
 
@@ -142,7 +138,7 @@ if (process.argv[1] && process.argv[1].endsWith("cloudflare-dns.js")) {
             type: r.type,
             content: r.content,
             proxied: r.proxied,
-          }))
+          })),
         );
       } else if (command === "create") {
         const zoneName = process.argv[3];
@@ -152,7 +148,7 @@ if (process.argv[1] && process.argv[1].endsWith("cloudflare-dns.js")) {
 
         if (!zoneName || !subdomain || !content) {
           console.error(
-            "Penggunaan: node jobs/cloudflare-dns.js create <zoneName> <subdomain> <targetIpOrHost> [proxied]"
+            "Penggunaan: node jobs/cloudflare-dns.js create <zoneName> <subdomain> <targetIpOrHost> [proxied]",
           );
           process.exit(1);
         }
@@ -164,7 +160,9 @@ if (process.argv[1] && process.argv[1].endsWith("cloudflare-dns.js")) {
           content,
           proxied,
         });
-        console.log(`[${result.action.toUpperCase()}] ${result.record.name} -> ${result.record.content} (proxied: ${result.record.proxied})`);
+        console.log(
+          `[${result.action.toUpperCase()}] ${result.record.name} -> ${result.record.content} (proxied: ${result.record.proxied})`,
+        );
       } else {
         console.log("Perintah tersedia: list, create");
       }

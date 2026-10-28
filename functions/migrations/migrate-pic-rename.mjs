@@ -64,8 +64,7 @@ for (const node of NODES) {
     .map(([key]) => key);
   const days = [...new Set(keys.map((k) => k.slice(0, 10)))].sort();
   console.log(
-    `${node.path}: ${keys.length} baris` +
-      (days.length ? `  (${days[0]} s/d ${days.at(-1)})` : ""),
+    `${node.path}: ${keys.length} baris` + (days.length ? `  (${days[0]} s/d ${days.at(-1)})` : ""),
   );
   total += keys.length;
   plan.push({ ...node, keys });

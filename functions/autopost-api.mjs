@@ -52,7 +52,9 @@ async function request(host, path, { method = "GET", apiKey, payload, timeout } 
         code: "timeout",
       });
     }
-    throw new PluginError(`${host} tidak bisa dihubungi: ${error.message}`, { code: "unreachable" });
+    throw new PluginError(`${host} tidak bisa dihubungi: ${error.message}`, {
+      code: "unreachable",
+    });
   }
 
   return unwrapAutopost(safeJson(text), res.status);

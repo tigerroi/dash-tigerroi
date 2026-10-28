@@ -28,7 +28,10 @@ test("unpaidBalance melewati saldo YouTube", () => {
     { name: "accounts/pub-1/payments/20260821", amount: "IDR 160,989,523" },
   ];
   assert.deepEqual(unpaidBalance(payments), { amount: 195441530, currency: "IDR" });
-  assert.equal(unpaidBalance([{ name: "accounts/pub-1/payments/20260821", amount: "IDR 1" }]), null);
+  assert.equal(
+    unpaidBalance([{ name: "accounts/pub-1/payments/20260821", amount: "IDR 1" }]),
+    null,
+  );
   assert.equal(unpaidBalance([]), null);
 });
 

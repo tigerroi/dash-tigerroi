@@ -113,7 +113,10 @@ test("launchOwnerOf memakai aturan nama yang sama dengan sync, melewati yang dia
 test("shiftedStartTime: jam baru WIB, menolak yang sudah tayang, lampau, dan melewati end_time", () => {
   const adSet = set({ endTime: "2026-09-20T00:00:00+0700" });
   assert.equal(shiftedStartTime(adSet, "2026-09-18T10:30", NOW), "2026-09-18T10:30:00+07:00");
-  assert.throws(() => shiftedStartTime(set({ startTime: "2026-09-17T11:00:00+0700" }), "2026-09-18T10:30", NOW), /sudah tayang/);
+  assert.throws(
+    () => shiftedStartTime(set({ startTime: "2026-09-17T11:00:00+0700" }), "2026-09-18T10:30", NOW),
+    /sudah tayang/,
+  );
   assert.throws(() => shiftedStartTime(adSet, "2026-09-17T11:00", NOW), /sudah lewat/);
   assert.throws(() => shiftedStartTime(adSet, "2026-09-20T01:00", NOW), /jam berakhir/);
   assert.throws(() => shiftedStartTime(adSet, "", NOW), /wajib/);

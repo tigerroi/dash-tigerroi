@@ -9,43 +9,10 @@
 //      menghasilkan perubahan yang tidak terbaca di halaman.
 
 import {
-  PLUGIN_ISSUES_BRANCH,
-  PLUGIN_KEYS_PATH,
-  PLUGIN_SITES_PATH,
-  PluginError,
-  bulkRow,
-  bulkSummary,
-  deploymentOutcome,
-  deploymentTasks,
-  landingLink,
-  landingRows,
-  legalOutcome,
-  legalPageList,
-  pluginKeyEntry,
-  pluginPingIds,
-  pluginSiteRow,
-  toPluginPayload,
-  unappliedFields,
-  normalizeVersion,
-  pluginUpdateRow,
-  updateOutcome,
-  updatePayload,
-} from "./plugin-core.js";
-import {
-  buildGptTags,
-  gamAccountForSite,
-  gptDivPrefix,
-  gptUnitChoices,
-  gptStampClock,
-  normalizeGptDivStamps,
-  mergeGptHeader,
-  normalizeGptOptions,
-  normalizeGptSpec,
-  pickGptUnit,
-  planGptBodies,
-} from "./gpt-inject-core.js";
-import { listAdUnits } from "./gam.js";
-import { auditSite } from "./plugin-audit-core.js";
+  accountResourceName,
+  listSites as listAdsenseSites,
+  listAdUnits as listAdsenseUnits,
+} from "./adsense.js";
 import {
   adsenseSizeLabel,
   normalizeAdsenseCodes,
@@ -53,28 +20,11 @@ import {
   verifyAdsenseSlots,
 } from "./adsense-inject-core.js";
 import {
-  accountResourceName,
-  listAdUnits as listAdsenseUnits,
-  listSites as listAdsenseSites,
-} from "./adsense.js";
-import {
-  createLandingPreset,
-  enrollSite,
-  generateLegalPages,
-  listLandings,
-  readDeployment,
-  readLegalPages,
-  readLicense,
-  runDeployment,
-  writeLicense,
-  pingSite,
-  readConfig,
-  readLanding,
-  resetSite,
-  saveLanding,
-  writeConfig,
-  updateSite,
-} from "./plugin-api.mjs";
+  generateKeywords,
+  listAutopostJobs,
+  readAutopostJob,
+  submitAutopostJob,
+} from "./autopost-api.mjs";
 import {
   AUTOPOST_MAX_KEYWORDS,
   autopostKeywords,
@@ -86,20 +36,70 @@ import {
   toAutopostPayload,
   toKeywordPayload,
 } from "./autopost-core.js";
+import { listAdUnits } from "./gam.js";
 import {
-  generateKeywords,
-  listAutopostJobs,
-  readAutopostJob,
-  submitAutopostJob,
-} from "./autopost-api.mjs";
+  buildGptTags,
+  gamAccountForSite,
+  gptDivPrefix,
+  gptStampClock,
+  gptUnitChoices,
+  mergeGptHeader,
+  normalizeGptDivStamps,
+  normalizeGptOptions,
+  normalizeGptSpec,
+  pickGptUnit,
+  planGptBodies,
+} from "./gpt-inject-core.js";
 import {
-  SYNC_ISSUES_PATH,
-  SYNC_RETRY_PATH,
+  createLandingPreset,
+  enrollSite,
+  generateLegalPages,
+  listLandings,
+  pingSite,
+  readConfig,
+  readDeployment,
+  readLanding,
+  readLegalPages,
+  readLicense,
+  resetSite,
+  runDeployment,
+  saveLanding,
+  updateSite,
+  writeConfig,
+  writeLicense,
+} from "./plugin-api.mjs";
+import { auditSite } from "./plugin-audit-core.js";
+import {
+  bulkRow,
+  bulkSummary,
+  deploymentOutcome,
+  deploymentTasks,
+  landingLink,
+  landingRows,
+  legalOutcome,
+  legalPageList,
+  normalizeVersion,
+  PLUGIN_ISSUES_BRANCH,
+  PLUGIN_KEYS_PATH,
+  PLUGIN_SITES_PATH,
+  PluginError,
+  pluginKeyEntry,
+  pluginPingIds,
+  pluginSiteRow,
+  pluginUpdateRow,
+  toPluginPayload,
+  unappliedFields,
+  updateOutcome,
+  updatePayload,
+} from "./plugin-core.js";
+import {
   accountToken,
   dueRetries,
   retryOutcome,
   retryRunning,
   retrySeed,
+  SYNC_ISSUES_PATH,
+  SYNC_RETRY_PATH,
   syncIssuesUpdate,
 } from "./sync-core.js";
 
@@ -348,7 +348,12 @@ export async function readSiteLanding(store, subdomainId, landingId) {
  * `slug` opsional; kalau kosong situs mengacaknya. Tidak ada retry: tanpa slug eksplisit, retry
  * sesudah timeout bisa melahirkan DUA landing.
  */
-export async function createSiteLanding(store, subdomainId, { slug = "" } = {}, random = Math.random) {
+export async function createSiteLanding(
+  store,
+  subdomainId,
+  { slug = "" } = {},
+  random = Math.random,
+) {
   const site = await resolveSite(store, subdomainId);
   const apiKey = await siteKey(store, subdomainId);
   const clean = String(slug || "").trim();
@@ -379,7 +384,9 @@ export async function createSiteLanding(store, subdomainId, { slug = "" } = {}, 
       ...link,
       cloakingUrl,
       videoPause: PRESET_VIDEO_PAUSE,
-      ...(unapplied.length ? { presetError: `Tidak diterapkan situs: ${unapplied.join(", ")}` } : {}),
+      ...(unapplied.length
+        ? { presetError: `Tidak diterapkan situs: ${unapplied.join(", ")}` }
+        : {}),
     };
   } catch (error) {
     return { ...link, presetError: error.message };
@@ -479,7 +486,9 @@ export async function saveSiteLanding(store, subdomainId, values) {
     landing,
     // `id` dikeluarkan dari perbandingan: ia dikirim sebagai angka dan dikembalikan sebagai apa pun
     // yang dipakai kolom situsnya, dan ia bukan sesuatu yang "gagal diterapkan".
-    unapplied: unappliedFields({ ...payload, id: undefined }, landing).filter((key) => key !== "id"),
+    unapplied: unappliedFields({ ...payload, id: undefined }, landing).filter(
+      (key) => key !== "id",
+    ),
   };
 }
 
@@ -619,7 +628,9 @@ export async function readAutopost(store, subdomainId, jobId) {
  * yang sudah benar sambil tetap melewatkan yang gagal.
  */
 export async function applyToSites(store, subdomainIds, run) {
-  const ids = [...new Set((subdomainIds || []).map((id) => String(id || "").trim()).filter(Boolean))];
+  const ids = [
+    ...new Set((subdomainIds || []).map((id) => String(id || "").trim()).filter(Boolean)),
+  ];
   const results = new Array(ids.length);
   let cursor = 0;
 
@@ -766,9 +777,12 @@ function networkUnits(ctx, account) {
           // menjawab dengan kalimatnya, bukan 500 yang menuduh server kontrol.
           throw error instanceof PluginError
             ? error
-            : new PluginError(`Unit iklan network ${code} gagal dibaca dari Ad Manager: ${error.message}`, {
-                code: "gam_units_failed",
-              });
+            : new PluginError(
+                `Unit iklan network ${code} gagal dibaca dari Ad Manager: ${error.message}`,
+                {
+                  code: "gam_units_failed",
+                },
+              );
         }
       })(),
     );
@@ -786,7 +800,9 @@ function networkUnits(ctx, account) {
  */
 export async function gptNetworksFor(store, subdomainIds) {
   const ctx = await gptContext(store);
-  const ids = [...new Set((subdomainIds || []).map((id) => String(id || "").trim()).filter(Boolean))];
+  const ids = [
+    ...new Set((subdomainIds || []).map((id) => String(id || "").trim()).filter(Boolean)),
+  ];
   const networks = new Map();
 
   const sites = await Promise.all(
@@ -851,12 +867,21 @@ async function gptSiteSpec(store, ctx, subdomainId, options, adUnitCodes = {}, d
 export async function previewGptSites(store, subdomainIds, options, adUnitCodes = {}) {
   normalizeGptOptions(options);
   const ctx = await gptContext(store);
-  const ids = [...new Set((subdomainIds || []).map((id) => String(id || "").trim()).filter(Boolean))];
+  const ids = [
+    ...new Set((subdomainIds || []).map((id) => String(id || "").trim()).filter(Boolean)),
+  ];
   const stamps = ids.map(() => ctx.nextStamp());
   const sites = await Promise.all(
     ids.map(async (id, index) => {
       try {
-        const { site, account, unit, spec } = await gptSiteSpec(store, ctx, id, options, adUnitCodes, stamps[index]);
+        const { site, account, unit, spec } = await gptSiteSpec(
+          store,
+          ctx,
+          id,
+          options,
+          adUnitCodes,
+          stamps[index],
+        );
         return {
           subdomainId: id,
           name: site.name,
@@ -892,7 +917,14 @@ export async function previewGptSites(store, subdomainIds, options, adUnitCodes 
 export async function injectGptOne(store, subdomainId, options, config = {}) {
   const { dryRun = false, adUnitCodes = {}, divStamp = "" } = config;
   const ctx = config.ctx || (await gptContext(store));
-  const { site, unit, spec } = await gptSiteSpec(store, ctx, subdomainId, options, adUnitCodes, divStamp);
+  const { site, unit, spec } = await gptSiteSpec(
+    store,
+    ctx,
+    subdomainId,
+    options,
+    adUnitCodes,
+    divStamp,
+  );
   const tags = buildGptTags(spec);
   const apiKey = await siteKey(store, site.id);
 
@@ -938,7 +970,12 @@ export async function injectGptOne(store, subdomainId, options, config = {}) {
   });
 }
 
-export async function injectGptMany(store, subdomainIds, options, { dryRun = false, adUnitCodes = {} } = {}) {
+export async function injectGptMany(
+  store,
+  subdomainIds,
+  options,
+  { dryRun = false, adUnitCodes = {} } = {},
+) {
   // Pilihan yang tidak sah ditolak SEKALI di depan, bukan tiga puluh kali sebagai tiga puluh baris
   // "gagal" yang semuanya menyebut kalimat yang sama.
   normalizeGptOptions(options);
@@ -1094,16 +1131,23 @@ export async function adsenseSitesFor(store) {
     store.read("googleApiConfigs"),
   ]);
   const rows = Object.entries(adsenseAccounts || {}).filter(
-    ([, row]) => row && !row.deletedAt && accountResourceName(row.accountName || row.publisherId || ""),
+    ([, row]) =>
+      row && !row.deletedAt && accountResourceName(row.accountName || row.publisherId || ""),
   );
 
   const accounts = await Promise.all(
     rows.map(async ([id, row]) => {
       const account = accountResourceName(row.accountName || row.publisherId);
-      const base = { accountId: id, accountName: String(row.name || ""), publisherId: account.split("/").pop() };
+      const base = {
+        accountId: id,
+        accountName: String(row.name || ""),
+        publisherId: account.split("/").pop(),
+      };
       try {
         const token = await accountToken(row, configs || {});
-        const domains = (await listAdsenseSites(account, token)).map((site) => hostOfDomain(site.domain || site.url)).filter(Boolean);
+        const domains = (await listAdsenseSites(account, token))
+          .map((site) => hostOfDomain(site.domain || site.url))
+          .filter(Boolean);
         return { ...base, domains, error: "" };
       } catch (error) {
         return { ...base, domains: [], error: error.message };
@@ -1118,7 +1162,10 @@ export async function adsenseSitesFor(store) {
     let best = null;
     for (const account of accounts) {
       for (const domain of account.domains) {
-        if ((host === domain || host.endsWith(`.${domain}`)) && (!best || domain.length > best.domain.length)) {
+        if (
+          (host === domain || host.endsWith(`.${domain}`)) &&
+          (!best || domain.length > best.domain.length)
+        ) {
           best = { domain, account };
         }
       }
@@ -1132,7 +1179,13 @@ export async function adsenseSitesFor(store) {
     }
   }
 
-  return { accounts: accounts.map(({ domains, ...account }) => ({ ...account, siteCount: domains.length })), sites };
+  return {
+    accounts: accounts.map(({ domains, ...account }) => ({
+      ...account,
+      siteCount: domains.length,
+    })),
+    sites,
+  };
 }
 
 /**
@@ -1262,10 +1315,8 @@ export async function syncPlugin(store) {
   const sites = (await store.read(PLUGIN_SITES_PATH)) || {};
   const subDomains = (await store.read("subDomains")) || {};
 
-  const { results } = await applyToSites(
-    store,
-    pluginPingIds(sites, subDomains),
-    (site) => pingOne(store, site.id).then(() => ({})),
+  const { results } = await applyToSites(store, pluginPingIds(sites, subDomains), (site) =>
+    pingOne(store, site.id).then(() => ({})),
   );
 
   const failed = results.filter((row) => row.status === "failed");
@@ -1339,7 +1390,11 @@ export async function retryPluginIssues(store, now = new Date()) {
   await store.update(PLUGIN_RETRY_BRANCH, outcomes);
   if (recovered.length) await dropPluginIssues(store, recovered);
 
-  return { retried: due.length, recovered: recovered.length, failed: due.length - recovered.length };
+  return {
+    retried: due.length,
+    recovered: recovered.length,
+    failed: due.length - recovered.length,
+  };
 }
 
 function pluginIssue(row) {
@@ -1365,9 +1420,7 @@ function writePluginIssues(store, failedRows, now = new Date()) {
 // Coret situs yang sudah menjawab dari daftar isu, sisanya dibiarkan apa adanya.
 async function dropPluginIssues(store, subdomainIds) {
   const sites = (await store.read(PLUGIN_SITES_PATH)) || {};
-  const names = new Set(
-    subdomainIds.map((id) => String(sites[id]?.name || id)).filter(Boolean),
-  );
+  const names = new Set(subdomainIds.map((id) => String(sites[id]?.name || id)).filter(Boolean));
 
   const branch = await store.read(`${SYNC_ISSUES_PATH}/${PLUGIN_ISSUES_BRANCH}`);
   const items = Object.values(branch?.items || {});

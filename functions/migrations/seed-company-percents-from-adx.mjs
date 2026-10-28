@@ -43,9 +43,16 @@ import { connect } from "../db.mjs";
  * SESUDAH tiap perubahan, jadi hasilnya bisa diadu sebelum satu baris pun ditulis.
  */
 function percentAt(rows, domain, date) {
-  const key = String(domain ?? "").trim().toLowerCase();
+  const key = String(domain ?? "")
+    .trim()
+    .toLowerCase();
   const list = rows
-    .filter((row) => String(row?.domain ?? "").trim().toLowerCase() === key && row?.effectiveFrom)
+    .filter(
+      (row) =>
+        String(row?.domain ?? "")
+          .trim()
+          .toLowerCase() === key && row?.effectiveFrom,
+    )
     .sort(
       (a, b) =>
         String(a.effectiveFrom).localeCompare(String(b.effectiveFrom)) ||
@@ -132,7 +139,9 @@ for (const row of rows) {
 console.log(`${rows.length} baris Cost Ad Exchange sejak ${since}.\n`);
 for (const item of planned) {
   const before = item.from === null ? "belum punya tarif" : `${item.from}%`;
-  console.log(`+ ${item.effectiveFrom} ${item.domain}: ${before} -> ${item.percent}%  (${item.companyName})`);
+  console.log(
+    `+ ${item.effectiveFrom} ${item.domain}: ${before} -> ${item.percent}%  (${item.companyName})`,
+  );
 }
 for (const line of skipped) console.log(`. ${line}`);
 

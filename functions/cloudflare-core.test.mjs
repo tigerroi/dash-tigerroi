@@ -1,18 +1,19 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  CloudflareError,
   cloudflareError,
   cloudflareFailureStatus,
-  CloudflareError,
   dnsRecordName,
   normalizeDnsInput,
 } from "./cloudflare-core.js";
 
-const throws = (fn, pattern) => assert.throws(fn, (error) => {
-  assert.ok(error instanceof CloudflareError, `harus CloudflareError, dapat ${error?.name}`);
-  assert.match(error.message, pattern);
-  return true;
-});
+const throws = (fn, pattern) =>
+  assert.throws(fn, (error) => {
+    assert.ok(error instanceof CloudflareError, `harus CloudflareError, dapat ${error?.name}`);
+    assert.match(error.message, pattern);
+    return true;
+  });
 
 test("nama relatif dilengkapi, nama penuh dibiarkan — keduanya menghasilkan nama yang sama", () => {
   // Kegagalan yang dicegah: "care" tersimpan benar secara kebetulan, sementara
@@ -29,7 +30,10 @@ test("nama relatif dilengkapi, nama penuh dibiarkan — keduanya menghasilkan na
 });
 
 test("tipe di luar daftar putih ditolak, bukan diteruskan ke Cloudflare", () => {
-  throws(() => normalizeDnsInput({ type: "SRV", name: "x", content: "y" }, "z.com"), /tidak didukung/);
+  throws(
+    () => normalizeDnsInput({ type: "SRV", name: "x", content: "y" }, "z.com"),
+    /tidak didukung/,
+  );
   throws(() => normalizeDnsInput({ type: "", name: "x", content: "y" }, "z.com"), /tidak didukung/);
 });
 
@@ -41,7 +45,10 @@ test("record A menuntut IPv4 yang tiap oktetnya sah", () => {
   // "empat kelompok angka" saja meloloskan ini, dan Cloudflare menolaknya dengan kode 1004 —
   // pesan yang tidak menyebut oktet mana yang salah.
   throws(() => normalizeDnsInput({ type: "A", name: "a", content: "999.1.1.1" }, "z.com"), /IPv4/);
-  throws(() => normalizeDnsInput({ type: "A", name: "a", content: "example.com" }, "z.com"), /IPv4/);
+  throws(
+    () => normalizeDnsInput({ type: "A", name: "a", content: "example.com" }, "z.com"),
+    /IPv4/,
+  );
 });
 
 test("CNAME ke alamat IP ditolak dengan sebab yang menyebut jalan keluarnya", () => {
@@ -154,7 +161,9 @@ test("komentar melebihi batas Cloudflare ditolak, bukan dipotong diam-diam", () 
 test("kode Cloudflare diterjemahkan jadi kalimat yang menyebut siapa yang memperbaikinya", () => {
   // "Record already exists" tidak menyebutkan bahwa yang harus dilakukan adalah menyunting yang
   // sudah ada.
-  const bentrok = cloudflareError(400, { errors: [{ code: 81057, message: "Record already exists" }] });
+  const bentrok = cloudflareError(400, {
+    errors: [{ code: 81057, message: "Record already exists" }],
+  });
   assert.match(bentrok.message, /Sunting yang sudah ada/);
   assert.equal(bentrok.code, "81057");
 

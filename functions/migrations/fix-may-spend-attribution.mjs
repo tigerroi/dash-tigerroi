@@ -114,13 +114,16 @@ const stripped = [...bySub]
   .filter(([, e]) => e.spending > 0 && e.earningKnown && e.earning === 0)
   .sort((a, b) => b[1].spending - a[1].spending);
 
-if (!stripped.length) console.log(`Tidak ada subdomain Mei yang berbelanja tanpa earning — sudah bersih.\n`);
+if (!stripped.length)
+  console.log(`Tidak ada subdomain Mei yang berbelanja tanpa earning — sudah bersih.\n`);
 
 console.log("Subdomain Mei yang berbelanja dan berearning Rp 0 (belanjanya dikosongkan):\n");
 let strippedTotal = 0;
 for (const [name, entry] of stripped) {
   strippedTotal += entry.spending;
-  console.log(`  ${name.padEnd(38)} ${rp(entry.spending).padStart(15)}  ${entry.rows.length} baris`);
+  console.log(
+    `  ${name.padEnd(38)} ${rp(entry.spending).padStart(15)}  ${entry.rows.length} baris`,
+  );
 }
 console.log(`  ${"TOTAL".padEnd(38)} ${rp(strippedTotal).padStart(15)}\n`);
 
@@ -168,7 +171,9 @@ for (const row of closes) {
   }
   closeTotal += want;
   const before = Number(row.totalSpending) || 0;
-  console.log(`  ${String(row.subDomain).padEnd(38)} ${rp(before).padStart(15)} -> ${rp(want).padStart(15)}`);
+  console.log(
+    `  ${String(row.subDomain).padEnd(38)} ${rp(before).padStart(15)} -> ${rp(want).padStart(15)}`,
+  );
   if (Math.abs(before - want) <= 1) continue;
   closeUpdates[row.id] = {
     totalSpending: want,
@@ -246,15 +251,25 @@ days.forEach((date, i) => {
 
 const check = round2(targetSpending + closeTotal);
 if (Math.abs(check - SHEET_TOTAL_SPENDING) > 1) {
-  console.error(`Total Mei ${rp(check)} tidak sama dengan spreadsheet ${rp(SHEET_TOTAL_SPENDING)}.`);
+  console.error(
+    `Total Mei ${rp(check)} tidak sama dengan spreadsheet ${rp(SHEET_TOTAL_SPENDING)}.`,
+  );
   process.exit(1);
 }
 
 console.log("Sesudahnya, Mei 2026 berbunyi:");
-console.log(`  Laba Rugi · Total belanja iklan : ${rp(targetSpending)} (usaha) + ${rp(closeTotal)} (akun tutup) = ${rp(check)}`);
-console.log(`  Cash Flow · belanja terpetakan  : ${rp(mappedAfter)} + ${rp(closeTotal)} = ${rp(mappedAfter + closeTotal)}`);
-console.log(`  coverageGap sisi belanja        : ${rp(check - (mappedAfter + closeTotal))} (akun yang tidak terbaca token Meta)`);
-console.log(`\nBaris: ${touched} baris ROI, ${Object.keys(closeUpdates).length} baris akun tutup, ${days.length} titik weeklyFinancials.`);
+console.log(
+  `  Laba Rugi · Total belanja iklan : ${rp(targetSpending)} (usaha) + ${rp(closeTotal)} (akun tutup) = ${rp(check)}`,
+);
+console.log(
+  `  Cash Flow · belanja terpetakan  : ${rp(mappedAfter)} + ${rp(closeTotal)} = ${rp(mappedAfter + closeTotal)}`,
+);
+console.log(
+  `  coverageGap sisi belanja        : ${rp(check - (mappedAfter + closeTotal))} (akun yang tidak terbaca token Meta)`,
+);
+console.log(
+  `\nBaris: ${touched} baris ROI, ${Object.keys(closeUpdates).length} baris akun tutup, ${days.length} titik weeklyFinancials.`,
+);
 
 if (dry) {
   console.log("\n--dry: tidak ada yang ditulis.");

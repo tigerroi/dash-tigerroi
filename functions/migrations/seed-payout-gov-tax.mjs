@@ -195,7 +195,8 @@ for (const [month, sheet] of Object.entries(SHEET)) {
 // --- laporan ------------------------------------------------------------------------------------
 
 for (const item of domainWrites) console.log(`domain  ${item.url} -> ${item.country}`);
-for (const url of unknownDomains) console.log(`domain  ${url} belum terdaftar di /domains — dilewati`);
+for (const url of unknownDomains)
+  console.log(`domain  ${url} belum terdaftar di /domains — dilewati`);
 for (const note of skipped) console.log(`payout  ${note} — dilewati`);
 
 for (const item of payoutWrites) {
