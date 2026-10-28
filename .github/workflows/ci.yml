@@ -32,6 +32,8 @@ jobs:
 
       - name: Test (frontend)
         run: npm test
+        env:
+          TZ: "Asia/Jakarta"
 
       - name: Build
         run: |
