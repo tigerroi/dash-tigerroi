@@ -50,6 +50,23 @@ const GAM_NETWORKS = [
   { domain: "ihopmenuwithprices.us", networkCode: "23340206616", defaultSiteCode: "ihop-menu" },
 ];
 
+// Kurs resmi konversi mata uang GAM ke IDR
+const GAM_FX_RATES = {
+  "23380486168": 190.87, // Tacobell (INR)
+  "23344333667": 18155.28, // Trayedit (USD)
+  "23367555867": 18155.28, // TikTok Mod (USD)
+  "23340206616": 18155.28, // IHOP (USD)
+};
+
+function formatIsoDate(d) {
+  if (!d) return "";
+  const s = String(d).replace(/\D/g, "");
+  if (s.length === 8) {
+    return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`;
+  }
+  return String(d);
+}
+
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.error("❌ SUPABASE_URL dan SUPABASE_SERVICE_ROLE_KEY wajib diisi.");
   process.exit(1);
@@ -277,18 +294,23 @@ export async function runSyncGam() {
           }
         }
 
-        const formattedEarning = `Rp ${Math.round(netTotalRev).toLocaleString("id-ID")}`;
+        const fxRate = GAM_FX_RATES[net.networkCode] || 18155.28;
+        const totalRevenueIdr = Math.round(netTotalRev * fxRate);
+        const formattedEarning = `Rp ${totalRevenueIdr.toLocaleString("id-ID")}`;
+        const cleanReportDate = formatIsoDate(netLatestDate || dateRange.endDate);
+
         await supabase
           .from("gam_accounts")
           .update({
             sync_status: "ok",
+            status_detail: null,
             sync_earning: formattedEarning,
-            last_sync_report_date: netLatestDate || dateRange.endDate,
+            last_sync_report_date: cleanReportDate,
             updated_at: new Date().toISOString(),
           })
           .eq("network_code", net.networkCode);
 
-        console.log(`    ✅ Updated gam_accounts (${net.domain}): ${formattedEarning}, Tgl: ${netLatestDate || dateRange.endDate}`);
+        console.log(`    ✅ Updated gam_accounts (${net.domain}): ${formattedEarning}, Tgl: ${cleanReportDate}`);
       } catch (netErr) {
         const msg = `Network ${net.domain} (${net.networkCode}): ${netErr.message}`;
         console.error(`    ❌ ${msg}`);
