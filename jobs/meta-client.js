@@ -207,3 +207,26 @@ export async function fetchCampaignInsights(actId, token, dateRange) {
     cpc: Number(r.cpc || 0),
   }));
 }
+
+/**
+ * Mengambil daftar seluruh campaign pada akun iklan Meta untuk armada dashboard.
+ */
+export async function fetchAccountCampaigns(actId, token) {
+  const id = normalizeActId(actId);
+  const rows = await graphAll(`${id}/campaigns`, token, {
+    fields: "id,name,status,effective_status,daily_budget,lifetime_budget,start_time,stop_time,objective",
+    limit: "500",
+  });
+
+  return rows.map((c) => ({
+    campaignId: String(c.id || ""),
+    campaign: c.name || "",
+    status: c.status === "ACTIVE" ? "Aktif" : c.status === "PAUSED" ? "Mati" : c.status || "",
+    configuredStatus: c.status || "",
+    effectiveStatus: c.effective_status || "",
+    startTime: c.start_time || "",
+    dailyBudget: c.daily_budget ? toMajor(c.daily_budget) : null,
+    lifetimeBudget: c.lifetime_budget ? toMajor(c.lifetime_budget) : null,
+    objective: c.objective || "",
+  }));
+}

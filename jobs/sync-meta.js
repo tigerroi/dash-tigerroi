@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { fetchAccountOverview, fetchCampaignInsights } from "./meta-client.js";
+import { fetchAccountCampaigns, fetchAccountOverview, fetchCampaignInsights } from "./meta-client.js";
 
 /**
  * Job Sinkronisasi Meta Ads ke Supabase TigerROI
@@ -200,7 +200,7 @@ export async function runSyncMeta() {
             .eq("id", account.id);
         }
 
-        // B. Ambil insights campaign 2 hari (kemarin & hari ini)
+        // B. Ambil insights campaign (spend harian)
         const insights = await fetchCampaignInsights(account.account_id, token, dateRange);
         console.log(`    Ditemukan ${insights.length} baris insights campaign.`);
 
@@ -226,6 +226,44 @@ export async function runSyncMeta() {
           current.impressions += row.impressions;
           current.clicks += row.clicks;
           current.campaign_count += 1;
+        }
+
+        // C. Ambil daftar seluruh campaign Meta untuk halaman Campaign Fleet
+        try {
+          const rawCampaigns = await fetchAccountCampaigns(account.account_id, token);
+          console.log(`    Ditemukan ${rawCampaigns.length} campaign Meta pada armada.`);
+
+          const enrichedCampaigns = rawCampaigns.map((c) => {
+            const siteCode = matchSiteCode(c.campaign, sites);
+            const firstToken = c.campaign.split(/[\s_-]+/)[0] || "";
+            return {
+              ...c,
+              account: account.name || "Meta Ads",
+              subDomain: siteCode || "",
+              campaignCode: firstToken,
+              subDomainSource: siteCode ? "otomatis" : "",
+            };
+          });
+
+          // Simpan ke profil advertiser / superadmin di tabel profiles Supabase
+          const { data: profilesList } = await supabase
+            .from("profiles")
+            .select("id, role, campaigns");
+
+          if (profilesList && profilesList.length > 0) {
+            for (const prof of profilesList) {
+              await supabase
+                .from("profiles")
+                .update({
+                  campaigns: enrichedCampaigns,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("id", prof.id);
+            }
+            console.log(`    ✅ Berhasil menyimpan ${enrichedCampaigns.length} campaign ke profil dashboard.`);
+          }
+        } catch (campErr) {
+          console.warn(`    ⚠️ Gagal memperbarui daftar campaign armada: ${campErr.message}`);
         }
       } catch (accErr) {
         const errorMsg = `Akun ${account.name}: ${accErr.message}`;
