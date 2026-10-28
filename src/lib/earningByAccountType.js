@@ -157,6 +157,11 @@ export function domainIndex(store) {
     if (sub?.name) {
       parents.set(normalize(sub.name), resolvedParent);
       parents.set(cleanDomain(sub.name), resolvedParent);
+      const prefix = cleanDomain(sub.name).split(".")[0];
+      if (prefix) {
+        parents.set(normalize(prefix), resolvedParent);
+        parents.set(cleanDomain(prefix), resolvedParent);
+      }
     }
     if (sub?.siteCode) {
       parents.set(normalize(sub.siteCode), resolvedParent);
