@@ -114,15 +114,16 @@ export async function runSyncMeta() {
     if (startError)
       console.warn("Peringatan: Gagal mencatat start ke sync_runs:", startError.message);
 
-    // 3. Ambil daftar pemetaan sites
-    const { data: sitesList, error: sitesError } = await supabase
-      .from("sites")
-      .select("site_code, campaign_pattern, is_active")
-      .eq("is_active", true);
+    // 3. Ambil daftar pemetaan sites & subdomains
+    const [{ data: sitesList, error: sitesError }, { data: subdomainsList }] = await Promise.all([
+      supabase.from("sites").select("site_code, campaign_pattern, is_active").eq("is_active", true),
+      supabase.from("subdomains").select("id, name, site_code, pic, pic_user_id"),
+    ]);
 
     if (sitesError) throw new Error(`Gagal membaca tabel sites: ${sitesError.message}`);
     const sites = sitesList || [];
-    console.log(`Memuat ${sites.length} site aktif untuk pemetaan campaign.`);
+    const subdomains = subdomainsList || [];
+    console.log(`Memuat ${sites.length} site dan ${subdomains.length} subdomain aktif.`);
 
     // 4. Ambil daftar akun Meta aktif dari meta_accounts
     const { data: accountsList, error: accountsError } = await supabase
@@ -206,12 +207,33 @@ export async function runSyncMeta() {
 
         for (const row of insights) {
           const siteCode = matchSiteCode(row.campaignName, sites);
-          const aggKey = `${row.date}__${siteCode}`;
+          const nameLower = String(row.campaignName || "").toLowerCase();
+
+          // Cari kecocokan subdomain spesifik
+          let matchedSubName = "";
+          for (const sub of subdomains) {
+            if (!sub.name) continue;
+            const subName = sub.name.toLowerCase();
+            const regex = new RegExp(`(^|[^a-z0-9])${subName}([^a-z0-9]|$)`, "i");
+            if (regex.test(nameLower)) {
+              matchedSubName = sub.name;
+              break;
+            }
+          }
+          if (!matchedSubName && siteCode && siteCode !== "unmapped") {
+            const matchingSubs = subdomains.filter((s) => s.site_code === siteCode);
+            const suffix = siteCode.split("-").pop();
+            const defaultSub = matchingSubs.find((s) => s.name === suffix) || matchingSubs[0];
+            matchedSubName = defaultSub ? defaultSub.name : "";
+          }
+
+          const aggKey = `${row.date}__${siteCode}__${matchedSubName}`;
 
           if (!dailyMap.has(aggKey)) {
             dailyMap.set(aggKey, {
               date: row.date,
               site_code: siteCode,
+              subdomain: matchedSubName,
               source: "meta",
               spend: 0,
               impressions: 0,
@@ -233,10 +255,8 @@ export async function runSyncMeta() {
           const rawCampaigns = await fetchAccountCampaigns(account.account_id, token);
           console.log(`    Ditemukan ${rawCampaigns.length} campaign Meta pada armada.`);
 
-          // Ambil daftar subdomain dari Supabase untuk mengetahui PIC masing-masing
-          const { data: dbSubdomains } = await supabase
-            .from("subdomains")
-            .select("id, name, site_code, pic, pic_user_id");
+          // Daftar subdomain sudah dimuat di awal
+          const dbSubdomains = subdomains;
 
           // Ambil daftar profil tim
           const { data: profilesList } = await supabase
@@ -348,6 +368,7 @@ export async function runSyncMeta() {
     const upsertRows = Array.from(dailyMap.values()).map((row) => ({
       date: row.date,
       site_code: row.site_code,
+      subdomain: row.subdomain || "",
       source: "meta",
       spend: Math.round(row.spend * 100) / 100,
       impressions: row.impressions,
@@ -359,16 +380,16 @@ export async function runSyncMeta() {
     }));
 
     if (upsertRows.length > 0) {
-      console.log(`\nMelakukan upsert ${upsertRows.length} baris ke tabel daily_stats...`);
+      console.log(`\nMelakukan upsert ${upsertRows.length} baris per subdomain ke tabel daily_stats...`);
       const { error: upsertError } = await supabase
         .from("daily_stats")
-        .upsert(upsertRows, { onConflict: "date,site_code,source" });
+        .upsert(upsertRows, { onConflict: "date,site_code,subdomain,source" });
 
       if (upsertError) {
         throw new Error(`Gagal upsert ke daily_stats: ${upsertError.message}`);
       }
       totalSyncedRows = upsertRows.length;
-      console.log(`✅ Berhasil upsert ${totalSyncedRows} baris daily_stats.`);
+      console.log(`✅ Berhasil upsert ${totalSyncedRows} baris daily_stats per subdomain.`);
     } else {
       console.log("ℹ️ Tidak ada data spend campaign baru untuk di-upsert.");
     }

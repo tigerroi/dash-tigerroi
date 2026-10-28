@@ -132,14 +132,19 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
     .replace(/\/.*$/, "");
   const unit = String(row.adUnitName || "").toLowerCase();
 
-  // 1. Prioritas 1: Cocokkan host URL langsung ke 17 subdomain
+  // 1. Prioritas 1: Cocokkan host URL langsung ke 17 subdomain resmi
   if (host) {
     for (const sub of subdomainsList || []) {
-      const subHost = String(sub.name || "")
-        .toLowerCase()
-        .replace(/^https?:\/\//, "")
-        .replace(/\/.*$/, "");
-      if (host === subHost || host.endsWith(`.${subHost}`) || subHost.includes(host)) {
+      if (!sub.name) continue;
+      const subName = sub.name.toLowerCase();
+      // Cocokkan apakah host persis, berawalan nama subdomain, atau mengandung nama subdomain
+      if (
+        host === subName ||
+        host.startsWith(`${subName}.`) ||
+        host.endsWith(`.${subName}`) ||
+        host.includes(`.${subName}.`) ||
+        (sub.parent_domain && host === `${subName}.${sub.parent_domain.toLowerCase()}`)
+      ) {
         return {
           siteCode: sub.site_code || defaultSiteCode,
           subdomainName: sub.name,
@@ -148,21 +153,42 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
     }
   }
 
-  // 2. Prioritas 2: Cocokkan nama unit iklan ke sites
-  for (const s of sitesList || []) {
-    if (!s.site_code) continue;
-    if (unit.includes(s.site_code.toLowerCase())) {
+  // 2. Prioritas 2: Cocokkan nama unit iklan ke subdomain
+  for (const sub of subdomainsList || []) {
+    if (!sub.name) continue;
+    const subName = sub.name.toLowerCase();
+    const regex = new RegExp(`(^|[^a-z0-9])${subName}([^a-z0-9]|$)`, "i");
+    if (regex.test(unit)) {
       return {
-        siteCode: s.site_code,
-        subdomainName: s.name || s.site_code,
+        siteCode: sub.site_code || defaultSiteCode,
+        subdomainName: sub.name,
       };
     }
   }
 
-  // 3. Fallback ke default site code network tersebut
+  // 3. Prioritas 3: Cocokkan nama unit iklan ke sites
+  for (const s of sitesList || []) {
+    if (!s.site_code) continue;
+    if (unit.includes(s.site_code.toLowerCase())) {
+      // Cari subdomain default untuk site ini
+      const matchingSubs = (subdomainsList || []).filter((sub) => sub.site_code === s.site_code);
+      const suffix = s.site_code.split("-").pop();
+      const defaultSub = matchingSubs.find((sub) => sub.name === suffix) || matchingSubs[0];
+      return {
+        siteCode: s.site_code,
+        subdomainName: defaultSub ? defaultSub.name : s.site_code,
+      };
+    }
+  }
+
+  // 4. Fallback ke default site code network tersebut
+  const matchingSubs = (subdomainsList || []).filter((sub) => sub.site_code === defaultSiteCode);
+  const suffix = (defaultSiteCode || "").split("-").pop();
+  const defaultSub = matchingSubs.find((sub) => sub.name === suffix) || matchingSubs[0];
+
   return {
     siteCode: defaultSiteCode || "unmapped",
-    subdomainName: host || defaultSiteCode || "unmapped",
+    subdomainName: defaultSub ? defaultSub.name : defaultSiteCode || "unmapped",
   };
 }
 
@@ -240,12 +266,14 @@ export async function runSyncGam() {
         for (const row of rows) {
           const mapped = mapGamRowToSite(row, net.defaultSiteCode, subdomains, sites);
           const siteCode = mapped.siteCode;
-          const aggKey = `${row.date}__${siteCode}`;
+          const subName = mapped.subdomainName || "";
+          const aggKey = `${row.date}__${siteCode}__${subName}`;
 
           if (!dailyMap.has(aggKey)) {
             dailyMap.set(aggKey, {
               date: row.date,
               site_code: siteCode,
+              subdomain: subName,
               source: "gam",
               revenue: 0,
               spend: 0,
@@ -255,7 +283,6 @@ export async function runSyncGam() {
                 adx_revenue: 0,
                 adsense_revenue: 0,
                 network_codes: [net.networkCode],
-                subdomains: {},
               },
             });
           }
@@ -266,19 +293,6 @@ export async function runSyncGam() {
           current.clicks += row.clicks;
           current.metadata.adx_revenue += row.adxRevenue;
           current.metadata.adsense_revenue += row.adsenseRevenue;
-
-          // Catat breakdown per subdomain
-          current.metadata.subdomains = current.metadata.subdomains || {};
-          current.metadata.subdomains[mapped.subdomainName] = current.metadata.subdomains[
-            mapped.subdomainName
-          ] || {
-            revenue: 0,
-            impressions: 0,
-            clicks: 0,
-          };
-          current.metadata.subdomains[mapped.subdomainName].revenue += row.totalRevenue;
-          current.metadata.subdomains[mapped.subdomainName].impressions += row.impressions;
-          current.metadata.subdomains[mapped.subdomainName].clicks += row.clicks;
           if (!current.metadata.network_codes.includes(net.networkCode)) {
             current.metadata.network_codes.push(net.networkCode);
           }
@@ -331,6 +345,7 @@ export async function runSyncGam() {
     const upsertRows = Array.from(dailyMap.values()).map((row) => ({
       date: row.date,
       site_code: row.site_code,
+      subdomain: row.subdomain || "",
       source: "gam",
       revenue: Math.round(row.revenue * 100) / 100,
       spend: 0,
@@ -342,10 +357,10 @@ export async function runSyncGam() {
     }));
 
     if (upsertRows.length > 0) {
-      console.log(`\nMelakukan upsert ${upsertRows.length} baris ke tabel daily_stats...`);
+      console.log(`\nMelakukan upsert ${upsertRows.length} baris per subdomain ke tabel daily_stats...`);
       const { error: upsertError } = await supabase
         .from("daily_stats")
-        .upsert(upsertRows, { onConflict: "date,site_code,source" });
+        .upsert(upsertRows, { onConflict: "date,site_code,subdomain,source" });
 
       if (upsertError) {
         throw new Error(`Gagal upsert ke daily_stats: ${upsertError.message}`);
