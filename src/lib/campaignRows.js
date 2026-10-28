@@ -23,6 +23,8 @@ export function normalizeCampaignRows(items) {
     subDomain: item.subDomain || "",
     campaignCode: item.campaignCode || "",
     subDomainSource: item.subDomainSource || "",
+    pic: item.pic || "",
+    owner: item.owner || "",
     // ID campaign di Meta — alamat yang dipakai saklar on/off. Baris lama (dan baris yang
     // diturunkan dari laporan ROI, yang tidak punya sisi Meta) datang tanpa ini, dan tombolnya
     // mati dengan alasannya alih-alih menembakkan perintah yang pasti gagal.
@@ -82,7 +84,7 @@ export function fleetCampaignRows(users) {
         ...row,
         id: `${user.id}__${row.campaignId || row.id}`,
         userId: user.id,
-        owner: user.name || user.email || "-",
+        owner: row.owner || row.pic || user.name || user.email || "-",
         command: commands[row.campaignId] || null,
       });
     }

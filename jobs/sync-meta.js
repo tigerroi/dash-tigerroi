@@ -233,35 +233,100 @@ export async function runSyncMeta() {
           const rawCampaigns = await fetchAccountCampaigns(account.account_id, token);
           console.log(`    Ditemukan ${rawCampaigns.length} campaign Meta pada armada.`);
 
-          const enrichedCampaigns = rawCampaigns.map((c) => {
-            const siteCode = matchSiteCode(c.campaign, sites);
-            const firstToken = c.campaign.split(/[\s_-]+/)[0] || "";
-            return {
-              ...c,
-              account: account.name || "Meta Ads",
-              subDomain: siteCode || "",
-              campaignCode: firstToken,
-              subDomainSource: siteCode ? "otomatis" : "",
-            };
-          });
+          // Ambil daftar subdomain dari Supabase untuk mengetahui PIC masing-masing
+          const { data: dbSubdomains } = await supabase
+            .from("subdomains")
+            .select("id, name, site_code, pic, pic_user_id");
 
-          // Simpan ke profil advertiser / superadmin di tabel profiles Supabase
+          // Ambil daftar profil tim
           const { data: profilesList } = await supabase
             .from("profiles")
-            .select("id, role, campaigns");
+            .select("id, name, email, role, campaigns");
 
-          if (profilesList && profilesList.length > 0) {
-            for (const prof of profilesList) {
-              await supabase
-                .from("profiles")
-                .update({
-                  campaigns: enrichedCampaigns,
-                  updated_at: new Date().toISOString(),
-                })
-                .eq("id", prof.id);
-            }
-            console.log(`    ✅ Berhasil menyimpan ${enrichedCampaigns.length} campaign ke profil dashboard.`);
+          // Siapkan wadah campaign per profil ID
+          const userCampaignsMap = new Map();
+          for (const p of profilesList || []) {
+            userCampaignsMap.set(p.id, []);
           }
+
+          // Cari profil Superadmin untuk menampung campaign tanpa PIC
+          const superadminProfile = (profilesList || []).find((p) => 
+            (p.role || "").includes("superadmin") || (p.email || "").includes("superadmin")
+          );
+
+          for (const c of rawCampaigns) {
+            const siteCode = matchSiteCode(c.campaign, sites);
+            const firstToken = c.campaign.split(/[\s_-]+/)[0] || "";
+            const nameLower = String(c.campaign || "").toLowerCase();
+
+            // 1. Cari kecocokan nama subdomain spesifik (contoh: "careers", "mod", "deals", "burrito")
+            let matchedSub = null;
+            if (dbSubdomains && dbSubdomains.length > 0) {
+              const sorted = [...dbSubdomains].sort((a, b) => (b.name || "").length - (a.name || "").length);
+              for (const sub of sorted) {
+                if (!sub.name) continue;
+                const subNameLower = sub.name.toLowerCase();
+                const regex = new RegExp(`(^|[^a-z0-9])${subNameLower}([^a-z0-9]|$)`, "i");
+                if (regex.test(nameLower)) {
+                  matchedSub = sub;
+                  break;
+                }
+              }
+              // Jika tidak cocok kata spesifik, cari subdomain dengan site_code yang sama
+              if (!matchedSub && siteCode && siteCode !== "unmapped") {
+                const matchingBySite = dbSubdomains.filter((s) => s.site_code === siteCode);
+                const suffix = siteCode.split("-").pop();
+                matchedSub = matchingBySite.find((s) => s.name === suffix) || matchingBySite[0] || null;
+              }
+            }
+
+            const picName = matchedSub?.pic || null;
+            const subName = matchedSub?.name || siteCode || "";
+
+            const enriched = {
+              ...c,
+              account: account.name || "Meta Ads",
+              subDomain: subName,
+              campaignCode: firstToken,
+              subDomainSource: subName ? "otomatis" : "",
+              pic: picName,
+              owner: picName ? picName : "Belum ada PIC",
+            };
+
+            // 2. Hubungkan ke user profil advertiser yang sesuai
+            let targetUserId = null;
+            if (picName) {
+              const matchedProf = (profilesList || []).find((p) => {
+                const pName = (p.name || "").toLowerCase();
+                const pEmail = (p.email || "").toLowerCase();
+                const targetPic = picName.toLowerCase();
+                return pName.includes(targetPic) || pEmail.includes(targetPic);
+              });
+              if (matchedProf) targetUserId = matchedProf.id;
+            }
+
+            // Jika campaign belum ada PIC-nya (atau PIC profil tidak ditemukan),
+            // letakkan di profil Superadmin dengan penanda "Belum ada PIC"
+            if (!targetUserId && superadminProfile) {
+              targetUserId = superadminProfile.id;
+            }
+
+            if (targetUserId && userCampaignsMap.has(targetUserId)) {
+              userCampaignsMap.get(targetUserId).push(enriched);
+            }
+          }
+
+          // Simpan pembagian campaign ke database Supabase
+          for (const [profId, camps] of userCampaignsMap.entries()) {
+            await supabase
+              .from("profiles")
+              .update({
+                campaigns: camps,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", profId);
+          }
+          console.log(`    ✅ Berhasil mendistribusikan ${rawCampaigns.length} campaign ke profil PIC masing-masing.`);
         } catch (campErr) {
           console.warn(`    ⚠️ Gagal memperbarui daftar campaign armada: ${campErr.message}`);
         }
