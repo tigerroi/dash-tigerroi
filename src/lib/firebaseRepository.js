@@ -213,6 +213,11 @@ export function subscribeResource(key, callback, onError) {
 
       const { data, error } = await query;
       if (error) {
+        if (error.code === "42P01") {
+          // Relasi tabel/view belum dibuat di Supabase, fallback aman tanpa toast merah
+          callback([]);
+          return;
+        }
         if (onError) onError(error);
         return;
       }
@@ -250,6 +255,11 @@ export function subscribeValue(key, callback, onError) {
     try {
       const { data, error } = await supabase.from(table).select("*");
       if (error) {
+        if (error.code === "42P01") {
+          // Relasi tabel/view belum dibuat di Supabase, fallback aman tanpa toast merah
+          callback(key === "domainTargets" ? {} : {});
+          return;
+        }
         if (onError) onError(error);
         return;
       }
