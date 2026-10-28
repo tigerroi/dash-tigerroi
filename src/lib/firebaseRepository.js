@@ -21,6 +21,12 @@ const TABLE_MAP = {
   countryRoi: "country_roi",
   pluginSites: "plugin_sites",
   weeklyFinancials: "view_daily_financials",
+  companyPercents: "company_percents",
+  bonusPercents: "bonus_percents",
+  invalidTraffic: "invalid_traffic",
+  adxCosts: "adx_costs",
+  payouts: "payouts",
+  accountCloses: "account_closes",
 };
 
 /**
@@ -187,6 +193,10 @@ export function subscribeResource(key, callback, onError) {
         table === "whitelist_topup"
       ) {
         query = query.order("date", { ascending: false });
+      } else if (table === "company_percents" || table === "bonus_percents") {
+        query = query.order("effective_from", { ascending: false });
+      } else if (table === "invalid_traffic") {
+        query = query.order("month", { ascending: false });
       } else if (table === "sync_runs") {
         query = query.order("started_at", { ascending: false }).limit(50);
       } else if (table === "reminders") {
