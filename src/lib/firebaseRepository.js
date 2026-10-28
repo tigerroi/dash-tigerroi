@@ -213,7 +213,7 @@ export function subscribeResource(key, callback, onError) {
 
       const { data, error } = await query;
       if (error) {
-        if (error.code === "42P01") {
+        if (error.code === "42P01" || error.code === "PGRST205") {
           // Relasi tabel/view belum dibuat di Supabase, fallback aman tanpa toast merah
           callback([]);
           return;
@@ -243,6 +243,10 @@ export function subscribeResource(key, callback, onError) {
  * Langganan berkala (polling) untuk nilai tunggal / object
  */
 export function subscribeValue(key, callback, onError) {
+  if (key === "weeklyFinancials") {
+    return subscribeResource(key, callback, onError);
+  }
+
   const table = TABLE_MAP[key];
   if (!table) {
     callback({});
@@ -255,7 +259,7 @@ export function subscribeValue(key, callback, onError) {
     try {
       const { data, error } = await supabase.from(table).select("*");
       if (error) {
-        if (error.code === "42P01") {
+        if (error.code === "42P01" || error.code === "PGRST205") {
           // Relasi tabel/view belum dibuat di Supabase, fallback aman tanpa toast merah
           callback(key === "domainTargets" ? {} : {});
           return;
