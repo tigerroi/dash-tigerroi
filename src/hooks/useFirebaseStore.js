@@ -143,7 +143,7 @@ function useStickyValue(key, shape, wanted, enabled, onLoading) {
         onLoading(key, false);
       },
       (error) => {
-        notifyError(error, "Data ringkasan gagal dimuat. Coba muat ulang halaman.");
+        console.warn(`[TigerROI] Sticky value error for ${key}:`, error);
         onLoading(key, false);
       },
     );
@@ -264,7 +264,7 @@ export function useFirebaseStore(navigate, resources, user, enabled = true, rout
           setLoadingMap((current) => ({ ...current, [key]: false }));
         },
         (error) => {
-          notifyError(error, "Data ringkasan gagal dimuat. Coba muat ulang halaman.");
+          console.warn(`[TigerROI] Summary subscription error for ${key}:`, error);
           setLoadingMap((current) => ({ ...current, [key]: false }));
         },
       );

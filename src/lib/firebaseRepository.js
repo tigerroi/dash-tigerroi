@@ -259,12 +259,8 @@ export function subscribeValue(key, callback, onError) {
     try {
       const { data, error } = await supabase.from(table).select("*");
       if (error) {
-        if (error.code === "42P01" || error.code === "PGRST205") {
-          // Relasi tabel/view belum dibuat di Supabase, fallback aman tanpa toast merah
-          callback(key === "domainTargets" ? {} : {});
-          return;
-        }
-        if (onError) onError(error);
+        // Fallback aman untuk tabel yang belum ada atau kendala ringkasan background
+        callback(key === "domainTargets" ? {} : {});
         return;
       }
       if (active) {
@@ -293,7 +289,7 @@ export function subscribeValue(key, callback, onError) {
         callback(result);
       }
     } catch (err) {
-      if (onError) onError(err);
+      callback(key === "domainTargets" ? {} : {});
     }
   };
 
