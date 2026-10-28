@@ -20,6 +20,7 @@ const TABLE_MAP = {
   roiSnapshots: "view_daily_roi",
   countryRoi: "country_roi",
   pluginSites: "plugin_sites",
+  weeklyFinancials: "view_daily_financials",
 };
 
 /**
@@ -106,17 +107,31 @@ export function subscribeResource(key, callback, onError) {
     let active = true;
     const fetchFinancials = async () => {
       try {
+        // Ambil langsung dari View Supabase view_daily_financials
         const { data, error } = await supabase
+          .from("view_daily_financials")
+          .select("*")
+          .order("date", { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          if (active) callback(data.map(toCamelCaseRow));
+          return;
+        }
+
+        // Fallback jika view_daily_financials belum di-run di Supabase
+        const { data: roiData, error: roiError } = await supabase
           .from("view_daily_roi")
           .select("*")
           .order("date", { ascending: false });
-        if (error) {
-          if (onError) onError(error);
+
+        if (roiError) {
+          if (onError) onError(roiError);
           return;
         }
+
         if (active) {
           const byDate = new Map();
-          for (const item of (data || [])) {
+          for (const item of (roiData || [])) {
             const row = toCamelCaseRow(item);
             const d = row.date;
             if (!d) continue;
