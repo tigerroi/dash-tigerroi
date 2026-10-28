@@ -27,6 +27,14 @@ const TABLE_MAP = {
   adxCosts: "adx_costs",
   payouts: "payouts",
   accountCloses: "account_closes",
+  notificationGroups: "notification_groups",
+  otpSecrets: "otp_secrets",
+  countryPresets: "country_presets",
+  gptSizeTemplates: "gpt_size_templates",
+  adsenseSlots: "adsense_slots",
+  cloakingUrls: "cloaking_urls",
+  telegramInbox: "telegram_inbox",
+  domainTargets: "domain_targets",
 };
 
 /**
@@ -246,6 +254,17 @@ export function subscribeValue(key, callback, onError) {
         return;
       }
       if (active) {
+        if (key === "domainTargets") {
+          const targetsMap = {};
+          for (const item of data || []) {
+            const row = toCamelCaseRow(item);
+            if (!targetsMap[row.domainId]) targetsMap[row.domainId] = {};
+            targetsMap[row.domainId][row.month] = row.targetData || {};
+          }
+          callback(targetsMap);
+          return;
+        }
+
         const result = {};
         for (let idx = 0; idx < (data || []).length; idx++) {
           const item = data[idx];
@@ -454,7 +473,19 @@ export function writeTarget(domainId, month, record) {
     `targets/${domainId}/${month}`,
     { jenis: record === null ? "(dikosongkan)" : Object.keys(record).join(", ") },
     async () => {
-      // Stub target simpan
+      const id = `${domainId}_${month}`;
+      if (record === null || Object.keys(record).length === 0) {
+        await supabase.from("domain_targets").delete().eq("id", id);
+        return null;
+      }
+      const { error } = await supabase.from("domain_targets").upsert({
+        id,
+        domain_id: domainId,
+        month,
+        target_data: record,
+        updated_at: new Date().toISOString(),
+      });
+      if (error) throw error;
       return record;
     },
   );
