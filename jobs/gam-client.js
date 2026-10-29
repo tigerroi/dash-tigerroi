@@ -208,6 +208,11 @@ export async function fetchGamDailyRevenue(networkCode, accessToken, dateRange) 
     );
   }
 
+  const formatIso = (d) => {
+    const s = String(d || "").replace(/\D/g, "");
+    return s.length === 8 ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}` : String(d);
+  };
+
   const rows = [];
   for (const r of resultData.rows || []) {
     const dValues = (r.dimensionValues || []).map((v) =>
@@ -215,7 +220,7 @@ export async function fetchGamDailyRevenue(networkCode, accessToken, dateRange) 
     );
     const mValues = r.metricValueGroups?.[0]?.primaryValues || r.metricValues || [];
 
-    const dateStr = dValues[0] || "";
+    const dateStr = formatIso(dValues[0] || "");
     const siteName = dValues[1] || "";
     const adUnitName = dValues[2] || "";
 
@@ -223,9 +228,11 @@ export async function fetchGamDailyRevenue(networkCode, accessToken, dateRange) 
       Number(
         v?.doubleValue != null
           ? v.doubleValue
-          : v?.integerValue != null
-            ? v.integerValue
-            : (v?.value ?? 0),
+          : v?.intValue != null
+            ? v.intValue
+            : v?.integerValue != null
+              ? v.integerValue
+              : (v?.value ?? 0),
       );
 
     const impressions = parseNum(mValues[0]);
@@ -244,6 +251,160 @@ export async function fetchGamDailyRevenue(networkCode, accessToken, dateRange) 
       adsenseRevenue,
       adServerRevenue,
       totalRevenue: adxRevenue + adsenseRevenue + adServerRevenue,
+    });
+  }
+
+  return rows;
+}
+
+/**
+ * Menjalankan laporan historical Rasio Penayangan (Fill Rate) per jam dari GAM.
+ * Metrik: AD_EXCHANGE_TOTAL_REQUESTS (permintaan) dan AD_EXCHANGE_IMPRESSIONS (tayangan).
+ * Dimensi: DATE, HOUR, SITE.
+ */
+export async function fetchGamHourlyFillRate(networkCode, accessToken, dateRange) {
+  const createUrl = `${GAM_BASE}/networks/${networkCode}/reports`;
+  const reportDef = {
+    reportDefinition: {
+      dimensions: ["DATE", "HOUR", "SITE"],
+      metrics: ["AD_EXCHANGE_TOTAL_REQUESTS", "AD_EXCHANGE_IMPRESSIONS"],
+      currencyCode: "IDR",
+      dateRange: {
+        fixed: {
+          startDate: {
+            year: Number(dateRange.startDate.slice(0, 4)),
+            month: Number(dateRange.startDate.slice(5, 7)),
+            day: Number(dateRange.startDate.slice(8, 10)),
+          },
+          endDate: {
+            year: Number(dateRange.endDate.slice(0, 4)),
+            month: Number(dateRange.endDate.slice(5, 7)),
+            day: Number(dateRange.endDate.slice(8, 10)),
+          },
+        },
+      },
+      reportType: "HISTORICAL",
+    },
+  };
+
+  const createRes = await fetch(createUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(reportDef),
+  });
+
+  const reportData = await createRes.json();
+  if (!createRes.ok) {
+    throw new Error(
+      `GAM Create Fill Rate Report Error (${createRes.status}): ${reportData.error?.message || JSON.stringify(reportData)}`,
+    );
+  }
+
+  const reportName = reportData.name;
+
+  const runUrl = `${GAM_BASE}/${reportName}:run`;
+  const runRes = await fetch(runUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  const runData = await runRes.json();
+  if (!runRes.ok) {
+    throw new Error(
+      `GAM Run Fill Rate Report Error (${runRes.status}): ${runData.error?.message || JSON.stringify(runData)}`,
+    );
+  }
+
+  const operationName = runData.name;
+
+  let isDone = false;
+  let attempts = 0;
+  let resultName = "";
+  while (!isDone && attempts < 40) {
+    await new Promise((r) => setTimeout(r, 2000));
+    attempts++;
+
+    const pollRes = await fetch(`${GAM_BASE}/${operationName}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const pollData = await pollRes.json();
+
+    if (!pollRes.ok) {
+      continue;
+    }
+
+    if (pollData.done) {
+      isDone = true;
+      if (pollData.error) {
+        throw new Error(`GAM Fill Rate Report Failed: ${pollData.error.message}`);
+      }
+      resultName =
+        pollData.response?.reportResult ||
+        pollData.response?.name ||
+        pollData.metadata?.reportResult ||
+        "";
+      break;
+    }
+  }
+
+  if (!isDone || !resultName) {
+    throw new Error("Timeout menunggu kompilasi laporan Fill Rate GAM.");
+  }
+
+  const rowsUrl = `${GAM_BASE}/${resultName}:fetchRows`;
+  const rowsRes = await fetch(rowsUrl, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  const resultData = await rowsRes.json();
+  if (!rowsRes.ok) {
+    throw new Error(
+      `GAM Fetch Fill Rate Rows Error: ${resultData.error?.message || JSON.stringify(resultData)}`,
+    );
+  }
+
+  const parseNum = (v) =>
+    Number(
+      v?.doubleValue != null
+        ? v.doubleValue
+        : v?.intValue != null
+          ? v.intValue
+          : v?.integerValue != null
+            ? v.integerValue
+            : (v?.value ?? 0),
+    );
+
+  const formatIso = (d) => {
+    const s = String(d || "").replace(/\D/g, "");
+    return s.length === 8 ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}` : String(d);
+  };
+
+  const rows = [];
+  for (const r of resultData.rows || []) {
+    const dValues = (r.dimensionValues || []).map((v) =>
+      v?.stringValue != null ? v.stringValue : String(v?.intValue ?? v?.value ?? ""),
+    );
+    const mValues = r.metricValueGroups?.[0]?.primaryValues || r.metricValues || [];
+
+    const dateStr = formatIso(dValues[0] || "");
+    const hourStr = String(dValues[1] || "").padStart(2, "0");
+    const siteName = dValues[2] || "";
+
+    const requests = parseNum(mValues[0]);
+    const impressions = parseNum(mValues[1]);
+
+    rows.push({
+      date: dateStr,
+      hour: hourStr,
+      siteName,
+      requests,
+      impressions,
     });
   }
 

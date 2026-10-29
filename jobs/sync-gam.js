@@ -1,7 +1,11 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
-import { fetchGamDailyRevenue, getGoogleServiceAccountToken } from "./gam-client.js";
+import {
+  fetchGamDailyRevenue,
+  fetchGamHourlyFillRate,
+  getGoogleServiceAccountToken,
+} from "./gam-client.js";
 
 /**
  * Job Sinkronisasi Google Ad Manager (GAM) ke Supabase TigerROI
@@ -266,12 +270,13 @@ export async function runSyncGam() {
         for (const row of rows) {
           const mapped = mapGamRowToSite(row, net.defaultSiteCode, subdomains, sites);
           const siteCode = mapped.siteCode;
-          const subName = mapped.subdomainName || "";
-          const aggKey = `${row.date}__${siteCode}__${subName}`;
+          const subName = (mapped.subdomainName || "").toLowerCase().trim();
+          const rowDate = formatIsoDate(row.date);
+          const aggKey = `${rowDate}__${siteCode}__${subName}`;
 
           if (!dailyMap.has(aggKey)) {
             dailyMap.set(aggKey, {
-              date: row.date,
+              date: rowDate,
               site_code: siteCode,
               subdomain: subName,
               source: "gam",
@@ -325,6 +330,55 @@ export async function runSyncGam() {
           .eq("network_code", net.networkCode);
 
         console.log(`    ✅ Updated gam_accounts (${net.domain}): ${formattedEarning}, Tgl: ${cleanReportDate}`);
+
+        // 5b. Tarik Laporan Rasio Penayangan (Fill Rate) per jam dari GAM
+        console.log(`    --> Menarik Laporan Rasio Penayangan (Fill Rate) per jam...`);
+        try {
+          const fillRateRows = await fetchGamHourlyFillRate(net.networkCode, accessToken, dateRange);
+          console.log(`    Ditemukan ${fillRateRows.length} baris rasio penayangan per jam.`);
+          for (const fRow of fillRateRows) {
+            const mapped = mapGamRowToSite({ siteName: fRow.siteName }, net.defaultSiteCode, subdomains, sites);
+            const siteCode = mapped.siteCode;
+            const subName = (mapped.subdomainName || "").toLowerCase().trim();
+            const fRowDate = formatIsoDate(fRow.date);
+            const aggKey = `${fRowDate}__${siteCode}__${subName}`;
+
+            if (!dailyMap.has(aggKey)) {
+              dailyMap.set(aggKey, {
+                date: fRowDate,
+                site_code: siteCode,
+                subdomain: subName,
+                source: "gam",
+                revenue: 0,
+                spend: 0,
+                impressions: 0,
+                clicks: 0,
+                metadata: {
+                  adx_revenue: 0,
+                  adsense_revenue: 0,
+                  network_codes: [net.networkCode],
+                  hourly: {},
+                  requests: 0,
+                  full_host: fRow.siteName || "",
+                },
+              });
+            }
+
+            const current = dailyMap.get(aggKey);
+            if (!current.metadata.hourly) current.metadata.hourly = {};
+            if (!current.metadata.hourly[fRow.hour]) {
+              current.metadata.hourly[fRow.hour] = { req: 0, imp: 0 };
+            }
+            current.metadata.hourly[fRow.hour].req += fRow.requests;
+            current.metadata.hourly[fRow.hour].imp += fRow.impressions;
+            current.metadata.requests = (current.metadata.requests || 0) + fRow.requests;
+            if (fRow.siteName && !current.metadata.full_host) {
+              current.metadata.full_host = fRow.siteName;
+            }
+          }
+        } catch (fillErr) {
+          console.warn(`    ⚠️ Peringatan Fill Rate (${net.domain}): ${fillErr.message}`);
+        }
       } catch (netErr) {
         const msg = `Network ${net.domain} (${net.networkCode}): ${netErr.message}`;
         console.error(`    ❌ ${msg}`);
@@ -342,19 +396,27 @@ export async function runSyncGam() {
     }
 
     // 6. Upsert ke tabel daily_stats
-    const upsertRows = Array.from(dailyMap.values()).map((row) => ({
-      date: row.date,
-      site_code: row.site_code,
-      subdomain: row.subdomain || "",
-      source: "gam",
-      revenue: Math.round(row.revenue * 100) / 100,
-      spend: 0,
-      impressions: row.impressions,
-      clicks: row.clicks,
-      cpc: 0,
-      metadata: row.metadata,
-      updated_at: new Date().toISOString(),
-    }));
+    const upsertRows = Array.from(dailyMap.values()).map((row) => {
+      let hourlyImp = 0;
+      if (row.metadata?.hourly) {
+        for (const h of Object.values(row.metadata.hourly)) {
+          hourlyImp += h.imp || 0;
+        }
+      }
+      return {
+        date: row.date,
+        site_code: row.site_code,
+        subdomain: row.subdomain || "",
+        source: "gam",
+        revenue: Math.round(row.revenue * 100) / 100,
+        spend: 0,
+        impressions: Math.max(row.impressions || 0, hourlyImp),
+        clicks: row.clicks || 0,
+        cpc: 0,
+        metadata: row.metadata,
+        updated_at: new Date().toISOString(),
+      };
+    });
 
     if (upsertRows.length > 0) {
       console.log(`\nMelakukan upsert ${upsertRows.length} baris per subdomain ke tabel daily_stats...`);
