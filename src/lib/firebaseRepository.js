@@ -352,7 +352,17 @@ export async function createResource(key, values, actor = "system") {
   delete payload.id; // Biarkan database menghasilkan UUID
 
   return tracked(`create:${key}`, table, nameOf(values), async () => {
-    const { data, error } = await supabase.from(table).insert(payload).select().single();
+    let { data, error } = await supabase.from(table).insert(payload).select().single();
+    if (error && error.code === "PGRST204") {
+      const match = error.message.match(/Could not find the '([^']+)' column/);
+      if (match && match[1]) {
+        console.warn(`[Supabase] Kolom '${match[1]}' belum ada di tabel '${table}', mencoba simpan tanpa kolom tersebut...`);
+        delete payload[match[1]];
+        const retry = await supabase.from(table).insert(payload).select().single();
+        data = retry.data;
+        error = retry.error;
+      }
+    }
     if (error) throw error;
     return toCamelCaseRow(data);
   });
@@ -369,7 +379,17 @@ export async function createResourceAt(key, id, values, actor = "system") {
   payload.id = id;
 
   return tracked(`create:${key}`, `${table}/${id}`, nameOf(values), async () => {
-    const { data, error } = await supabase.from(table).upsert(payload).select().single();
+    let { data, error } = await supabase.from(table).upsert(payload).select().single();
+    if (error && error.code === "PGRST204") {
+      const match = error.message.match(/Could not find the '([^']+)' column/);
+      if (match && match[1]) {
+        console.warn(`[Supabase] Kolom '${match[1]}' belum ada di tabel '${table}', mencoba simpan tanpa kolom tersebut...`);
+        delete payload[match[1]];
+        const retry = await supabase.from(table).upsert(payload).select().single();
+        data = retry.data;
+        error = retry.error;
+      }
+    }
     if (error) throw error;
     return toCamelCaseRow(data);
   });
@@ -403,9 +423,19 @@ export async function updateResource(key, id, values, actor = "system") {
 
   const payload = toSnakeCasePayload(values);
   delete payload.id;
+  delete payload.created_at;
 
   return tracked(`update:${key}`, `${table}/${id}`, changedFields(values), async () => {
-    const { error } = await supabase.from(table).update(payload).eq("id", id);
+    let { error } = await supabase.from(table).update(payload).eq("id", id);
+    if (error && error.code === "PGRST204") {
+      const match = error.message.match(/Could not find the '([^']+)' column/);
+      if (match && match[1]) {
+        console.warn(`[Supabase] Kolom '${match[1]}' belum ada di tabel '${table}', mencoba update tanpa kolom tersebut...`);
+        delete payload[match[1]];
+        const retry = await supabase.from(table).update(payload).eq("id", id);
+        error = retry.error;
+      }
+    }
     if (error) throw error;
   });
 }
