@@ -34,6 +34,40 @@ function stampOf(row) {
 }
 
 /**
+ * Memformat waktu update sinkronisasi (WIB).
+ * Jika `time` masih bernilai default '23:59' dan terdapat stempel waktu sinkronisasi `updatedAt`,
+ * konversikan ke jam:menit aktual saat sinkronisasi GitHub Actions selesai.
+ */
+export function formatRoiTime(item) {
+  const rawTime = firstValue(item?.time);
+  const updatedAt = item?.updatedAt || item?.updated_at;
+
+  if (rawTime && rawTime !== "23:59") {
+    return rawTime;
+  }
+
+  if (updatedAt) {
+    try {
+      const date = new Date(updatedAt);
+      if (!Number.isNaN(date.getTime())) {
+        return date
+          .toLocaleTimeString("id-ID", {
+            timeZone: "Asia/Jakarta",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          })
+          .replace(".", ":");
+      }
+    } catch {
+      // Abaikan jika parsing gagal, fallback ke rawTime
+    }
+  }
+
+  return rawTime || "23:59";
+}
+
+/**
  * Snapshot per sync, ditambah baris harian untuk hari-hari yang tidak punya snapshot.
  *
  * Baris harian hari yang SAMA dengan snapshot dibuang, bukan ditampilkan berdampingan: keduanya
@@ -74,6 +108,7 @@ export function normalizeRealtimeRoiRow(item, rate, countryBreakdown) {
 
   return {
     ...item,
+    time: formatRoiTime(item),
     campaign: firstValue(item.campaign),
     metaSpend: money.spending,
     adTax: money.adTax,

@@ -3,6 +3,7 @@ import { describe, test } from "node:test";
 import { buildCountryBreakdown } from "./countryBreakdown.js";
 import {
   earningSourceLabel,
+  formatRoiTime,
   normalizeRealtimeRoiRow,
   realtimeRoiColumnTone,
   realtimeRoiRows,
@@ -112,6 +113,17 @@ describe("normalizeRealtimeRoiRow", () => {
     );
     assert.equal(normalizeRealtimeRoiRow(row, 0, index).countries.length, 1);
     assert.deepEqual(normalizeRealtimeRoiRow({ ...row, date: "2026-08-11" }, 0, index).countries, []);
+  });
+
+  test("waktu update sinkronisasi mengambil jam riil dari updatedAt jika time 23:59", () => {
+    // 07:20 UTC = 14:20 WIB
+    const syncItem = {
+      ...row,
+      time: "23:59",
+      updatedAt: "2026-10-29T07:20:49.062Z",
+    };
+    assert.equal(normalizeRealtimeRoiRow(syncItem, 0).time, "14:20");
+    assert.equal(formatRoiTime({ time: "10:15", updatedAt: "2026-10-29T07:20:49.062Z" }), "10:15");
   });
 });
 
