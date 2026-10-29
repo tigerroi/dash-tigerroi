@@ -28,3 +28,4 @@ CREATE POLICY "gam_hourly_fill_rate_select" ON public.gam_hourly_fill_rate
 
 CREATE POLICY "gam_hourly_fill_rate_admin" ON public.gam_hourly_fill_rate
     FOR ALL TO authenticated USING (public.is_admin());
+

@@ -29,6 +29,13 @@ test("domain induk dari subDomains, dan dari akhiran untuk yang belum terdaftar"
   assert.equal(owners.domainOf("trends.rabbit.com"), "rabbit.com");
   assert.equal(owners.domainOf("baru.rabbit.com"), "rabbit.com");
   assert.equal(owners.domainOf("entah.lainnya.id"), "");
+
+  // Domain induk dengan URL https:// dan subdomain slug pendek
+  const httpsDomains = [{ domainUrl: "https://tiktokmodapk.net" }];
+  const slugSubs = [{ name: "careers", parentDomain: "tiktokmodapk.net", pic: "Mul" }];
+  const realOwners = subDomainOwnerIndex(slugSubs, httpsDomains);
+  assert.equal(realOwners.domainOf("careers.tiktokmodapk.net"), "tiktokmodapk.net");
+  assert.equal(realOwners.picOf("careers.tiktokmodapk.net"), "Mul");
 });
 
 test("PIC baris lebih dulu, subDomains cuma menambal yang tidak membawanya", () => {

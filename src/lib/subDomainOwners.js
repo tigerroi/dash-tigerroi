@@ -12,23 +12,41 @@ const normalize = (value) => cellText(value).toLowerCase();
 
 const clean = (value) => cellText(value);
 
+const cleanDomain = (value) =>
+  clean(value)
+    .toLowerCase()
+    .replace(/^https?:\/\//i, "")
+    .replace(/\/.*$/, "")
+    .trim();
+
 export function subDomainOwnerIndex(subDomains, domains) {
   const byName = new Map();
   for (const sub of subDomains || []) {
-    const key = normalize(sub?.name);
-    if (!key) continue;
-    byName.set(key, { domain: clean(sub?.parentDomain), pic: clean(sub?.pic) });
+    const rawKey = normalize(sub?.name);
+    if (!rawKey) continue;
+    const parent = cleanDomain(sub?.parentDomain);
+    const pic = clean(sub?.pic);
+
+    // Simpan key slug biasa (contoh "careers")
+    byName.set(rawKey, { domain: parent, pic });
+
+    // Jika belum ada domain di key-nya dan parent diketahui, daftarkan juga hostname lengkapnya (contoh "careers.tiktokmodapk.net")
+    if (parent && !rawKey.includes(".")) {
+      byName.set(`${rawKey}.${parent}`, { domain: parent, pic });
+    }
   }
 
-  const knownDomains = (domains || []).map((item) => clean(item?.domainUrl)).filter(Boolean);
+  const knownDomains = (domains || [])
+    .map((item) => cleanDomain(item?.domainUrl || item?.name || item?.domain))
+    .filter(Boolean);
 
   return {
     /** Domain induk sebuah subdomain, "" kalau tidak ada yang tahu. */
     domainOf(name) {
-      const key = normalize(name);
+      const key = cleanDomain(name);
       if (!key) return "";
 
-      const registered = byName.get(key)?.domain;
+      const registered = byName.get(key)?.domain || byName.get(key.split(".")[0])?.domain;
       if (registered) return registered;
 
       return (
@@ -43,7 +61,13 @@ export function subDomainOwnerIndex(subDomains, domains) {
      * dan yang tampil di kolom tabel; `subDomains.pic` cuma menambal baris yang tidak membawanya.
      */
     picOf(name, rowPic) {
-      return clean(rowPic) || byName.get(normalize(name))?.pic || "";
+      const key = cleanDomain(name);
+      return (
+        clean(rowPic) ||
+        byName.get(key)?.pic ||
+        byName.get(key.split(".")[0])?.pic ||
+        ""
+      );
     },
   };
 }
