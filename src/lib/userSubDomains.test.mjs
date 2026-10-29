@@ -21,6 +21,29 @@ test("kepemilikan dicocokkan lewat nama, username, email, atau id — tanpa pedu
     ]).map((item) => item.name),
     ["care.petcins.com"],
   );
+  // Pencocokan singkatan 3 huruf tim (Nur, Mul, Sul, Man)
+  const teamSubs = [
+    { name: "rewards", pic: "Nur" },
+    { name: "careers", pic: "Mul" },
+    { name: "insurance", pic: "Sul" },
+    { name: "mod", pic: "Man" },
+  ];
+  assert.deepEqual(
+    assignedSubDomains({ name: "Nurjaman", username: "lightman" }, teamSubs).map((s) => s.name),
+    ["rewards"],
+  );
+  assert.deepEqual(
+    assignedSubDomains({ name: "Mulyana" }, teamSubs).map((s) => s.name),
+    ["careers"],
+  );
+  assert.deepEqual(
+    assignedSubDomains({ name: "Zulfan" }, teamSubs).map((s) => s.name),
+    ["insurance"],
+  );
+  assert.deepEqual(
+    assignedSubDomains({ name: "Mas Def" }, teamSubs).map((s) => s.name),
+    ["mod"],
+  );
 });
 
 test("user tanpa identitas apa pun tidak memiliki subdomain siapa pun", () => {

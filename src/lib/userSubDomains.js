@@ -30,12 +30,37 @@ export function assignedSubDomains(user, subDomains) {
   const userKeys = [user?.id, user?.name, user?.username, user?.email].map(nameKey).filter(Boolean);
   if (userKeys.length === 0) return [];
 
+  // Alias pemetaan nama singkatan PIC ke identitas user
+  const checkPicMatch = (picVal) => {
+    const p = nameKey(picVal);
+    if (!p) return false;
+    if (userKeys.includes(p)) return true;
+
+    // Pencocokan singkatan 3 huruf umum tim (Nur, Mul, Sul, Man)
+    for (const uk of userKeys) {
+      if (uk.length >= 3 && p.length >= 3) {
+        if (uk.startsWith(p) || p.startsWith(uk)) return true;
+      }
+      // Khusus Zulfan / Sulaiman
+      if ((p === "sul" && uk.includes("zulfan")) || (uk === "sul" && p.includes("zulfan"))) return true;
+      // Khusus Mas Def / Man
+      if ((p === "man" && (uk.includes("def") || uk.includes("mas"))) || (uk === "man" && (uk.includes("def") || uk.includes("mas")))) return true;
+      // Khusus Nurjaman / Lightman
+      if ((p === "nur" && uk.includes("lightman")) || (p === "lightman" && uk.startsWith("nur"))) return true;
+    }
+    return false;
+  };
+
   return (Array.isArray(subDomains) ? subDomains : []).filter((item) => {
     if (!item || item.deletedAt) return false;
+
+    // Cek kecocokan picUserId atau pic_user_id
+    if (item.picUserId && (item.picUserId === user.id || item.picUserId === user.name)) return true;
+    if (item.pic_user_id && (item.pic_user_id === user.id || item.pic_user_id === user.name)) return true;
+
     return [item.pic, item.user, item.userOwner, item.userId, item.ownerId]
-      .map(nameKey)
       .filter(Boolean)
-      .some((key) => userKeys.includes(key));
+      .some(checkPicMatch);
   });
 }
 

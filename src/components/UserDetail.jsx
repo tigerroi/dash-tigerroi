@@ -1,6 +1,6 @@
 import { ArrowLeft, Mail, MessageSquare, UserRound } from "lucide-react";
 import { useMemo } from "react";
-import { canToggleCampaign } from "../config/access";
+import { canToggleCampaign, isSuperAdmin } from "../config/access";
 import { useUrlRange, useUrlState } from "../hooks/useUrlState";
 import { adTaxRateOf, earningAccountType, formatRoiPercent, withAdTax } from "../lib/adTax";
 import { toCommandMap } from "../lib/campaignCommands";
@@ -299,6 +299,7 @@ export function UserDetail({
           commands={campaignCommands}
           canToggle={canToggle}
           onToggleCampaign={onSetCampaignStatus}
+          viewer={viewer}
         />
       </section>
 
@@ -511,6 +512,7 @@ function CampaignManagementTable({
   commands = {},
   canToggle = false,
   onToggleCampaign,
+  viewer,
 }) {
   // Tabel ini LIVE (satu baris per campaign, keadaan sekarang), jadi filter tanggal tak berarti —
   // ia ada di "Riwayat Spend Campaign". Yang tinggal di sini cuma penyaring Kode Keitaro, untuk
@@ -589,22 +591,28 @@ function CampaignManagementTable({
     {
       accessorKey: "subDomain",
       header: "Sub Domain",
-      cell: ({ row }) => (
-        <>
-          <SelectField
-            className="campaign-pill-select indigo"
-            // Controlled and persisted. This used to be an uncontrolled defaultValue with no
-            // handler, so every mapping was lost on reload — and with it the only input Sync ROI
-            // needs to attribute spend.
-            value={row.original.subDomain || ""}
-            disabled={readOnly || !onMapCampaign}
-            onChange={(next) => onMapCampaign?.(row.original.id, next)}
-            options={subDomainOptions}
-            searchable
-          />
-          <small className="muted-line">{describeMappingSource(row.original)}</small>
-        </>
-      ),
+      cell: ({ row }) => {
+        const canEditSubdomain = isSuperAdmin(viewer?.role);
+        return (
+          <>
+            <SelectField
+              className="campaign-pill-select indigo"
+              // Controlled and persisted. Hanya Superadmin yang boleh mengubah pemetaan sub domain.
+              value={row.original.subDomain || ""}
+              disabled={!canEditSubdomain || readOnly || !onMapCampaign}
+              title={
+                !canEditSubdomain
+                  ? "Hanya Superadmin yang dapat mengubah pemetaan sub domain kampanye."
+                  : undefined
+              }
+              onChange={(next) => onMapCampaign?.(row.original.id, next)}
+              options={subDomainOptions}
+              searchable
+            />
+            <small className="muted-line">{describeMappingSource(row.original)}</small>
+          </>
+        );
+      },
     },
     {
       // Diurutkan lewat POSISI SAKLAR (`configuredStatus`: ACTIVE/PAUSED), bukan label — yang itu
@@ -910,16 +918,36 @@ function buildProfileFromStore(user, store) {
   // Baris ROI milik user ini = baris subdomain-subdomain itu. Menyaringnya lewat `pic` baris akan
   // memotong riwayat setiap subdomain yang pernah berpindah PIC — lihat src/lib/userSubDomains.js.
   const ownedKeys = subDomainNameKeys(profileSubDomains);
-  // Prefer the explicit owner; fall back to the old name-substring guess for accounts saved
-  // before /ad-accounts had a User Pemilik column.
-  const owned = store.adAccounts.filter((item) => item.userOwner === user.name);
+  // Prefer the explicit owner or alias match; fall back to the old name-substring guess
+  const userKeys = [user?.id, user?.name, user?.username, user?.email]
+    .filter(Boolean)
+    .map((k) => String(k).trim().toLowerCase());
+
+  const checkOwnerMatch = (item) => {
+    if (!item) return false;
+    const owner = String(item.userOwner || item.pic || "").trim().toLowerCase();
+    const actUserId = item.picUserId || item.pic_user_id || item.userId;
+    if (actUserId && (actUserId === user.id || actUserId === user.name)) return true;
+    if (owner && userKeys.includes(owner)) return true;
+    for (const uk of userKeys) {
+      if (owner.length >= 3 && uk.length >= 3 && (uk.startsWith(owner) || owner.startsWith(uk))) return true;
+      if (owner === "sul" && uk.includes("zulfan")) return true;
+      if (owner === "man" && (uk.includes("def") || uk.includes("mas"))) return true;
+      if (owner === "nur" && uk.includes("lightman")) return true;
+    }
+    return false;
+  };
+
+  const owned = store.adAccounts.filter(checkOwnerMatch);
   const adAccounts =
     owned.length > 0
       ? owned
       : store.adAccounts.filter((item) =>
-          String(item.name || "")
-            .toLowerCase()
-            .includes(String(user.name || "").toLowerCase()),
+          userKeys.some((uk) =>
+            String(item.name || "")
+              .toLowerCase()
+              .includes(uk),
+          ),
         );
   const profileReports =
     toArray(user.masterRoiReports).length > 0
