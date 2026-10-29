@@ -410,3 +410,176 @@ export async function fetchGamHourlyFillRate(networkCode, accessToken, dateRange
 
   return rows;
 }
+
+/**
+ * Menjalankan laporan historical Pendapatan GAM per jam (Hourly Revenue).
+ * Dimensi: DATE, HOUR, SITE, AD_UNIT_NAME (fallback DATE, HOUR, SITE).
+ * Metrik: IMPRESSIONS, CLICKS, AD_EXCHANGE_REVENUE, ADSENSE_REVENUE, AD_SERVER_REVENUE.
+ */
+export async function fetchGamHourlyRevenue(networkCode, accessToken, dateRange) {
+  const createUrl = `${GAM_BASE}/networks/${networkCode}/reports`;
+
+  const buildReportDef = (dims) => ({
+    reportDefinition: {
+      dimensions: dims,
+      metrics: [
+        "IMPRESSIONS",
+        "CLICKS",
+        "AD_EXCHANGE_REVENUE",
+        "ADSENSE_REVENUE",
+        "AD_SERVER_REVENUE",
+      ],
+      currencyCode: "IDR",
+      dateRange: {
+        fixed: {
+          startDate: {
+            year: Number(dateRange.startDate.slice(0, 4)),
+            month: Number(dateRange.startDate.slice(5, 7)),
+            day: Number(dateRange.startDate.slice(8, 10)),
+          },
+          endDate: {
+            year: Number(dateRange.endDate.slice(0, 4)),
+            month: Number(dateRange.endDate.slice(5, 7)),
+            day: Number(dateRange.endDate.slice(8, 10)),
+          },
+        },
+      },
+      reportType: "HISTORICAL",
+    },
+  });
+
+  let reportData;
+  let createRes;
+  let hasAdUnit = true;
+
+  // Coba dengan AD_UNIT_NAME dulu agar akurasi pemetaan per subdomain maksimal
+  createRes = await fetch(createUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(buildReportDef(["DATE", "HOUR", "SITE", "AD_UNIT_NAME"])),
+  });
+
+  reportData = await createRes.json();
+
+  if (!createRes.ok) {
+    // Jika GAM menolak AD_UNIT_NAME bersama HOUR, fallback ke ["DATE", "HOUR", "SITE"]
+    hasAdUnit = false;
+    createRes = await fetch(createUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(buildReportDef(["DATE", "HOUR", "SITE"])),
+    });
+    reportData = await createRes.json();
+  }
+
+  if (!createRes.ok) {
+    throw new Error(
+      `GAM Create Hourly Revenue Report Error (${createRes.status}): ${reportData.error?.message || JSON.stringify(reportData)}`,
+    );
+  }
+
+  const reportName = reportData.name;
+
+  // Run report
+  const runUrl = `${GAM_BASE}/${reportName}:run`;
+  const runRes = await fetch(runUrl, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const runData = await runRes.json();
+  if (!runRes.ok) {
+    throw new Error(`GAM Run Hourly Report Error: ${runData.error?.message || JSON.stringify(runData)}`);
+  }
+
+  const operationName = runData.name;
+
+  // Polling hingga selesai (maksimal 3 menit)
+  let resultName = null;
+  let isDone = false;
+  for (let attempt = 0; attempt < 36; attempt++) {
+    await new Promise((r) => setTimeout(r, 5000));
+    const pollRes = await fetch(`${GAM_BASE}/${operationName}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const pollData = await pollRes.json();
+    if (pollData.done) {
+      if (pollData.error) {
+        throw new Error(`GAM Hourly Report Execution Failed: ${pollData.error.message}`);
+      }
+      resultName = pollData.response?.reportResult || pollData.response?.name || reportName;
+      isDone = true;
+      break;
+    }
+  }
+
+  if (!isDone) {
+    throw new Error("Timeout menunggu laporan GAM Hourly Revenue.");
+  }
+
+  // Ambil baris
+  const rowsUrl = `${GAM_BASE}/${resultName}:fetchRows`;
+  const rowsRes = await fetch(rowsUrl, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const resultData = await rowsRes.json();
+  if (!rowsRes.ok) {
+    throw new Error(`GAM Fetch Hourly Rows Error: ${resultData.error?.message || JSON.stringify(resultData)}`);
+  }
+
+  const parseNum = (v) =>
+    Number(
+      v?.doubleValue != null
+        ? v.doubleValue
+        : v?.intValue != null
+          ? v.intValue
+          : v?.integerValue != null
+            ? v.integerValue
+            : (v?.value ?? 0),
+    );
+
+  const formatIso = (d) => {
+    const s = String(d || "").replace(/\D/g, "");
+    return s.length === 8 ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}` : String(d);
+  };
+
+  const rows = [];
+  for (const r of resultData.rows || []) {
+    const dValues = (r.dimensionValues || []).map((v) =>
+      v?.stringValue != null ? v.stringValue : String(v?.intValue ?? v?.value ?? ""),
+    );
+    const mValues = r.metricValueGroups?.[0]?.primaryValues || r.metricValues || [];
+
+    const dateStr = formatIso(dValues[0] || "");
+    const hourStr = String(dValues[1] || "").padStart(2, "0");
+    const siteName = dValues[2] || "";
+    const adUnitName = hasAdUnit ? dValues[3] || "" : "";
+
+    const impressions = parseNum(mValues[0]);
+    const clicks = parseNum(mValues[1]);
+    const adxRevenue = parseNum(mValues[2]);
+    const adsenseRevenue = parseNum(mValues[3]);
+    const adServerRevenue = parseNum(mValues[4]);
+
+    rows.push({
+      date: dateStr,
+      hour: hourStr,
+      time: `${hourStr}:00`,
+      siteName,
+      adUnitName,
+      impressions,
+      clicks,
+      adxRevenue,
+      adsenseRevenue,
+      adServerRevenue,
+      totalRevenue: adxRevenue + adsenseRevenue + adServerRevenue,
+    });
+  }
+
+  return rows;
+}

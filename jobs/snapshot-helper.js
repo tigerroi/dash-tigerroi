@@ -149,3 +149,123 @@ export async function recordRoiSnapshot(supabase, targetDate) {
     console.warn(`⚠️ [SNAPSHOT] Gagal melakukan pruning snapshot lama: ${err.message}`);
   }
 }
+
+/**
+ * Menyimpan riwayat snapshot per jam dari laporan historical GAM (Opsi 2: Keliatan Seharian).
+ * Menghitung akumulasi kumulatif jam demi jam (00:00 s/d 23:00) dan mencatatnya ke `roi_snapshots`.
+ */
+export async function recordHourlyGamSnapshots(supabase, hourlyGamRows, subdomains, sites) {
+  if (!hourlyGamRows || hourlyGamRows.length === 0) {
+    return;
+  }
+
+  console.log(`\n🕒 [HOURLY GAM] Mengolah ${hourlyGamRows.length} baris data per jam GAM ke roi_snapshots...`);
+
+  // Subdomain & Site Map
+  const subMap = new Map();
+  for (const s of subdomains || []) {
+    if (s.name) subMap.set(s.name.toLowerCase().trim(), s);
+  }
+  const siteMap = new Map();
+  for (const st of sites || []) {
+    if (st.site_code) siteMap.set(st.site_code.toLowerCase().trim(), st);
+  }
+
+  // Kelompokkan data per date + site_code + subdomain + hour
+  const hourlyGroup = new Map();
+  for (const row of hourlyGamRows) {
+    const d = row.date;
+    const h = String(row.hour || "00").padStart(2, "0");
+    const site = (row.siteCode || "").toLowerCase().trim();
+    const sub = (row.subdomainName || "").toLowerCase().trim();
+    const key = `${d}__${site}__${sub}`;
+
+    if (!hourlyGroup.has(key)) {
+      hourlyGroup.set(key, {
+        date: d,
+        site_code: site,
+        sub_domain: sub,
+        hours: new Map(),
+      });
+    }
+
+    const group = hourlyGroup.get(key);
+    if (!group.hours.has(h)) {
+      group.hours.set(h, { revenue: 0, impressions: 0, clicks: 0 });
+    }
+    const hData = group.hours.get(h);
+    hData.revenue += Number(row.totalRevenue || 0);
+    hData.impressions += Number(row.impressions || 0);
+    hData.clicks += Number(row.clicks || 0);
+  }
+
+  // Hitung kumulatif sepanjang hari dan siapkan baris snapshot
+  const snapshotRows = [];
+  for (const group of hourlyGroup.values()) {
+    const subObj = subMap.get(group.sub_domain);
+    const siteObj = siteMap.get(group.site_code);
+    const parentDomain = subObj?.parent_domain || siteObj?.domain || "-";
+    const pic = subObj?.pic || siteObj?.pic || "-";
+    const campaign = group.site_code;
+
+    // Urutkan jam dari 00 sampai 23
+    const sortedHours = Array.from(group.hours.keys()).sort();
+    let cumulativeRev = 0;
+    let cumulativeImp = 0;
+    let cumulativeClicks = 0;
+
+    for (const h of sortedHours) {
+      const hData = group.hours.get(h);
+      const hourRev = Math.round(hData.revenue);
+      cumulativeRev += hourRev;
+      cumulativeImp += hData.impressions;
+      cumulativeClicks += hData.clicks;
+
+      const timeStr = `${h}:00`;
+      const snapshotId = `${group.date}T${h}-00__${group.site_code}__${group.sub_domain || "root"}`;
+
+      snapshotRows.push({
+        id: snapshotId,
+        date: group.date,
+        time: timeStr,
+        site_code: group.site_code,
+        sub_domain: group.sub_domain,
+        campaign,
+        domain: parentDomain,
+        pic,
+        spending: 0,
+        meta_spend: 0,
+        ad_tax: 0,
+        total_spending: 0,
+        earning: cumulativeRev,
+        gam_revenue: cumulativeRev,
+        adsense_revenue: 0,
+        profit: cumulativeRev,
+        roi: 0,
+        clicks: cumulativeClicks,
+        impressions: cumulativeImp,
+        cpc: 0,
+        currency: "IDR",
+        fx_rate: 1.0,
+        fluk_spend: 0,
+        fluk_earn: hourRev, // Pendapatan pada 1 jam tersebut
+        fluk_roi: 0,
+        created_at: new Date().toISOString(),
+      });
+    }
+  }
+
+  if (snapshotRows.length > 0) {
+    console.log(`💾 [HOURLY GAM] Menyimpan ${snapshotRows.length} baris snapshot per jam ke tabel roi_snapshots...`);
+    const { error: upsertErr } = await supabase
+      .from("roi_snapshots")
+      .upsert(snapshotRows, { onConflict: "id" });
+
+    if (upsertErr) {
+      console.warn(`⚠️ [HOURLY GAM] Gagal menyimpan baris per jam ke roi_snapshots: ${upsertErr.message}`);
+    } else {
+      console.log(`✅ [HOURLY GAM] Sukses menyimpan riwayat per jam seharian ke roi_snapshots!`);
+    }
+  }
+}
+

@@ -4,9 +4,10 @@ import { createClient } from "@supabase/supabase-js";
 import {
   fetchGamDailyRevenue,
   fetchGamHourlyFillRate,
+  fetchGamHourlyRevenue,
   getGoogleServiceAccountToken,
 } from "./gam-client.js";
-import { recordRoiSnapshot } from "./snapshot-helper.js";
+import { recordHourlyGamSnapshots, recordRoiSnapshot } from "./snapshot-helper.js";
 
 /**
  * Job Sinkronisasi Google Ad Manager (GAM) ke Supabase TigerROI
@@ -257,6 +258,7 @@ export async function runSyncGam() {
     let totalSyncedRows = 0;
     const errors = [];
     const dailyMap = new Map(); // key `${date}__${site_code}` -> aggregated data
+    const allHourlyGamRows = []; // Menyimpan data historis per jam dari GAM (Opsi 2)
 
     // 5. Loop ke 4 Network GAM
     for (const net of GAM_NETWORKS) {
@@ -380,6 +382,23 @@ export async function runSyncGam() {
         } catch (fillErr) {
           console.warn(`    ⚠️ Peringatan Fill Rate (${net.domain}): ${fillErr.message}`);
         }
+
+        // 5c. Tarik Laporan Pendapatan per jam (Hourly Revenue) dari GAM untuk riwayat seharian
+        console.log(`    --> Menarik Laporan Pendapatan per jam (Hourly Revenue)...`);
+        try {
+          const hourlyRevRows = await fetchGamHourlyRevenue(net.networkCode, accessToken, dateRange);
+          console.log(`    Ditemukan ${hourlyRevRows.length} baris pendapatan per jam.`);
+          for (const hRow of hourlyRevRows) {
+            const mapped = mapGamRowToSite(hRow, net.defaultSiteCode, subdomains, sites);
+            allHourlyGamRows.push({
+              ...hRow,
+              siteCode: mapped.siteCode,
+              subdomainName: mapped.subdomainName,
+            });
+          }
+        } catch (hErr) {
+          console.warn(`    ⚠️ Peringatan Hourly Revenue (${net.domain}): ${hErr.message}`);
+        }
       } catch (netErr) {
         const msg = `Network ${net.domain} (${net.networkCode}): ${netErr.message}`;
         console.error(`    ❌ ${msg}`);
@@ -432,7 +451,16 @@ export async function runSyncGam() {
       console.log(`✅ Berhasil upsert ${totalSyncedRows} baris pendapatan GAM ke daily_stats.`);
     }
 
-    // 6b. Catat snapshot ROI realtime untuk jam sync ini
+    // 6b. Catat riwayat snapshot per jam GAM seharian penuh (Opsi 2)
+    if (allHourlyGamRows.length > 0) {
+      try {
+        await recordHourlyGamSnapshots(supabase, allHourlyGamRows, subdomains, sites);
+      } catch (hourlySnapErr) {
+        console.warn(`⚠️ Gagal mencatat hourly gam snapshots: ${hourlySnapErr.message}`);
+      }
+    }
+
+    // 6c. Catat snapshot ROI realtime untuk jam sync ini
     try {
       await recordRoiSnapshot(supabase);
     } catch (snapErr) {
