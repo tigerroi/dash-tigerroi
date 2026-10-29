@@ -6,6 +6,7 @@ import {
   fetchGamHourlyFillRate,
   getGoogleServiceAccountToken,
 } from "./gam-client.js";
+import { recordRoiSnapshot } from "./snapshot-helper.js";
 
 /**
  * Job Sinkronisasi Google Ad Manager (GAM) ke Supabase TigerROI
@@ -429,6 +430,13 @@ export async function runSyncGam() {
       }
       totalSyncedRows = upsertRows.length;
       console.log(`✅ Berhasil upsert ${totalSyncedRows} baris pendapatan GAM ke daily_stats.`);
+    }
+
+    // 6b. Catat snapshot ROI realtime untuk jam sync ini
+    try {
+      await recordRoiSnapshot(supabase);
+    } catch (snapErr) {
+      console.warn(`⚠️ Gagal mencatat roi_snapshots: ${snapErr.message}`);
     }
 
     // 7. Catat status akhir ke sync_runs

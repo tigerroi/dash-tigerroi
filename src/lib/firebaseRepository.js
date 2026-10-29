@@ -17,7 +17,7 @@ const TABLE_MAP = {
   whitelistTopup: "whitelist_topup",
   syncRuns: "sync_runs",
   roiReports: "view_daily_roi",
-  roiSnapshots: "view_daily_roi",
+  roiSnapshots: "roi_snapshots",
   countryRoi: "country_roi",
   pluginSites: "plugin_sites",
   weeklyFinancials: "view_daily_financials",
@@ -194,7 +194,9 @@ export function subscribeResource(key, callback, onError) {
     try {
       let query = supabase.from(table).select("*");
       // Urutkan berdasarkan kolom waktu jika ada
-      if (
+      if (table === "roi_snapshots") {
+        query = query.order("date", { ascending: false }).order("time", { ascending: false });
+      } else if (
         table === "view_daily_roi" ||
         table === "daily_roi_reports" ||
         table === "expenses" ||
@@ -213,6 +215,17 @@ export function subscribeResource(key, callback, onError) {
 
       const { data, error } = await query;
       if (error) {
+        if (table === "roi_snapshots") {
+          // Fallback transparan ke view_daily_roi jika tabel snapshot belum dibuat
+          const { data: fallbackData } = await supabase
+            .from("view_daily_roi")
+            .select("*")
+            .order("date", { ascending: false });
+          if (active && fallbackData) {
+            callback(fallbackData.map(toCamelCaseRow));
+            return;
+          }
+        }
         if (error.code === "42P01" || error.code === "PGRST205") {
           // Relasi tabel/view belum dibuat di Supabase, fallback aman tanpa toast merah
           callback([]);
@@ -222,6 +235,17 @@ export function subscribeResource(key, callback, onError) {
         return;
       }
       if (active) {
+        if (table === "roi_snapshots" && (!data || data.length === 0)) {
+          // Jika tabel snapshot masih kosong (belum ada sync run), fallback ke view_daily_roi
+          const { data: fallbackData } = await supabase
+            .from("view_daily_roi")
+            .select("*")
+            .order("date", { ascending: false });
+          if (fallbackData && fallbackData.length > 0) {
+            callback(fallbackData.map(toCamelCaseRow));
+            return;
+          }
+        }
         const rows = (data || []).map(toCamelCaseRow);
         callback(rows);
       }

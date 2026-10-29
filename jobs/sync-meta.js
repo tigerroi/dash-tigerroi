@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { fetchAccountCampaigns, fetchAccountOverview, fetchCampaignInsights } from "./meta-client.js";
+import { recordRoiSnapshot } from "./snapshot-helper.js";
 
 /**
  * Job Sinkronisasi Meta Ads ke Supabase TigerROI
@@ -392,6 +393,13 @@ export async function runSyncMeta() {
       console.log(`✅ Berhasil upsert ${totalSyncedRows} baris daily_stats per subdomain.`);
     } else {
       console.log("ℹ️ Tidak ada data spend campaign baru untuk di-upsert.");
+    }
+
+    // 5b. Catat snapshot ROI realtime untuk jam sync ini
+    try {
+      await recordRoiSnapshot(supabase);
+    } catch (snapErr) {
+      console.warn(`⚠️ Gagal mencatat roi_snapshots: ${snapErr.message}`);
     }
 
     // 6. Catat keberhasilan ke sync_runs
