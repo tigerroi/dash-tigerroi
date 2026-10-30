@@ -20,6 +20,7 @@ const dashboardSubscriptions = {
   weeklyFinancials: "array",
   advertiserSpend: "array",
   roiReports: "array",
+  countryRoi: "array",
   // Tarif ad tax dipakai tiap kali sebuah ROI ditampilkan, jadi ia diikuti seperti data lain:
   // admin mengubahnya di halaman Settings dan tabel yang sedang terbuka ikut berubah.
   roiSettings: "object",

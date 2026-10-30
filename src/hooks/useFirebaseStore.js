@@ -73,6 +73,7 @@ const emptyStore = {
   weeklyFinancials: [],
   advertiserSpend: [],
   roiReports: [],
+  countryRoi: [],
   roiSnapshots: [],
   // Riwayat panel Profile User (campaignHistory, countryRoi, dailySpend, balanceSnapshots), satu
   // cabang per user. Langganan berat seperti roiSnapshots — lihat `needsUserReports`.

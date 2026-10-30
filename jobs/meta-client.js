@@ -230,3 +230,36 @@ export async function fetchAccountCampaigns(actId, token) {
     objective: c.objective || "",
   }));
 }
+
+/**
+ * Mengambil data spend Meta Ads per campaign dengan breakdown NEGARA (Country ISO code).
+ * Digunakan untuk mengisi tabel breakdown negara `country_roi`.
+ */
+export async function fetchCampaignSpendByCountry(actId, token, dateRange) {
+  const id = normalizeActId(actId);
+  const params = {
+    level: "campaign",
+    breakdowns: "country",
+    fields: "campaign_id,campaign_name,spend,impressions,clicks",
+    limit: "500",
+  };
+
+  if (dateRange?.since && dateRange?.until) {
+    params.time_range = { since: dateRange.since, until: dateRange.until };
+    params.time_increment = "1";
+  } else {
+    params.date_preset = "today";
+  }
+
+  const rows = await graphAll(`${id}/insights`, token, params);
+
+  return rows.map((r) => ({
+    date: r.date_start || dateRange?.since || new Date().toISOString().slice(0, 10),
+    campaignId: String(r.campaign_id || ""),
+    campaignName: r.campaign_name || "",
+    countryCode: String(r.country || "").trim().toUpperCase(),
+    spend: Number(r.spend || 0),
+    impressions: Number(r.impressions || 0),
+    clicks: Number(r.clicks || 0),
+  }));
+}

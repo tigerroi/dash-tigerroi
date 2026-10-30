@@ -583,3 +583,168 @@ export async function fetchGamHourlyRevenue(networkCode, accessToken, dateRange)
 
   return rows;
 }
+
+/**
+ * Menjalankan laporan historical pendapatan GAM dengan rincian breakdown NEGARA.
+ * Dimensi: DATE, SITE, COUNTRY_CODE, COUNTRY_NAME
+ */
+export async function fetchGamCountryRevenue(networkCode, accessToken, dateRange) {
+  const createUrl = `${GAM_BASE}/networks/${networkCode}/reports`;
+  const reportDef = {
+    reportDefinition: {
+      dimensions: ["DATE", "SITE", "COUNTRY_CODE", "COUNTRY_NAME"],
+      metrics: [
+        "IMPRESSIONS",
+        "CLICKS",
+        "AD_EXCHANGE_REVENUE",
+        "ADSENSE_REVENUE",
+        "AD_SERVER_REVENUE",
+      ],
+      currencyCode: "IDR",
+      dateRange: {
+        fixed: {
+          startDate: {
+            year: Number(dateRange.startDate.slice(0, 4)),
+            month: Number(dateRange.startDate.slice(5, 7)),
+            day: Number(dateRange.startDate.slice(8, 10)),
+          },
+          endDate: {
+            year: Number(dateRange.endDate.slice(0, 4)),
+            month: Number(dateRange.endDate.slice(5, 7)),
+            day: Number(dateRange.endDate.slice(8, 10)),
+          },
+        },
+      },
+      reportType: "HISTORICAL",
+    },
+  };
+
+  const createRes = await fetch(createUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(reportDef),
+  });
+
+  const reportData = await createRes.json();
+  if (!createRes.ok) {
+    throw new Error(
+      `GAM Create Country Report Error (${createRes.status}): ${reportData.error?.message || JSON.stringify(reportData)}`,
+    );
+  }
+
+  const reportName = reportData.name;
+  const runUrl = `${GAM_BASE}/${reportName}:run`;
+  const runRes = await fetch(runUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  const runData = await runRes.json();
+  if (!runRes.ok) {
+    throw new Error(
+      `GAM Run Country Report Error (${runRes.status}): ${runData.error?.message || JSON.stringify(runData)}`,
+    );
+  }
+
+  const operationName = runData.name;
+  let isDone = false;
+  let attempts = 0;
+  let resultName = "";
+  while (!isDone && attempts < 60) {
+    await new Promise((r) => setTimeout(r, 3000));
+    attempts++;
+
+    const pollRes = await fetch(`${GAM_BASE}/${operationName}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const pollData = await pollRes.json();
+
+    if (!pollRes.ok) {
+      console.warn(`    ⚠️ Polling GAM country report (${pollRes.status})`);
+      continue;
+    }
+
+    if (pollData.done) {
+      isDone = true;
+      if (pollData.error) {
+        throw new Error(`GAM Country Report Failed: ${pollData.error.message}`);
+      }
+      resultName =
+        pollData.response?.reportResult ||
+        pollData.response?.name ||
+        pollData.metadata?.reportResult ||
+        "";
+      break;
+    }
+  }
+
+  if (!isDone) {
+    throw new Error("Timeout menunggu laporan Google Ad Manager breakdown negara.");
+  }
+
+  const rowsUrl = `${GAM_BASE}/${resultName}:fetchRows`;
+  const rowsRes = await fetch(rowsUrl, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  const resultData = await rowsRes.json();
+  if (!rowsRes.ok) {
+    throw new Error(`GAM Fetch Country Rows Error: ${resultData.error?.message}`);
+  }
+
+  const parseNum = (v) =>
+    Number(
+      v?.doubleValue != null
+        ? v.doubleValue
+        : v?.intValue != null
+          ? v.intValue
+          : v?.integerValue != null
+            ? v.integerValue
+            : (v?.value ?? 0),
+    );
+
+  const formatIso = (d) => {
+    const s = String(d || "").replace(/\D/g, "");
+    return s.length === 8 ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}` : String(d);
+  };
+
+  const rows = [];
+  for (const r of resultData.rows || []) {
+    const dValues = (r.dimensionValues || []).map((v) =>
+      v?.stringValue != null ? v.stringValue : String(v?.intValue ?? v?.value ?? ""),
+    );
+    const mValues = r.metricValueGroups?.[0]?.primaryValues || r.metricValues || [];
+
+    const dateStr = formatIso(dValues[0] || "");
+    const siteName = dValues[1] || "";
+    const countryCode = String(dValues[2] || "").trim().toUpperCase();
+    const countryName = dValues[3] || countryCode;
+
+    const impressions = parseNum(mValues[0]);
+    const clicks = parseNum(mValues[1]);
+    const adxRevenue = parseNum(mValues[2]);
+    const adsenseRevenue = parseNum(mValues[3]);
+    const adServerRevenue = parseNum(mValues[4]);
+
+    rows.push({
+      date: dateStr,
+      siteName,
+      countryCode,
+      countryName,
+      impressions,
+      clicks,
+      adxRevenue,
+      adsenseRevenue,
+      adServerRevenue,
+      totalRevenue: adxRevenue + adsenseRevenue + adServerRevenue,
+    });
+  }
+
+  return rows;
+}

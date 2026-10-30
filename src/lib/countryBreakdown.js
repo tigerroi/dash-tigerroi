@@ -62,6 +62,60 @@ export function buildCountryBreakdown(users, rate) {
   return index;
 }
 
+/**
+ * Membangun peta breakdown negara langsung dari baris tabel Supabase `country_roi`.
+ */
+export function buildCountryBreakdownFromRows(countryRoiRows, rate) {
+  const index = new Map();
+
+  for (const item of Array.isArray(countryRoiRows) ? countryRoiRows : []) {
+    const subDomain = item.sub_domain || item.subDomain;
+    const key = countryBreakdownKey(item.date, subDomain);
+    if (!key) continue;
+
+    const rows = index.get(key) || [];
+    const spending = Number(item.spend ?? item.spending ?? 0);
+    const adTax = spending * (rate || 0.05);
+    const totalSpending = spending + adTax;
+    const earning = Number(item.earning || 0);
+    const code = String(item.country_code || item.countryCode || "").toUpperCase();
+    const name = item.country_name || item.countryName || item.country || code;
+
+    rows.push({
+      id: item.id || `${key}__${code}`,
+      country: name,
+      isoCode: code,
+      countryLabel: `${name}${code ? ` (${code})` : ""}`,
+      spending,
+      adTax,
+      totalSpending,
+      earning,
+      earningKnown: item.earningKnown !== false,
+      impressions:
+        item.impressions !== null && item.impressions !== undefined
+          ? Number(item.impressions)
+          : null,
+      clicks:
+        item.clicks !== null && item.clicks !== undefined
+          ? Number(item.clicks)
+          : null,
+      cpc: Number(item.cpc || 0),
+      roi: Number(item.roi || 0),
+    });
+    index.set(key, rows);
+  }
+
+  for (const rows of index.values()) {
+    rows.sort(
+      (a, b) =>
+        toAmount(b.totalSpending) - toAmount(a.totalSpending) ||
+        toAmount(b.earning) - toAmount(a.earning),
+    );
+  }
+
+  return index;
+}
+
 // Baris negara milik satu baris ROI. Selalu array — baris hari lama tidak punya rincian negara
 // (`countryRoi` ditulis utuh tiap run, jadi isinya hanya hari data terakhir), dan pemanggilnya
 // tidak perlu membedakan "tidak ada kuncinya" dari "kuncinya kosong".

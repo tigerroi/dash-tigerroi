@@ -9,7 +9,7 @@ import { lowBalanceAdvertisers } from "../lib/alerts";
 import { buildCalendarMonth, dayDetail } from "../lib/calendarReport";
 import { cellText } from "../lib/cellText";
 import { monthCoverage } from "../lib/chartScope";
-import { buildCountryBreakdown } from "../lib/countryBreakdown";
+import { buildCountryBreakdown, buildCountryBreakdownFromRows } from "../lib/countryBreakdown";
 import {
   currentMonthRange,
   filterByDateWindow,
@@ -342,10 +342,12 @@ export function Overview({ store, navigate, tab, role, viewer }) {
   // `store.userReports` cuma terisi di tab yang benar-benar memakainya (`needsUserReports`), dan
   // tab inilah salah satunya. Pada render pertama ia masih kosong dan lencana negaranya menyusul —
   // perilaku yang sama dengan tabelnya sendiri, yang sumbernya `roiSnapshots`.
-  const countryBreakdown = useMemo(
-    () => buildCountryBreakdown(countryRoiSources(store.users, store.userReports), adTaxRate),
-    [store.users, store.userReports, adTaxRate],
-  );
+  const countryBreakdown = useMemo(() => {
+    if (Array.isArray(store.countryRoi) && store.countryRoi.length > 0) {
+      return buildCountryBreakdownFromRows(store.countryRoi, adTaxRate);
+    }
+    return buildCountryBreakdown(countryRoiSources(store.users, store.userReports), adTaxRate);
+  }, [store.countryRoi, store.users, store.userReports, adTaxRate]);
   // ═══ Tab Kalender ═══
   //
   // Bulan yang dibuka dan tanggal yang dipilih tinggal di ALAMAT, seperti filter lain di dashboard

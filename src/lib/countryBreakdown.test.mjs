@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { buildCountryBreakdown, countriesOf } from "./countryBreakdown.js";
+import {
+  buildCountryBreakdown,
+  buildCountryBreakdownFromRows,
+  countriesOf,
+} from "./countryBreakdown.js";
 
 const users = [
   {
@@ -124,5 +128,54 @@ describe("countryBreakdown", () => {
   test("user tanpa countryRoi dilewati tanpa melempar", () => {
     assert.equal(buildCountryBreakdown([{ name: "Kosong" }, null], 0.05).size, 0);
     assert.equal(buildCountryBreakdown(undefined, 0.05).size, 0);
+  });
+
+  test("buildCountryBreakdownFromRows membaca baris tabel Supabase country_roi dengan benar", () => {
+    const supabaseRows = [
+      {
+        id: "cr-1",
+        date: "2026-10-23",
+        sub_domain: "insurance.tiktokmodapk.net",
+        country_code: "IT",
+        country_name: "Italia",
+        spend: 159836,
+        impressions: 4460,
+        clicks: 3508,
+        cpc: 45.56,
+        earning: 796925,
+        profit: 629097,
+        roi: 374.85,
+      },
+      {
+        id: "cr-2",
+        date: "2026-10-23",
+        sub_domain: "insurance.tiktokmodapk.net",
+        country_code: "RO",
+        country_name: "Romania",
+        spend: 59504,
+        impressions: 2324,
+        clicks: 1911,
+        cpc: 31.14,
+        earning: 283520,
+        profit: 221041,
+        roi: 353.78,
+      },
+    ];
+
+    const index = buildCountryBreakdownFromRows(supabaseRows, 0.05);
+    const rows = countriesOf(index, {
+      date: "2026-10-23",
+      subDomain: "insurance.tiktokmodapk.net",
+    });
+
+    assert.equal(rows.length, 2);
+    assert.equal(rows[0].countryLabel, "Italia (IT)");
+    assert.equal(rows[0].spending, 159836);
+    assert.equal(rows[0].adTax, 7991.8);
+    assert.equal(rows[0].totalSpending, 167827.8);
+    assert.equal(rows[0].earning, 796925);
+    assert.equal(rows[0].roi, 374.85);
+
+    assert.equal(rows[1].countryLabel, "Romania (RO)");
   });
 });
