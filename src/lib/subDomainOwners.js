@@ -57,6 +57,19 @@ export function subDomainOwnerIndex(subDomains, domains) {
       );
     },
     /**
+     * Nama FQDN lengkap sebuah subdomain (contoh: "careers" + domain induk "tiktokmodapk.net" -> "careers.tiktokmodapk.net").
+     */
+    fullOf(name) {
+      const raw = clean(name).trim();
+      if (!raw) return "";
+      const domain = this.domainOf(raw);
+      if (!domain) return raw;
+      const lower = raw.toLowerCase();
+      const lowerDomain = domain.toLowerCase();
+      if (lower === lowerDomain || lower.endsWith(`.${lowerDomain}`)) return raw;
+      return `${raw}.${domain}`;
+    },
+    /**
      * PIC sebuah baris. Yang di BARIS lebih dulu: itu yang dipakai sisi sync saat menulis baris
      * dan yang tampil di kolom tabel; `subDomains.pic` cuma menambal baris yang tidak membawanya.
      */

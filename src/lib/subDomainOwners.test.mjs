@@ -35,6 +35,9 @@ test("domain induk dari subDomains, dan dari akhiran untuk yang belum terdaftar"
   const slugSubs = [{ name: "careers", parentDomain: "tiktokmodapk.net", pic: "Mul" }];
   const realOwners = subDomainOwnerIndex(slugSubs, httpsDomains);
   assert.equal(realOwners.domainOf("careers.tiktokmodapk.net"), "tiktokmodapk.net");
+  assert.equal(realOwners.domainOf("careers"), "tiktokmodapk.net");
+  assert.equal(realOwners.fullOf("careers"), "careers.tiktokmodapk.net");
+  assert.equal(realOwners.fullOf("careers.tiktokmodapk.net"), "careers.tiktokmodapk.net");
   assert.equal(realOwners.picOf("careers.tiktokmodapk.net"), "Mul");
 });
 

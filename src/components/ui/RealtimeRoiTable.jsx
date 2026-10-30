@@ -23,16 +23,20 @@ import { MetaSpendNote } from "./MetaSpendNote";
  * META BAL. — enam kolom, plus kepala kelompok berwarna yang membedakan sisi Meta dari sisi
  * earning. Yang membacanya tidak punya cara tahu bahwa kolomnya ADA di halaman sebelah.
  */
-export function RealtimeRoiTable({ items, rate, countryBreakdown, picOf }) {
+export function RealtimeRoiTable({ items, rate, countryBreakdown, picOf, formatSubDomain }) {
   // `picOf` (opsional) menambal PIC baris yang ditulis sebelum subdomainnya diberi PIC, lewat
   // indeks pemilik yang sama dengan filter PIC — kolom dan filter tidak boleh menyebut dua nama.
   const rows = useMemo(
     () =>
       items.map((item) => {
         const row = normalizeRealtimeRoiRow(item, rate, countryBreakdown);
-        return { ...row, pic: picOf ? picOf(row.subDomain, item.pic) : item.pic || "" };
+        return {
+          ...row,
+          pic: picOf ? picOf(row.subDomain, item.pic) : item.pic || "",
+          displaySubDomain: formatSubDomain ? formatSubDomain(row.subDomain) : row.subDomain,
+        };
       }),
-    [items, rate, countryBreakdown, picOf],
+    [items, rate, countryBreakdown, picOf, formatSubDomain],
   );
   // Judul kelompok kolom earning dibaca dari `source` barisnya sendiri, bukan ditulis tetap.
   // Sebelumnya ia selalu berbunyi "ADSENSE" padahal seluruh angkanya datang dari laporan Google
@@ -231,7 +235,7 @@ function realtimeRoiColumns(earningSource) {
     fixed({
       accessorKey: "subDomain",
       header: "Sub-Domain",
-      cell: ({ getValue }) => getValue(),
+      cell: ({ row }) => row.original.displaySubDomain || row.original.subDomain,
       meta: { headerClassName: "master-domain-head", className: "master-domain-cell" },
     }),
     // Di sebelah Sub-Domain, bukan di dalam kelompok earning: earning-nya memang dari GAM, tapi

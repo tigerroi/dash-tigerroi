@@ -20,6 +20,7 @@ export function OwnerFilterFields({
   onSubDomain,
   subDomain,
   subDomainOptions,
+  formatSubDomain,
 }) {
   return (
     <>
@@ -58,7 +59,10 @@ export function OwnerFilterFields({
           ariaLabel="Subdomain"
           value={subDomain}
           onChange={onSubDomain}
-          options={[{ value: "", label: "Semua Subdomain" }, ...toSelectOptions(subDomainOptions)]}
+          options={[
+            { value: "", label: "Semua Subdomain" },
+            ...toSelectOptions(subDomainOptions, formatSubDomain),
+          ]}
         />
       </div>
     </>

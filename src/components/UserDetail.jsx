@@ -20,6 +20,7 @@ import { resultLabel } from "../lib/metaResults";
 import { MoneyByCurrency, renderCell } from "../lib/renderCell";
 import { realtimeRoiRows } from "../lib/roiRealtime";
 import { sortTableItems } from "../lib/sortTableItems";
+import { subDomainOwnerIndex } from "../lib/subDomainOwners";
 import { toAmount } from "../lib/toAmount";
 import { countryRoiSources, userReportBranch } from "../lib/userReports";
 import { assignedSubDomains, rowsForSubDomains, subDomainNameKeys } from "../lib/userSubDomains";
@@ -45,6 +46,10 @@ export function UserDetail({
 }) {
   const firebaseUser = store.users.find((item) => item.id === userId);
   const profile = firebaseUser ? buildProfileFromStore(firebaseUser, store) : {};
+  const subDomainOwners = useMemo(
+    () => subDomainOwnerIndex(store.subDomains, store.domains),
+    [store.subDomains, store.domains],
+  );
   const initials = getInitials(profile.name);
   // Hari berjalan, sama dengan tabel ROI di Overview: yang dicari saat membuka halaman ini adalah
   // keadaan sekarang. Pemilih periode di tiap panel yang menyebutkan hari mana yang sedang tampil.
@@ -379,7 +384,7 @@ export function UserDetail({
               onChange={setMasterRoiSub}
               options={[
                 { value: "", label: "Semua Sub-Domain" },
-                ...toSelectOptions(masterSubOptions),
+                ...toSelectOptions(masterSubOptions, subDomainOwners.fullOf),
               ]}
             />
             <DateRangePicker
@@ -392,6 +397,7 @@ export function UserDetail({
         </div>
         <RealtimeRoiTable
           countryBreakdown={countryBreakdown}
+          formatSubDomain={subDomainOwners.fullOf}
           items={shownMasterRoi}
           rate={adTaxRate}
         />

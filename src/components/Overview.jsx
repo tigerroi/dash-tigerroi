@@ -592,6 +592,7 @@ export function Overview({ store, navigate, tab, role, viewer }) {
                   advertiserOptions={advertiserOptions}
                   domain={domain}
                   domainOptions={domainOptions}
+                  formatSubDomain={subDomainOwners.fullOf}
                   onAdvertiser={changeAdvertiser}
                   onDomain={setDomain}
                   onSubDomain={setSubDomain}
@@ -757,6 +758,7 @@ export function Overview({ store, navigate, tab, role, viewer }) {
                     advertiserOptions={advertiserOptions}
                     domain={domain}
                     domainOptions={domainOptions}
+                    formatSubDomain={subDomainOwners.fullOf}
                     onAdvertiser={changeAdvertiser}
                     onDomain={setDomain}
                     onSubDomain={setSubDomain}
@@ -830,6 +832,7 @@ export function Overview({ store, navigate, tab, role, viewer }) {
                   advertiserOptions={advertiserOptions}
                   domain={domain}
                   domainOptions={domainOptions}
+                  formatSubDomain={subDomainOwners.fullOf}
                   onAdvertiser={changeAdvertiser}
                   onDomain={setDomain}
                   onSubDomain={setSubDomain}
@@ -841,6 +844,7 @@ export function Overview({ store, navigate, tab, role, viewer }) {
           </div>
           <RealtimeRoiTable
             countryBreakdown={countryBreakdown}
+            formatSubDomain={subDomainOwners.fullOf}
             items={filteredRoiReports}
             picOf={subDomainOwners.picOf}
             rate={adTaxRate}
