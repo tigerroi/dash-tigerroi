@@ -7,6 +7,7 @@ import { fetchGamCountryRevenue, getGoogleServiceAccountToken } from "./gam-clie
 /**
  * Job Sinkronisasi ROI per Negara (Country ROI) ke Supabase TigerROI
  * Menggabungkan biaya iklan Meta Ads per negara dengan pendapatan Google Ad Manager per negara.
+ * Mendukung rentang multi-hari (semua hari sesuai campaign).
  * Hasilnya ditulis ke tabel `public.country_roi`.
  */
 
@@ -82,10 +83,35 @@ function matchSubDomain(campaignName, subdomains, defaultSubDomain = "") {
   return defaultSubDomain || "unmapped";
 }
 
-export async function runSyncCountryRoi(targetDate = null) {
-  const dateStr = targetDate || getJakartaDate(0);
+export async function runSyncCountryRoi(startDate = null, endDate = null) {
+  let start = startDate;
+  let end = endDate;
+
+  // Jika tidak ada argumen, cari rentang tanggal dari database view_daily_roi
+  if (!start) {
+    const { data: roiDates } = await supabase
+      .from("view_daily_roi")
+      .select("date")
+      .order("date", { ascending: true });
+
+    if (roiDates && roiDates.length > 0) {
+      start = roiDates[0].date;
+      end = roiDates[roiDates.length - 1].date;
+    } else {
+      start = getJakartaDate(30); // 30 hari ke belakang
+      end = getJakartaDate(0);
+    }
+  } else if (!end) {
+    end = start;
+  }
+
   const startedAt = new Date().toISOString();
-  console.log(`[${startedAt}] Memulai Sinkronisasi ROI per Negara untuk tanggal: ${dateStr}...`);
+  console.log(`===============================================================`);
+  console.log(`   TIGERROI - SINKRONISASI ROI PER NEGARA (MULTI-HARI)`);
+  console.log(`===============================================================`);
+  console.log(`Rentang Tanggal : ${start} s/d ${end}`);
+  console.log(`Waktu Mulai     : ${startedAt}`);
+  console.log(`---------------------------------------------------------------`);
 
   let runId = null;
 
@@ -111,7 +137,7 @@ export async function runSyncCountryRoi(targetDate = null) {
       .select("id, name, site_code, pic");
     const subdomains = subdomainsData || [];
 
-    // Map: subDomain -> countryCode -> { spend, impressions, clicks }
+    // Map: date__subDomain__countryCode -> { date, subDomain, countryCode, spend, impressions, clicks }
     const spendMap = new Map();
 
     // 3. Tarik spend dari Meta Ads
@@ -129,23 +155,29 @@ export async function runSyncCountryRoi(targetDate = null) {
       });
     }
 
-    console.log(`Ditemukan ${accounts.length} akun Meta Ads untuk di-scan per negara.`);
+    console.log(`Ditemukan ${accounts.length} akun Meta Ads untuk di-scan.`);
     for (const acc of accounts) {
       const token = acc.access_token || GLOBAL_META_TOKEN;
-      if (!token) continue;
+      if (!token) {
+        console.log(`ℹ️ Akun ${acc.account_id} belum memiliki token Meta.`);
+        continue;
+      }
 
       try {
+        console.log(`Menarik data Meta Ads [${start} s/d ${end}] untuk akun ${acc.account_id}...`);
         const countryRows = await fetchCampaignSpendByCountry(acc.account_id, token, {
-          since: dateStr,
-          until: dateStr,
+          since: start,
+          until: end,
         });
 
         for (const r of countryRows) {
+          const rowDate = r.date || start;
           const subDomain = matchSubDomain(r.campaignName, subdomains);
           const cCode = r.countryCode || "UNKNOWN";
-          const key = `${subDomain}__${cCode}`;
+          const key = `${rowDate}__${subDomain}__${cCode}`;
 
           const existing = spendMap.get(key) || {
+            date: rowDate,
             subDomain,
             countryCode: cCode,
             spend: 0,
@@ -158,23 +190,33 @@ export async function runSyncCountryRoi(targetDate = null) {
           existing.clicks += r.clicks;
           spendMap.set(key, existing);
         }
+        console.log(`  -> Berhasil menarik ${countryRows.length} baris breakdown negara dari Meta.`);
       } catch (err) {
         console.warn(`⚠️ Gagal menarik breakdown negara Meta untuk akun ${acc.account_id}: ${err.message}`);
       }
     }
 
     // 4. Tarik revenue dari Google Ad Manager
-    const earnMap = new Map(); // key: subDomain__countryCode -> { earning, impressions, clicks, countryName }
+    const earnMap = new Map(); // key: date__subDomain__countryCode -> { date, subDomain, countryCode, countryName, earning, impressions, clicks }
 
     let clientEmail = process.env.GAM_CLIENT_EMAIL;
     let privateKey = process.env.GAM_PRIVATE_KEY;
+    if ((!clientEmail || !privateKey) && process.env.GAM_SERVICE_ACCOUNT_JSON) {
+      try {
+        const sa = JSON.parse(process.env.GAM_SERVICE_ACCOUNT_JSON);
+        clientEmail = sa.client_email;
+        privateKey = sa.private_key;
+      } catch {
+        // Abaikan jika format bukan JSON valid
+      }
+    }
     if ((!clientEmail || !privateKey) && existsSync(resolve("./service-account.json"))) {
       try {
         const sa = JSON.parse(readFileSync(resolve("./service-account.json"), "utf-8"));
         clientEmail = sa.client_email;
         privateKey = sa.private_key;
       } catch {
-        // Abaikan jika tidak valid
+        // Abaikan jika parsing gagal
       }
     }
 
@@ -183,18 +225,20 @@ export async function runSyncCountryRoi(targetDate = null) {
         const gamToken = await getGoogleServiceAccountToken({ clientEmail, privateKey });
         for (const net of GAM_NETWORKS) {
           try {
-            console.log(`Menarik breakdown negara GAM untuk network ${net.domain} (${net.networkCode})...`);
+            console.log(`Menarik breakdown negara GAM [${start} s/d ${end}] untuk network ${net.domain}...`);
             const gamRows = await fetchGamCountryRevenue(net.networkCode, gamToken, {
-              startDate: dateStr,
-              endDate: dateStr,
+              startDate: start,
+              endDate: end,
             });
 
             for (const gr of gamRows) {
+              const rowDate = gr.date || start;
               const subDomain = gr.siteName || net.domain;
               const cCode = gr.countryCode || "UNKNOWN";
-              const key = `${subDomain}__${cCode}`;
+              const key = `${rowDate}__${subDomain}__${cCode}`;
 
               const existing = earnMap.get(key) || {
+                date: rowDate,
                 subDomain,
                 countryCode: cCode,
                 countryName: gr.countryName || cCode,
@@ -208,6 +252,7 @@ export async function runSyncCountryRoi(targetDate = null) {
               existing.clicks += gr.clicks;
               earnMap.set(key, existing);
             }
+            console.log(`  -> Berhasil menarik ${gamRows.length} baris breakdown negara dari ${net.domain}.`);
           } catch (netErr) {
             console.warn(`⚠️ Gagal menarik GAM country report untuk ${net.domain}: ${netErr.message}`);
           }
@@ -219,15 +264,16 @@ export async function runSyncCountryRoi(targetDate = null) {
       console.log("ℹ️ Kredensial Service Account GAM belum ditemukan di environment. Bagian GAM dilewati.");
     }
 
-    // 5. Gabungkan spend dan earning
+    // 5. Gabungkan spend dan earning untuk semua hari
     const allKeys = new Set([...spendMap.keys(), ...earnMap.keys()]);
-    console.log(`Menggabungkan data: total ${allKeys.size} kombinasi (subdomain x negara).`);
+    console.log(`\nMenggabungkan data: total ${allKeys.size} kombinasi (tanggal x subdomain x negara).`);
 
     const recordsToUpsert = [];
     for (const key of allKeys) {
       const spendItem = spendMap.get(key) || {};
       const earnItem = earnMap.get(key) || {};
 
+      const rowDate = spendItem.date || earnItem.date || start;
       const subDomain = spendItem.subDomain || earnItem.subDomain || "unknown";
       const countryCode = spendItem.countryCode || earnItem.countryCode || "UNKNOWN";
       const countryName = earnItem.countryName || countryCode;
@@ -244,7 +290,7 @@ export async function runSyncCountryRoi(targetDate = null) {
       const cpc = clicks > 0 ? (spend > 0 ? spend / clicks : earning / clicks) : 0;
 
       recordsToUpsert.push({
-        date: dateStr,
+        date: rowDate,
         sub_domain: subDomain,
         country_code: countryCode,
         country_name: countryName,
@@ -259,16 +305,22 @@ export async function runSyncCountryRoi(targetDate = null) {
     }
 
     if (recordsToUpsert.length > 0) {
-      const { error: upsertErr } = await supabase.from("country_roi").upsert(recordsToUpsert, {
-        onConflict: "date,sub_domain,country_code",
-      });
+      console.log(`Menyimpan ${recordsToUpsert.length} baris ke tabel Supabase 'country_roi'...`);
+      // Upsert dalam batch 500 baris agar aman dari limit payload
+      const BATCH_SIZE = 500;
+      for (let i = 0; i < recordsToUpsert.length; i += BATCH_SIZE) {
+        const batch = recordsToUpsert.slice(i, i + BATCH_SIZE);
+        const { error: upsertErr } = await supabase.from("country_roi").upsert(batch, {
+          onConflict: "date,sub_domain,country_code",
+        });
 
-      if (upsertErr) {
-        throw new Error(`Gagal menyimpan data ke tabel country_roi: ${upsertErr.message}`);
+        if (upsertErr) {
+          throw new Error(`Gagal menyimpan batch ${i}: ${upsertErr.message}`);
+        }
       }
       console.log(`✅ Berhasil menyimpan ${recordsToUpsert.length} baris ke tabel country_roi.`);
     } else {
-      console.log("ℹ️ Tidak ada data negara yang perlu disimpan untuk tanggal ini.");
+      console.log("ℹ️ Tidak ada data negara yang ditemukan.");
     }
 
     // 6. Catat sukses ke sync_runs
@@ -278,12 +330,12 @@ export async function runSyncCountryRoi(targetDate = null) {
         .update({
           status: "success",
           completed_at: new Date().toISOString(),
-          summary: `Tersinkronisasi ${recordsToUpsert.length} baris negara`,
+          summary: `Tersinkronisasi ${recordsToUpsert.length} baris negara (${start} s/d ${end})`,
         })
         .eq("id", runId);
     }
 
-    console.log(`🎉 Sinkronisasi ROI per Negara Selesai Sukses.`);
+    console.log(`🎉 Sinkronisasi Selesai.`);
   } catch (err) {
     console.error(`❌ Error Sinkronisasi ROI per Negara: ${err.message}`);
     if (runId) {
@@ -302,8 +354,9 @@ export async function runSyncCountryRoi(targetDate = null) {
 
 // Jalankan jika dieksekusi langsung
 if (process.argv[1] && process.argv[1].endsWith("sync-country-roi.js")) {
-  const targetDateArg = process.argv[2] || null;
-  runSyncCountryRoi(targetDateArg)
+  const startArg = process.argv[2] || null;
+  const endArg = process.argv[3] || null;
+  runSyncCountryRoi(startArg, endArg)
     .then(() => process.exit(0))
     .catch(() => process.exit(1));
 }
