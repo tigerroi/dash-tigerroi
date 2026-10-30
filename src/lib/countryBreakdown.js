@@ -48,6 +48,16 @@ export function buildCountryBreakdown(users, rate) {
         ...normalizeCountryRoiRow(item, rate),
       });
       index.set(key, rows);
+
+      // Daftarkan juga versi slug jika item membawa domain
+      const rawSub = String(item?.subDomain || "");
+      if (rawSub.includes(".")) {
+        const slug = rawSub.split(".")[0].trim().toLowerCase();
+        const slugKey = countryBreakdownKey(item?.date, slug);
+        if (slugKey && !index.has(slugKey)) {
+          index.set(slugKey, rows);
+        }
+      }
     }
   }
 
@@ -103,6 +113,16 @@ export function buildCountryBreakdownFromRows(countryRoiRows, rate) {
       roi: Number(item.roi || 0),
     });
     index.set(key, rows);
+
+    // Daftarkan juga kunci slug pendek jika subDomain membawa nama domain (contoh: "insurance.tiktokmodapk.net" -> "insurance")
+    const rawSub = String(subDomain || "");
+    if (rawSub.includes(".")) {
+      const slug = rawSub.split(".")[0].trim().toLowerCase();
+      const slugKey = countryBreakdownKey(item.date, slug);
+      if (slugKey) {
+        index.set(slugKey, rows);
+      }
+    }
   }
 
   for (const rows of index.values()) {
@@ -120,7 +140,27 @@ export function buildCountryBreakdownFromRows(countryRoiRows, rate) {
 // (`countryRoi` ditulis utuh tiap run, jadi isinya hanya hari data terakhir), dan pemanggilnya
 // tidak perlu membedakan "tidak ada kuncinya" dari "kuncinya kosong".
 export function countriesOf(index, item) {
-  return index?.get(countryBreakdownKey(item?.date, item?.subDomain)) || [];
+  if (!index || !item) return [];
+  const primary = index.get(countryBreakdownKey(item?.date, item?.subDomain));
+  if (primary && primary.length > 0) return primary;
+
+  const rawSub = String(item?.subDomain || "").trim().toLowerCase();
+  const rawDay = String(item?.date || "").slice(0, 10);
+  if (!rawDay || !rawSub) return [];
+
+  // Jika item.subDomain membawa domain (contoh: "insurance.tiktokmodapk.net" -> "insurance")
+  const slug = rawSub.split(".")[0];
+  const bySlug = index.get(`${rawDay}__${slug}`);
+  if (bySlug && bySlug.length > 0) return bySlug;
+
+  // Jika di index tersimpan FQDN dan item.subDomain adalah slug pendek
+  for (const [key, rows] of index.entries()) {
+    if (key.startsWith(`${rawDay}__${slug}.`)) {
+      return rows;
+    }
+  }
+
+  return [];
 }
 
 // Pasangan `[kunci, baris]`. RTDB mengirim `countryRoi` sebagai object berkunci

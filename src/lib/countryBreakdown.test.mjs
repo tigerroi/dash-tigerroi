@@ -9,7 +9,6 @@ import {
 const users = [
   {
     name: "Rina",
-    // Bentuk apa adanya dari RTDB: object berkunci `subdomain__negara`, bukan array.
     countryRoi: {
       "trends-stylefemale-com__ID": {
         date: "2026-08-09",
@@ -37,7 +36,6 @@ describe("countryBreakdown", () => {
     const rows = countriesOf(index, { date: "2026-08-09", subDomain: "trends.stylefemale.com" });
 
     assert.equal(rows.length, 2);
-    // Spend terbesar dulu — negara yang paling banyak menghabiskan uang yang pertama dicari.
     assert.deepEqual(
       rows.map((row) => row.countryLabel),
       ["Turki (TR)", "Indonesia (ID)"],
@@ -130,7 +128,7 @@ describe("countryBreakdown", () => {
     assert.equal(buildCountryBreakdown(undefined, 0.05).size, 0);
   });
 
-  test("buildCountryBreakdownFromRows membaca baris tabel Supabase country_roi dengan benar", () => {
+  test("buildCountryBreakdownFromRows membaca baris tabel Supabase country_roi dengan benar dan mendukung slug", () => {
     const supabaseRows = [
       {
         id: "cr-1",
@@ -163,6 +161,8 @@ describe("countryBreakdown", () => {
     ];
 
     const index = buildCountryBreakdownFromRows(supabaseRows, 0.05);
+
+    // 1. Pencarian dengan FQDN utuh
     const rows = countriesOf(index, {
       date: "2026-10-23",
       subDomain: "insurance.tiktokmodapk.net",
@@ -175,7 +175,14 @@ describe("countryBreakdown", () => {
     assert.equal(rows[0].totalSpending, 167827.8);
     assert.equal(rows[0].earning, 796925);
     assert.equal(rows[0].roi, 374.85);
-
     assert.equal(rows[1].countryLabel, "Romania (RO)");
+
+    // 2. Pencarian dengan slug saja ('insurance') seperti yang ada di view_daily_roi
+    const rowsBySlug = countriesOf(index, {
+      date: "2026-10-23",
+      subDomain: "insurance",
+    });
+    assert.equal(rowsBySlug.length, 2);
+    assert.equal(rowsBySlug[0].countryLabel, "Italia (IT)");
   });
 });
