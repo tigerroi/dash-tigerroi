@@ -83,6 +83,31 @@ function matchSubDomain(campaignName, subdomains, defaultSubDomain = "") {
   return defaultSubDomain || "unmapped";
 }
 
+// Menyamakan nama subdomain antara GAM (domain utuh: keto.ihopmenuwithprices.us) dan Meta (slug: keto)
+// Keduanya akan selalu dinormalkan menjadi FQDN resmi yang sama persis (misal: keto.ihopmenuwithprices.us)
+function resolveCanonicalSubDomain(rawName, subdomains) {
+  const clean = String(rawName || "").trim().toLowerCase().replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
+  if (!clean || clean === "unmapped") return clean;
+  const slug = clean.split(".")[0];
+
+  for (const s of subdomains) {
+    const sName = String(s.name || "").trim().toLowerCase();
+    const sSlug = sName.split(".")[0];
+    const parent = String(s.parent_domain || "")
+      .toLowerCase()
+      .replace(/^https?:\/\//i, "")
+      .replace(/\/.*$/, "")
+      .trim();
+
+    if (slug === sSlug || clean === sName) {
+      if (sName.includes(".")) return sName;
+      if (parent) return `${sSlug}.${parent}`;
+      return sName;
+    }
+  }
+  return clean;
+}
+
 export async function runSyncCountryRoi(startDate = null, endDate = null) {
   let start = startDate;
   let end = endDate;
@@ -131,10 +156,10 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
 
     if (runRecord) runId = runRecord.id;
 
-    // 2. Ambil master subdomain
+    // 2. Ambil master subdomain beserta parent_domain untuk pembentukan FQDN
     const { data: subdomainsData } = await supabase
       .from("subdomains")
-      .select("id, name, site_code, pic");
+      .select("id, name, site_code, pic, parent_domain");
     const subdomains = subdomainsData || [];
 
     // Map: date__subDomain__countryCode -> { date, subDomain, countryCode, spend, impressions, clicks }
@@ -172,7 +197,10 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
 
         for (const r of countryRows) {
           const rowDate = r.date || start;
-          const subDomain = matchSubDomain(r.campaignName, subdomains);
+          const subDomain = resolveCanonicalSubDomain(
+            matchSubDomain(r.campaignName, subdomains),
+            subdomains,
+          );
           const cCode = r.countryCode || "UNKNOWN";
           const key = `${rowDate}__${subDomain}__${cCode}`;
 
@@ -233,7 +261,10 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
 
             for (const gr of gamRows) {
               const rowDate = gr.date || start;
-              const subDomain = gr.siteName || net.domain;
+              const subDomain = resolveCanonicalSubDomain(
+                gr.siteName || net.domain,
+                subdomains,
+              );
               const cCode = gr.countryCode || "UNKNOWN";
               const key = `${rowDate}__${subDomain}__${cCode}`;
 

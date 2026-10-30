@@ -8,3 +8,4 @@ DROP POLICY IF EXISTS "country_roi_select" ON public.country_roi;
 
 CREATE POLICY "country_roi_select" ON public.country_roi
     FOR SELECT TO public USING (true);
+
