@@ -40,48 +40,54 @@ export function subDomainOwnerIndex(subDomains, domains) {
     .map((item) => cleanDomain(item?.domainUrl || item?.name || item?.domain))
     .filter(Boolean);
 
+  /** Domain induk sebuah subdomain, "" kalau tidak ada yang tahu. */
+  function domainOf(name) {
+    const key = cleanDomain(name);
+    if (!key) return "";
+
+    const registered = byName.get(key)?.domain || byName.get(key.split(".")[0])?.domain;
+    if (registered) return registered;
+
+    return (
+      knownDomains.find((domain) => {
+        const suffix = domain.toLowerCase();
+        return key === suffix || key.endsWith(`.${suffix}`);
+      }) || ""
+    );
+  }
+
+  /**
+   * Nama FQDN lengkap sebuah subdomain (contoh: "careers" + domain induk "tiktokmodapk.net" -> "careers.tiktokmodapk.net").
+   */
+  function fullOf(name) {
+    const raw = clean(name).trim();
+    if (!raw) return "";
+    const domain = domainOf(raw);
+    if (!domain) return raw;
+    const lower = raw.toLowerCase();
+    const lowerDomain = domain.toLowerCase();
+    if (lower === lowerDomain || lower.endsWith(`.${lowerDomain}`)) return raw;
+    return `${raw}.${domain}`;
+  }
+
+  /**
+   * PIC sebuah baris. Yang di BARIS lebih dulu: itu yang dipakai sisi sync saat menulis baris
+   * dan yang tampil di kolom tabel; `subDomains.pic` cuma menambal baris yang tidak membawanya.
+   */
+  function picOf(name, rowPic) {
+    const key = cleanDomain(name);
+    return (
+      clean(rowPic) ||
+      byName.get(key)?.pic ||
+      byName.get(key.split(".")[0])?.pic ||
+      ""
+    );
+  }
+
   return {
-    /** Domain induk sebuah subdomain, "" kalau tidak ada yang tahu. */
-    domainOf(name) {
-      const key = cleanDomain(name);
-      if (!key) return "";
-
-      const registered = byName.get(key)?.domain || byName.get(key.split(".")[0])?.domain;
-      if (registered) return registered;
-
-      return (
-        knownDomains.find((domain) => {
-          const suffix = domain.toLowerCase();
-          return key === suffix || key.endsWith(`.${suffix}`);
-        }) || ""
-      );
-    },
-    /**
-     * Nama FQDN lengkap sebuah subdomain (contoh: "careers" + domain induk "tiktokmodapk.net" -> "careers.tiktokmodapk.net").
-     */
-    fullOf(name) {
-      const raw = clean(name).trim();
-      if (!raw) return "";
-      const domain = this.domainOf(raw);
-      if (!domain) return raw;
-      const lower = raw.toLowerCase();
-      const lowerDomain = domain.toLowerCase();
-      if (lower === lowerDomain || lower.endsWith(`.${lowerDomain}`)) return raw;
-      return `${raw}.${domain}`;
-    },
-    /**
-     * PIC sebuah baris. Yang di BARIS lebih dulu: itu yang dipakai sisi sync saat menulis baris
-     * dan yang tampil di kolom tabel; `subDomains.pic` cuma menambal baris yang tidak membawanya.
-     */
-    picOf(name, rowPic) {
-      const key = cleanDomain(name);
-      return (
-        clean(rowPic) ||
-        byName.get(key)?.pic ||
-        byName.get(key.split(".")[0])?.pic ||
-        ""
-      );
-    },
+    domainOf,
+    fullOf,
+    picOf,
   };
 }
 

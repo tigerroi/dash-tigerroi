@@ -39,6 +39,10 @@ test("domain induk dari subDomains, dan dari akhiran untuk yang belum terdaftar"
   assert.equal(realOwners.fullOf("careers"), "careers.tiktokmodapk.net");
   assert.equal(realOwners.fullOf("careers.tiktokmodapk.net"), "careers.tiktokmodapk.net");
   assert.equal(realOwners.picOf("careers.tiktokmodapk.net"), "Mul");
+
+  // Memastikan fungsi bisa dipanggil secara detached / sebagai callback tanpa this
+  const detachedFullOf = realOwners.fullOf;
+  assert.equal(detachedFullOf("careers"), "careers.tiktokmodapk.net");
 });
 
 test("PIC baris lebih dulu, subDomains cuma menambal yang tidak membawanya", () => {
