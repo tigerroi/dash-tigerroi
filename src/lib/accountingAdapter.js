@@ -127,3 +127,98 @@ export function normalizeInvalidTrafficRow(row = {}) {
   };
 }
 
+/**
+ * Menyiapkan payload untuk Pengeluaran (expenses)
+ */
+export function formatExpensePayload(values = {}) {
+  const nominal = Number(values.nominal || values.amount || 0);
+  const qty = Number(values.qty || 1);
+  const total = values.total !== undefined && values.total !== "" ? Number(values.total) : nominal * qty;
+  const itemName = String(values.itemName || values.item_name || values.description || "").trim();
+  const note = values.note ? String(values.note).trim() : (values.description || "");
+
+  return {
+    date: values.date || new Date().toISOString().slice(0, 10),
+    item_name: itemName,
+    category: values.category || itemName || "Operasional",
+    description: note || itemName,
+    qty,
+    nominal,
+    total,
+    amount: total || nominal,
+    pic: values.pic ? String(values.pic).trim() : null,
+    note,
+  };
+}
+
+/**
+ * Normalisasi baris Pengeluaran saat dibaca dari database
+ */
+export function normalizeExpenseRow(row = {}) {
+  if (!row || typeof row !== "object") return row;
+  const nominal = Number(row.nominal ?? row.amount ?? 0);
+  const qty = Number(row.qty ?? 1);
+  const total = Number(row.total ?? (nominal * qty));
+  const itemName = row.itemName || row.item_name || row.description || row.category || "";
+  const note = row.note || row.description || "";
+
+  return {
+    ...row,
+    itemName,
+    item_name: itemName,
+    qty,
+    nominal,
+    total,
+    amount: total,
+    note,
+  };
+}
+
+/**
+ * Menyiapkan payload untuk Whitelist Top-Up (whitelist_topup)
+ */
+export function formatWhitelistTopupPayload(values = {}) {
+  const nominal = Number(values.nominal || values.amount || 0);
+  const fee = Number(values.feeTopup || values.fee_topup || values.fee || 0);
+  const total = values.total !== undefined && values.total !== "" ? Number(values.total) : nominal + fee;
+  const namaKode = String(values.namaKode || values.nama_kode || values.account_code || "").trim();
+
+  return {
+    date: values.date || new Date().toISOString().slice(0, 10),
+    nama_kode: namaKode,
+    account_code: namaKode,
+    pic: values.pic ? String(values.pic).trim() : null,
+    nominal,
+    amount: nominal,
+    fee,
+    fee_topup: fee,
+    total,
+    note: values.note ? String(values.note).trim() : null,
+  };
+}
+
+/**
+ * Normalisasi baris Whitelist Top-Up saat dibaca dari database
+ */
+export function normalizeWhitelistTopupRow(row = {}) {
+  if (!row || typeof row !== "object") return row;
+  const nominal = Number(row.nominal ?? row.amount ?? 0);
+  const feeTopup = Number(row.feeTopup ?? row.fee_topup ?? row.fee ?? 0);
+  const total = Number(row.total ?? (nominal + feeTopup));
+  const namaKode = row.namaKode || row.nama_kode || row.account_code || "";
+
+  return {
+    ...row,
+    namaKode,
+    nama_kode: namaKode,
+    account_code: namaKode,
+    nominal,
+    amount: nominal,
+    feeTopup,
+    fee_topup: feeTopup,
+    fee: feeTopup,
+    total,
+  };
+}
+
+

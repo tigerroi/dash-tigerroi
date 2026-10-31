@@ -4,10 +4,14 @@ import { formatAdAccountPayload, normalizeAdAccountRow } from "./adAccountAdapte
 import {
   formatAdxCostPayload,
   formatBonusPercentPayload,
+  formatExpensePayload,
   formatInvalidTrafficPayload,
+  formatWhitelistTopupPayload,
   normalizeAdxCostRow,
   normalizeBonusPercentRow,
+  normalizeExpenseRow,
   normalizeInvalidTrafficRow,
+  normalizeWhitelistTopupRow,
 } from "./accountingAdapter.js";
 
 /**
@@ -69,6 +73,30 @@ export function toCamelCaseRow(row) {
   if (result.actId && !result.accountId) {
     result.accountId = result.actId;
   }
+  if (result.accountCode && !result.namaKode) {
+    result.namaKode = result.accountCode;
+  }
+  if (result.namaKode && !result.accountCode) {
+    result.accountCode = result.namaKode;
+  }
+  if (result.fee && !result.feeTopup) {
+    result.feeTopup = result.fee;
+  }
+  if (result.feeTopup && !result.fee) {
+    result.fee = result.feeTopup;
+  }
+  if (result.amount && !result.nominal) {
+    result.nominal = result.amount;
+  }
+  if (result.nominal && !result.amount) {
+    result.amount = result.nominal;
+  }
+  if (result.itemName && !result.description) {
+    result.description = result.itemName;
+  }
+  if (result.description && !result.itemName) {
+    result.itemName = result.description;
+  }
   return result;
 }
 
@@ -96,6 +124,12 @@ function prepareResourcePayload(key, values) {
   }
   if (key === "invalidTraffic") {
     return formatInvalidTrafficPayload(values);
+  }
+  if (key === "expenses") {
+    return formatExpensePayload(values);
+  }
+  if (key === "whitelistTopup") {
+    return formatWhitelistTopupPayload(values);
   }
 
   const payload = toSnakeCasePayload(values);
@@ -315,6 +349,10 @@ export function subscribeResource(key, callback, onError) {
           rows = rows.map(normalizeAdxCostRow);
         } else if (key === "invalidTraffic") {
           rows = rows.map(normalizeInvalidTrafficRow);
+        } else if (key === "expenses") {
+          rows = rows.map(normalizeExpenseRow);
+        } else if (key === "whitelistTopup") {
+          rows = rows.map(normalizeWhitelistTopupRow);
         }
         callback(rows);
       }
