@@ -84,3 +84,4 @@ test("formatInvalidTrafficPayload computes total nominal from check1, check2, ch
   assert.equal(payload.nominal, 100000);
   assert.equal(payload.amount, 100000);
 });
+

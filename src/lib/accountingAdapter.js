@@ -126,3 +126,4 @@ export function normalizeInvalidTrafficRow(row = {}) {
     check3: Number(row.check3 || 0),
   };
 }
+

@@ -217,7 +217,18 @@ export async function runSyncMeta() {
           `    Saldo/Limit: ${overview.currency} ${overview.remainingBudget.toLocaleString()} | Spent: ${overview.amountSpent}`,
         );
 
-        // Update informasi saldo di meta_accounts & ad_accounts jika baris ada di database
+        // B. Ambil insights campaign (spend harian)
+        const insights = await fetchCampaignInsights(account.account_id, token, dateRange);
+        console.log(`    Ditemukan ${insights.length} baris insights campaign.`);
+
+        let accountSpendToday = 0;
+        for (const ins of insights) {
+          if (ins.date === dateToday) {
+            accountSpendToday += Number(ins.spend || 0);
+          }
+        }
+
+        // Update informasi saldo & spend hari ini di meta_accounts & ad_accounts jika baris ada di database
         if (account.id !== "env-account") {
           await supabase
             .from("meta_accounts")
@@ -226,6 +237,7 @@ export async function runSyncMeta() {
               balance: overview.balance,
               spend_cap: overview.spendCap,
               amount_spent: overview.amountSpent,
+              spend_today: accountSpendToday,
               last_synced_at: new Date().toISOString(),
               last_error: null,
             })
@@ -239,6 +251,7 @@ export async function runSyncMeta() {
                 balance: overview.balance,
                 spend_cap: overview.spendCap,
                 amount_spent: overview.amountSpent,
+                spend_today: accountSpendToday,
                 status: "ACTIVE",
                 updated_at: new Date().toISOString(),
               })
@@ -247,10 +260,6 @@ export async function runSyncMeta() {
             // Lanjutkan jika tabel ad_accounts belum diperbarui
           }
         }
-
-        // B. Ambil insights campaign (spend harian)
-        const insights = await fetchCampaignInsights(account.account_id, token, dateRange);
-        console.log(`    Ditemukan ${insights.length} baris insights campaign.`);
 
         for (const row of insights) {
           const siteCode = matchSiteCode(row.campaignName, sites);

@@ -83,12 +83,116 @@ export function Overview({ store, navigate, tab, role, viewer }) {
   // untuk angka final.
   // Default "Hari Ini" ({from,to} sehari), lewat DateRangePicker yang sama dengan seluruh dashboard.
   const [roiRange, setRoiRange] = useUrlRange("roi", todayRange);
-  const dashboardStats = store.dashboardStats || {};
   const weeklyFinancials = store.weeklyFinancials || [];
-  const advertiserSpend = store.advertiserSpend || [];
-  const lowBalance = lowBalanceAdvertisers(advertiserSpend, store.alertSettings);
   const roiReports = store.roiReports || [];
   const roiSnapshots = store.roiSnapshots || [];
+
+  const advertiserSpend = useMemo(() => {
+    if (Array.isArray(store.advertiserSpend) && store.advertiserSpend.length > 0) {
+      return store.advertiserSpend;
+    }
+
+    const users = Array.isArray(store.users) ? store.users : [];
+    const adAccounts = Array.isArray(store.adAccounts) ? store.adAccounts : [];
+
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
+
+    const spendTodayByPic = new Map();
+    for (const snap of roiSnapshots) {
+      if (!snap?.date || snap?.date === today) {
+        const pic = String(snap?.pic || "").trim();
+        if (pic) {
+          const current = spendTodayByPic.get(pic.toLowerCase()) || 0;
+          const val = Number(snap.spending || snap.metaSpend || snap.totalSpending || 0);
+          if (val > current) spendTodayByPic.set(pic.toLowerCase(), val);
+        }
+      }
+    }
+    for (const rep of roiReports) {
+      if (rep?.date === today) {
+        const pic = String(rep?.pic || "").trim();
+        if (pic) {
+          const current = spendTodayByPic.get(pic.toLowerCase()) || 0;
+          const val = Number(rep.spending || rep.metaSpend || rep.totalSpending || 0);
+          spendTodayByPic.set(pic.toLowerCase(), current + val);
+        }
+      }
+    }
+
+    const balanceByPic = new Map();
+    for (const acc of adAccounts) {
+      if (acc.syncDisabled) continue;
+      const owner = String(acc.userOwner || "").trim();
+      if (!owner) continue;
+
+      const key = owner.toLowerCase();
+      const prevBal = balanceByPic.get(key) || 0;
+      balanceByPic.set(key, prevBal + Number(acc.balance || 0));
+
+      if (Number(acc.spendToday || 0) > 0) {
+        const prevSpend = spendTodayByPic.get(key) || 0;
+        spendTodayByPic.set(key, Math.max(prevSpend, Number(acc.spendToday || 0)));
+      }
+    }
+
+    const picSet = new Map();
+    for (const u of users) {
+      if (u.name) {
+        picSet.set(u.name.toLowerCase(), { name: u.name, userId: u.id || u.uid });
+      }
+    }
+    for (const acc of adAccounts) {
+      if (acc.userOwner) {
+        const k = acc.userOwner.toLowerCase();
+        if (!picSet.has(k)) {
+          picSet.set(k, { name: acc.userOwner, userId: acc.id });
+        }
+      }
+    }
+    for (const pic of spendTodayByPic.keys()) {
+      if (!picSet.has(pic)) {
+        picSet.set(pic, { name: pic, userId: null });
+      }
+    }
+
+    const result = [];
+    for (const [key, info] of picSet.entries()) {
+      const balance = balanceByPic.get(key) || 0;
+      const spendToday = spendTodayByPic.get(key) || 0;
+
+      result.push({
+        id: info.userId || key,
+        userId: info.userId,
+        pic: info.name,
+        balance,
+        spendToday,
+      });
+    }
+
+    return result.sort((a, b) => b.spendToday - a.spendToday || a.pic.localeCompare(b.pic));
+  }, [store.advertiserSpend, store.users, store.adAccounts, store.roiReports, store.roiSnapshots]);
+
+  const dashboardStats = useMemo(() => {
+    const raw = store.dashboardStats || {};
+    const totalSpend =
+      raw.totalSpend !== undefined && raw.totalSpend !== null
+        ? raw.totalSpend
+        : advertiserSpend.reduce((sum, item) => sum + (Number(item.spendToday) || 0), 0);
+
+    const managedCampaigns =
+      raw.managedCampaigns ||
+      (Array.isArray(store.subDomains)
+        ? store.subDomains.filter((s) => s.status === "Active" && Boolean(s.campaignCodes)).length
+        : "-");
+
+    return {
+      ...raw,
+      totalSpend,
+      managedCampaigns: managedCampaigns || "-",
+    };
+  }, [store.dashboardStats, advertiserSpend, store.subDomains]);
+
+  const lowBalance = lowBalanceAdvertisers(advertiserSpend, store.alertSettings);
   // Tarif ad tax dari halaman Settings. Dipakai hanya untuk baris yang belum membawa pajaknya
   // sendiri — baris riwayat tetap memakai tarif yang berlaku saat ia ditulis.
   const adTaxRate = adTaxRateOf(store.roiSettings);

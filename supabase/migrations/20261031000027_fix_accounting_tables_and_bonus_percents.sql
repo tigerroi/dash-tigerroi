@@ -110,3 +110,4 @@ DROP POLICY IF EXISTS "account_closes_anon_select" ON public.account_closes;
 DROP POLICY IF EXISTS "account_closes_public_all" ON public.account_closes;
 CREATE POLICY "account_closes_public_all" ON public.account_closes
     FOR ALL TO public USING (true) WITH CHECK (true);
+
