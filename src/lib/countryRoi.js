@@ -8,6 +8,107 @@ import { toAmount } from "./toAmount.js";
 // dengan ad tax di antaranya. Formulanya sendiri tinggal di adTax.js — dipakai tabel ini dan
 // tabel ROI subdomain, dan dua tabel yang menghitung uang yang sama tidak boleh punya dua rumus.
 
+// Kamus nama resmi negara standar Google Ad Manager (GAM) / ISO 3166-1 alpha-2
+export const GAM_COUNTRY_NAMES = {
+  GR: "Greece",
+  LT: "Lithuania",
+  LV: "Latvia",
+  CZ: "Czechia",
+  MT: "Malta",
+  BE: "Belgium",
+  EE: "Estonia",
+  NZ: "New Zealand",
+  AT: "Austria",
+  NO: "Norway",
+  AU: "Australia",
+  DK: "Denmark",
+  RO: "Romania",
+  RS: "Serbia",
+  BG: "Bulgaria",
+  SK: "Slovakia",
+  HU: "Hungary",
+  US: "United States",
+  CA: "Canada",
+  GB: "United Kingdom",
+  DE: "Germany",
+  FR: "France",
+  IT: "Italy",
+  ES: "Spain",
+  NL: "Netherlands",
+  SE: "Sweden",
+  FI: "Finland",
+  IE: "Ireland",
+  CH: "Switzerland",
+  PL: "Poland",
+  PT: "Portugal",
+  ID: "Indonesia",
+  MY: "Malaysia",
+  SG: "Singapore",
+  TH: "Thailand",
+  VN: "Vietnam",
+  PH: "Philippines",
+  IN: "India",
+  PK: "Pakistan",
+  BD: "Bangladesh",
+  BR: "Brazil",
+  MX: "Mexico",
+  AR: "Argentina",
+  CL: "Chile",
+  CO: "Colombia",
+  PE: "Peru",
+  ZA: "South Africa",
+  AE: "United Arab Emirates",
+  SA: "Saudi Arabia",
+  TR: "Turkey",
+  JP: "Japan",
+  KR: "South Korea",
+  TW: "Taiwan",
+  HK: "Hong Kong",
+  EG: "Egypt",
+  NG: "Nigeria",
+  KE: "Kenya",
+  MA: "Morocco",
+  DZ: "Algeria",
+  UA: "Ukraine",
+  HR: "Croatia",
+  SI: "Slovenia",
+  BA: "Bosnia and Herzegovina",
+  ME: "Montenegro",
+  MK: "North Macedonia",
+  AL: "Albania",
+  CY: "Cyprus",
+  IS: "Iceland",
+  LU: "Luxembourg",
+  MD: "Moldova",
+  GE: "Georgia",
+  AM: "Armenia",
+  AZ: "Azerbaijan",
+  KZ: "Kazakhstan",
+  UZ: "Uzbekistan",
+  IL: "Israel",
+  QA: "Qatar",
+  KW: "Kuwait",
+  OM: "Oman",
+  BH: "Bahrain",
+  JO: "Jordan",
+  LB: "Lebanon",
+  IQ: "Iraq",
+  EC: "Ecuador",
+  UY: "Uruguay",
+  PY: "Paraguay",
+  BO: "Bolivia",
+  CR: "Costa Rica",
+  PA: "Panama",
+  DO: "Dominican Republic",
+  GT: "Guatemala",
+  SV: "El Salvador",
+  HN: "Honduras",
+  NI: "Nicaragua",
+  PR: "Puerto Rico",
+  JM: "Jamaica",
+  TT: "Trinidad and Tobago",
+};
+
 let regionNames = null;
 try {
   regionNames = new Intl.DisplayNames(["en"], { type: "region" });
@@ -16,32 +117,77 @@ try {
 }
 
 /**
- * Menormalkan kode negara ISO 2-huruf (misal 'RS', 'RO', 'BG') menjadi nama negara lengkap resmi (misal 'Serbia', 'Romania', 'Bulgaria')
- * seperti halnya yang digunakan pada Google Ad Manager (GAM).
+ * Menormalkan kode negara ISO 2-huruf atau singkatan (misal 'GR', 'GR (GR)', 'RS', 'RO')
+ * menjadi nama negara lengkap resmi (misal 'Greece', 'Serbia', 'Romania') seperti halnya di Google Ad Manager (GAM).
  */
 export function resolveCountryName(codeOrName) {
   const str = String(codeOrName || "").trim();
   if (!str || str === "UNKNOWN") return str || "-";
+
+  // Ekstrak kode 2-huruf: dari string telanjang "GR", format kurung "(GR)", format ganda "GR (GR)"
+  let code = "";
   if (str.length === 2 && /^[A-Za-z]{2}$/.test(str)) {
-    const code = str.toUpperCase();
-    if (regionNames) {
-      try {
-        const name = regionNames.of(code);
-        if (name && name !== code) return name;
-      } catch {
-        // Abaikan jika tidak terdaftar
+    code = str.toUpperCase();
+  } else {
+    const parenMatch = str.match(/\(([A-Za-z]{2})\)/);
+    if (parenMatch) {
+      code = parenMatch[1].toUpperCase();
+    } else {
+      const tokenMatch = str.match(/\b([A-Za-z]{2})\b/);
+      if (tokenMatch && (str.includes("(") || str.length <= 7)) {
+        code = tokenMatch[1].toUpperCase();
       }
     }
   }
+
+  if (code && GAM_COUNTRY_NAMES[code]) {
+    return GAM_COUNTRY_NAMES[code];
+  }
+
+  if (code && regionNames) {
+    try {
+      const name = regionNames.of(code);
+      if (name && name !== code) return name;
+    } catch {
+      // Abaikan jika tidak terdaftar
+    }
+  }
+
   return str;
 }
 
 export function normalizeCountryRoiRow(item, rate) {
-  const resolved = resolveCountryName(item?.country || item?.countryName || item?.countryCode || item?.isoCode);
+  const rawCountry = item?.country || item?.countryName || item?.countryCode || item?.isoCode;
+  const resolved = resolveCountryName(rawCountry);
+
+  // Ambil kode ISO 2 huruf
+  let code = item?.isoCode || item?.countryCode;
+  if (!code && typeof rawCountry === "string") {
+    const m = rawCountry.match(/\b([A-Za-z]{2})\b/);
+    if (m) code = m[1].toUpperCase();
+  }
+  if (code) code = String(code).toUpperCase();
+
+  const countryLabel =
+    resolved && code && resolved.toUpperCase() !== code
+      ? `${resolved} (${code})`
+      : resolved || "-";
+
+  const spending = Number(item?.spending ?? item?.spend ?? 0);
+  const earning = Number(item?.earning ?? item?.revenue ?? 0);
+  const impressions = Number(item?.impressions || 0);
+
+  const ecpm =
+    impressions > 0 && earning > 0
+      ? Math.round((earning / impressions) * 1000)
+      : item?.ecpm;
+
   return {
     ...item,
     country: resolved,
-    countryLabel: `${resolved || "-"}${item?.isoCode ? ` (${item.isoCode})` : ""}`,
+    isoCode: code || item?.isoCode,
+    countryLabel,
+    ecpm,
     ...withAdTax(item, rate),
   };
 }

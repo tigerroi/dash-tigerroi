@@ -86,6 +86,14 @@ export function realtimeRoiRows(snapshots, dailyRows) {
   return rows.sort((a, b) => stampOf(b).localeCompare(stampOf(a)));
 }
 
+function validMetric(val) {
+  if (val === null || val === undefined || val === "" || val === "-" || val === "0" || val === 0) {
+    return null;
+  }
+  const n = Number(val);
+  return !Number.isNaN(n) && n > 0 ? n : null;
+}
+
 /**
  * Satu baris tabel ROI realtime, apa adanya untuk dirender.
  *
@@ -105,6 +113,43 @@ export function normalizeRealtimeRoiRow(item, rate, countryBreakdown) {
   // yang memberi tahu barisnya kenapa.
   const money = withAdTax(item, rate);
   const sources = earningSources(item);
+
+  // Dijodohkan dari `item` yang mentah — tanggal ISO dan nama subdomain apa adanya
+  const countries = countriesOf(countryBreakdown, item);
+
+  // Impressions GAM: ambil dari item.impressions atau agregasi impresi seluruh negara di baris ini
+  const totalImpressions =
+    validMetric(item.impressions) ||
+    countries.reduce((sum, c) => sum + (Number(c.impressions) || 0), 0) ||
+    0;
+
+  const totalGamClicks = validMetric(item.clicks) || 0;
+  const totalGamEarning = Number(money.earning || 0);
+
+  let computedEcpm = validMetric(item.pageRpm) || validMetric(item.ecpm);
+  if (!computedEcpm) {
+    if (totalImpressions > 0 && totalGamEarning > 0) {
+      computedEcpm = Math.round((totalGamEarning / totalImpressions) * 1000);
+    } else if (totalGamClicks > 0 && totalGamEarning > 0) {
+      // Jika impresi tidak dilaporkan GAM, estimasi dengan CTR rata-rata standar (~3.5%)
+      const estImpressions = Math.round(totalGamClicks / 0.035);
+      computedEcpm = Math.round((totalGamEarning / estImpressions) * 1000);
+    }
+  }
+
+  // Clicks & Spend Meta untuk CPR
+  const metaSpending = Number(money.spending || item.metaSpend || item.meta_spend || 0);
+  const metaClicks =
+    validMetric(item.adClicks) ||
+    validMetric(item.metaClicks) ||
+    countries.reduce((sum, c) => sum + (Number(c.clicks) || 0), 0) ||
+    validMetric(item.clicks) ||
+    0;
+
+  let computedCpr = validMetric(item.cpr) || validMetric(item.costPerResult);
+  if (!computedCpr && metaSpending > 0 && metaClicks > 0) {
+    computedCpr = Math.round((metaSpending / metaClicks) * 100) / 100;
+  }
 
   return {
     ...item,
@@ -137,26 +182,13 @@ export function normalizeRealtimeRoiRow(item, rate, countryBreakdown) {
     flukRoi: firstValue(item.flukRoi, item.roiFluctuation),
     clicks: firstValue(item.clicks),
     cpc: firstValue(item.cpc),
-    // Satu kunci untuk kolom eCPM (Google Ad Manager / AdSense): jika belum terisi, dihitung dari (earning ÷ impressions) × 1000
-    pageRpm: firstValue(
-      item.pageRpm,
-      item.ecpm,
-      Number(item.impressions || 0) > 0 && Number(money.earning || 0) > 0
-        ? Math.round((Number(money.earning) / Number(item.impressions)) * 1000)
-        : "",
-    ),
-    // CPR (Cost Per Result / Meta Ads): jika belum terisi, dihitung dari spend ÷ clicks/results
-    cpr: firstValue(
-      item.cpr,
-      Number(item.clicks || item.adClicks || 0) > 0 && Number(money.spending || 0) > 0
-        ? Math.round((Number(money.spending) / Number(item.clicks || item.adClicks)) * 100) / 100
-        : "",
-    ),
+    // Satu kunci untuk kolom eCPM (Google Ad Manager / AdSense)
+    pageRpm: computedEcpm || "-",
+    // CPR (Cost Per Result / Meta Ads)
+    cpr: computedCpr || "-",
     metaBalance: firstValue(item.metaBalance, item.balance),
     campaigns: toCampaignList(item.campaigns),
-    // Dijodohkan dari `item` yang mentah — tanggal ISO dan nama subdomain apa adanya, dua hal yang
-    // dipakai sisi sync sebagai kunci saat menulis barisnya.
-    countries: countriesOf(countryBreakdown, item),
+    countries,
   };
 }
 

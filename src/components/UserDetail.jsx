@@ -1097,6 +1097,10 @@ function buildProfileFromStore(user, store) {
     const profit = Math.round((earning - totalSpending) * 100) / 100;
     const roi = totalSpending > 0 ? Math.round(((earning - totalSpending) / totalSpending) * 10000) / 100 : 0;
     const cpc = clicks > 0 ? Math.round((spending / clicks) * 100) / 100 : Number(row.cpc || 0);
+    const ecpm =
+      impressions > 0 && earning > 0
+        ? Math.round((earning / impressions) * 1000)
+        : Number(row.ecpm || 0);
 
     const fullSubDomain = canonicalSubDomain(rawSub, store.subDomains);
     const countryFullName = resolveCountryName(row.countryName || row.country_name || row.countryCode || row.country_code);
@@ -1113,6 +1117,7 @@ function buildProfileFromStore(user, store) {
       profit,
       roi,
       cpc,
+      ecpm,
       clicks,
       impressions,
     };
