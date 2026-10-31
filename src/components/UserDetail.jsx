@@ -188,10 +188,10 @@ export function UserDetail({
   // Didukung data real-time Supabase country_roi dengan fallback ke userReports.
   const countryBreakdown = useMemo(() => {
     if (Array.isArray(store.countryRoi) && store.countryRoi.length > 0) {
-      return buildCountryBreakdownFromRows(store.countryRoi, adTaxRate);
+      return buildCountryBreakdownFromRows(store.countryRoi, adTaxRate, masterRoiRows);
     }
     return buildCountryBreakdown(countryRoiSources(store.users, store.userReports), adTaxRate);
-  }, [store.countryRoi, store.users, store.userReports, adTaxRate]);
+  }, [store.countryRoi, store.users, store.userReports, adTaxRate, masterRoiRows]);
 
   return (
     <div className="page-stack user-detail-page">
@@ -1024,20 +1024,85 @@ function buildProfileFromStore(user, store) {
 
   // Sinkronisasi Breakdown ROI per Negara dari tabel Supabase country_roi
   const userCountryRoiRows = rowsForSubDomains(toArray(store.countryRoi), ownedKeys);
-  const mappedDbCountryRoi = userCountryRoiRows.map((row) => ({
-    id: row.id || `${row.date}_${row.subDomain || row.sub_domain}_${row.countryCode || row.country_code}`,
-    date: row.date,
-    subDomain: row.subDomain || row.sub_domain,
-    country: row.countryName || row.country_name || row.countryCode || row.country_code,
-    countryCode: row.countryCode || row.country_code,
-    spending: Number(row.spend ?? row.spending ?? 0),
-    earning: Number(row.earning ?? row.revenue ?? 0),
-    profit: Number(row.profit ?? 0),
-    roi: Number(row.roiPercent ?? row.roi_percent ?? row.roi ?? 0),
-    cpc: Number(row.cpc ?? 0),
-    clicks: Number(row.clicks ?? 0),
-    impressions: Number(row.impressions ?? 0),
-  }));
+
+  // Peta total pendapatan GAM per subdomain dan tanggal dari laporan resmi GAM
+  const gamRevBySubDate = new Map();
+  for (const r of toArray(profileReports)) {
+    const rawSub = String(r.subDomain || r.siteCode || "").trim().toLowerCase();
+    const d = String(r.date || "").slice(0, 10);
+    const rev = Number(r.earning || r.gamRevenue || r.revenue || 0);
+    if (rawSub && rev > 0) {
+      gamRevBySubDate.set(`${d}__${rawSub}`, rev);
+      if (rawSub.includes(".")) {
+        gamRevBySubDate.set(`${d}__${rawSub.split(".")[0]}`, rev);
+      }
+    }
+  }
+
+  // Hitung total agregasi klik dan spending per kelompok (tanggal + subdomain)
+  const groupTotals = new Map();
+  for (const row of userCountryRoiRows) {
+    const d = String(row.date || "").slice(0, 10);
+    const rawSub = String(row.subDomain || row.sub_domain || "").trim().toLowerCase();
+    const slug = rawSub.includes(".") ? rawSub.split(".")[0] : rawSub;
+    const gKey = `${d}__${slug}`;
+    if (!groupTotals.has(gKey)) {
+      groupTotals.set(gKey, { clicks: 0, impressions: 0, spending: 0, earning: 0 });
+    }
+    const gt = groupTotals.get(gKey);
+    gt.clicks += Number(row.clicks || 0);
+    gt.impressions += Number(row.impressions || 0);
+    gt.spending += Number(row.spend ?? row.spending ?? 0);
+    gt.earning += Number(row.earning ?? row.revenue ?? 0);
+  }
+
+  const mappedDbCountryRoi = userCountryRoiRows.map((row) => {
+    const d = String(row.date || "").slice(0, 10);
+    const rawSub = String(row.subDomain || row.sub_domain || "").trim().toLowerCase();
+    const slug = rawSub.includes(".") ? rawSub.split(".")[0] : rawSub;
+    const gKey = `${d}__${slug}`;
+    const gt = groupTotals.get(gKey) || { clicks: 0, impressions: 0, spending: 0, earning: 0 };
+    const gamRev = gamRevBySubDate.get(gKey) || gamRevBySubDate.get(`${d}__${rawSub}`) || 0;
+
+    let earning = Number(row.earning ?? row.revenue ?? 0);
+    const spending = Number(row.spend ?? row.spending ?? 0);
+    const clicks = Number(row.clicks || 0);
+    const impressions = Number(row.impressions || 0);
+
+    // Bila earning negara belum terisi (atau mendekati 0), distribusikan revenue GAM subdomain secara proporsional
+    if (earning <= 0.01 && gamRev > 0) {
+      const share =
+        gt.clicks > 0
+          ? clicks / gt.clicks
+          : gt.impressions > 0
+            ? impressions / gt.impressions
+            : gt.spending > 0
+              ? spending / gt.spending
+              : 0;
+      earning = Math.round(share * gamRev * 100) / 100;
+    }
+
+    const adTax = spending * 0.05;
+    const totalSpending = spending + adTax;
+    const profit = Math.round((earning - totalSpending) * 100) / 100;
+    const roi = totalSpending > 0 ? Math.round(((earning - totalSpending) / totalSpending) * 10000) / 100 : 0;
+    const cpc = clicks > 0 ? Math.round((spending / clicks) * 100) / 100 : Number(row.cpc || 0);
+
+    return {
+      id: row.id || `${row.date}_${row.subDomain || row.sub_domain}_${row.countryCode || row.country_code}`,
+      date: row.date,
+      subDomain: row.subDomain || row.sub_domain,
+      country: row.countryName || row.country_name || row.countryCode || row.country_code,
+      countryCode: row.countryCode || row.country_code,
+      spending,
+      earning,
+      profit,
+      roi,
+      cpc,
+      clicks,
+      impressions,
+    };
+  });
   const profileCountryRoi =
     mappedDbCountryRoi.length > 0 ? mappedDbCountryRoi : toArray(history("countryRoi"));
 

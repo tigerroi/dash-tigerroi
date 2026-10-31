@@ -592,7 +592,7 @@ export async function fetchGamCountryRevenue(networkCode, accessToken, dateRange
   const createUrl = `${GAM_BASE}/networks/${networkCode}/reports`;
   const reportDef = {
     reportDefinition: {
-      dimensions: ["DATE", "SITE", "COUNTRY_CODE", "COUNTRY_NAME"],
+      dimensions: ["DATE", "SITE", "AD_UNIT_NAME", "COUNTRY_CODE", "COUNTRY_NAME"],
       metrics: [
         "IMPRESSIONS",
         "CLICKS",
@@ -723,8 +723,9 @@ export async function fetchGamCountryRevenue(networkCode, accessToken, dateRange
 
     const dateStr = formatIso(dValues[0] || "");
     const siteName = dValues[1] || "";
-    const countryCode = String(dValues[2] || "").trim().toUpperCase();
-    const countryName = dValues[3] || countryCode;
+    const adUnitName = dValues[2] || "";
+    const countryCode = String(dValues[3] || "").trim().toUpperCase();
+    const countryName = dValues[4] || countryCode;
 
     const impressions = parseNum(mValues[0]);
     const clicks = parseNum(mValues[1]);
@@ -735,6 +736,7 @@ export async function fetchGamCountryRevenue(networkCode, accessToken, dateRange
     rows.push({
       date: dateStr,
       siteName,
+      adUnitName,
       countryCode,
       countryName,
       impressions,

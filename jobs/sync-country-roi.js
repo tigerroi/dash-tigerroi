@@ -63,6 +63,81 @@ function getJakartaDate(daysAgo = 0) {
   return formatter.format(d);
 }
 
+// Kurs mata uang GAM resmi TigerROI
+const GAM_FX_RATES = {
+  "23380486168": 190.87, // Tacobell (INR)
+  "23344333667": 18155.28, // Trayedit (USD)
+  "23367555867": 18155.28, // TikTok Mod (USD)
+  "23340206616": 18155.28, // IHOP (USD)
+};
+
+// Pencocokan baris GAM (siteName / URL / adUnitName) ke subdomain & site_code
+function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
+  const host = String(row.siteName || "")
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "");
+  const unit = String(row.adUnitName || "").toLowerCase();
+
+  // 1. Prioritas 1: Cocokkan host URL langsung ke 17 subdomain resmi
+  if (host) {
+    for (const sub of subdomainsList || []) {
+      if (!sub.name) continue;
+      const subName = sub.name.toLowerCase();
+      if (
+        host === subName ||
+        host.startsWith(subName + ".") ||
+        host.endsWith("." + subName) ||
+        host.includes("." + subName + ".") ||
+        (sub.parent_domain && host === subName + "." + sub.parent_domain.toLowerCase())
+      ) {
+        return {
+          siteCode: sub.site_code || defaultSiteCode,
+          subdomainName: sub.name,
+        };
+      }
+    }
+  }
+
+  // 2. Prioritas 2: Cocokkan nama unit iklan ke subdomain
+  for (const sub of subdomainsList || []) {
+    if (!sub.name) continue;
+    const subName = sub.name.toLowerCase();
+    const regex = new RegExp("(^|[^a-z0-9])" + subName + "([^a-z0-9]|$)", "i");
+    if (regex.test(unit)) {
+      return {
+        siteCode: sub.site_code || defaultSiteCode,
+        subdomainName: sub.name,
+      };
+    }
+  }
+
+  // 3. Prioritas 3: Cocokkan nama unit iklan ke sites
+  for (const s of sitesList || []) {
+    if (!s.site_code) continue;
+    if (unit.includes(s.site_code.toLowerCase())) {
+      const matchingSubs = (subdomainsList || []).filter((sub) => sub.site_code === s.site_code);
+      const suffix = s.site_code.split("-").pop();
+      const defaultSub = matchingSubs.find((sub) => sub.name === suffix) || matchingSubs[0];
+      return {
+        siteCode: s.site_code,
+        subdomainName: defaultSub ? defaultSub.name : s.site_code,
+      };
+    }
+  }
+
+  // 4. Fallback ke default site code network tersebut
+  const matchingSubs = (subdomainsList || []).filter((sub) => sub.site_code === defaultSiteCode);
+  const suffix = (defaultSiteCode || "").split("-").pop();
+  const defaultSub = matchingSubs.find((sub) => sub.name === suffix) || matchingSubs[0];
+
+  return {
+    siteCode: defaultSiteCode || "unmapped",
+    subdomainName: defaultSub ? defaultSub.name : defaultSiteCode || "unmapped",
+  };
+}
+
 // 4 Network GAM bawaan
 const GAM_NETWORKS = [
   { domain: "trayedit.com", networkCode: "23344333667", defaultSiteCode: "tray-decor" },
@@ -161,6 +236,11 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
       .from("subdomains")
       .select("id, name, site_code, pic, parent_domain");
     const subdomains = subdomainsData || [];
+
+    const { data: sitesData } = await supabase
+      .from("sites")
+      .select("id, name, site_code, domain");
+    const sites = sitesData || [];
 
     // Map: date__subDomain__countryCode -> { date, subDomain, countryCode, spend, impressions, clicks }
     const spendMap = new Map();
@@ -284,10 +364,17 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
               endDate: end,
             });
 
+            const fxRate = GAM_FX_RATES[net.networkCode] || 1;
             for (const gr of gamRows) {
               const rowDate = gr.date || start;
+              const mapped = mapGamRowToSite(
+                { siteName: gr.siteName, adUnitName: gr.adUnitName },
+                net.defaultSiteCode,
+                subdomains,
+                sites,
+              );
               const subDomain = resolveCanonicalSubDomain(
-                gr.siteName || net.domain,
+                mapped.subdomainName || gr.siteName || net.domain,
                 subdomains,
               );
               const cCode = gr.countryCode || "UNKNOWN";
@@ -303,7 +390,7 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
                 clicks: 0,
               };
 
-              existing.earning += gr.totalRevenue;
+              existing.earning += gr.totalRevenue * fxRate;
               existing.impressions += gr.impressions;
               existing.clicks += gr.clicks;
               earnMap.set(key, existing);
