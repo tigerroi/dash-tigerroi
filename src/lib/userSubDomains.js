@@ -43,8 +43,12 @@ export function assignedSubDomains(user, subDomains) {
       }
       // Khusus Zulfan / Sulaiman
       if ((p === "sul" && uk.includes("zulfan")) || (uk === "sul" && p.includes("zulfan"))) return true;
-      // Khusus Mas Def / Man
-      if ((p === "man" && (uk.includes("def") || uk.includes("mas"))) || (uk === "man" && (uk.includes("def") || uk.includes("mas")))) return true;
+      // Khusus Mas Def / Man / Ade Suparman
+      if (
+        (p === "man" && (uk.includes("def") || uk.includes("mas") || uk.includes("suparman"))) ||
+        (uk === "man" && (p.includes("def") || p.includes("mas") || p.includes("suparman")))
+      )
+        return true;
       // Khusus Nurjaman / Lightman
       if ((p === "nur" && uk.includes("lightman")) || (p === "lightman" && uk.startsWith("nur"))) return true;
     }
@@ -54,13 +58,19 @@ export function assignedSubDomains(user, subDomains) {
   return (Array.isArray(subDomains) ? subDomains : []).filter((item) => {
     if (!item || item.deletedAt) return false;
 
-    // Cek kecocokan picUserId atau pic_user_id
+    // Prioritaskan nama PIC eksplisit jika terisi di baris subdomain
+    const hasExplicitPic = Boolean(item.pic || item.user || item.userOwner);
+    if (hasExplicitPic) {
+      return [item.pic, item.user, item.userOwner, item.userId, item.ownerId]
+        .filter(Boolean)
+        .some(checkPicMatch);
+    }
+
+    // Fallback jika field teks pic kosong: gunakan picUserId atau pic_user_id
     if (item.picUserId && (item.picUserId === user.id || item.picUserId === user.name)) return true;
     if (item.pic_user_id && (item.pic_user_id === user.id || item.pic_user_id === user.name)) return true;
 
-    return [item.pic, item.user, item.userOwner, item.userId, item.ownerId]
-      .filter(Boolean)
-      .some(checkPicMatch);
+    return false;
   });
 }
 

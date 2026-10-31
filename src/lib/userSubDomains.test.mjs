@@ -44,6 +44,24 @@ test("kepemilikan dicocokkan lewat nama, username, email, atau id — tanpa pedu
     assignedSubDomains({ name: "Mas Def" }, teamSubs).map((s) => s.name),
     ["mod"],
   );
+
+  // Jika pic_user_id di database salah referensi, nama pic eksplisit tetap harus menang
+  const conflictedSubs = [
+    { name: "rewards", pic: "Nurjaman", pic_user_id: "usr-nurjaman" },
+    { name: "decor", pic: "Nurjaman", pic_user_id: "usr-nurjaman" },
+    { name: "hacks", pic: "Nurjaman", pic_user_id: "usr-nurjaman" },
+    { name: "mod", pic: "Man", pic_user_id: "usr-nurjaman" }, // pic_user_id tertukar
+    { name: "materials", pic: "Man", pic_user_id: "usr-nurjaman" },
+    { name: "keto", pic: "Man", pic_user_id: "usr-nurjaman" },
+  ];
+  assert.deepEqual(
+    assignedSubDomains({ id: "usr-nurjaman", name: "Nurjaman", email: "nurjaman@tigerroi.com" }, conflictedSubs).map((s) => s.name),
+    ["rewards", "decor", "hacks"],
+  );
+  assert.deepEqual(
+    assignedSubDomains({ id: "usr-ade", name: "Ade Suparman", username: "Man", email: "man@tigerroi.com" }, conflictedSubs).map((s) => s.name),
+    ["mod", "materials", "keto"],
+  );
 });
 
 test("user tanpa identitas apa pun tidak memiliki subdomain siapa pun", () => {
