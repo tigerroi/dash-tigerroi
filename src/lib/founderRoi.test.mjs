@@ -17,11 +17,12 @@ function rows() {
   ];
 }
 
-test("profit & ROI memakai ER − pembagi, diurutkan Profit Founder tertinggi", () => {
+test("profit & ROI memakai ER − pembagi, diurutkan Profit Founder tertinggi (mode advertiser)", () => {
   const report = buildFounderRoi({
     roiReports: rows(),
     adAccounts,
     range,
+    mode: "advertiser",
     whitelistTopup: [
       { date: "2026-08-01", pic: "Godek", nominal: 1000000 },
       { date: "2026-08-01", pic: "Nur", nominal: 3000000 },
@@ -60,6 +61,7 @@ test("earning yang tidak diketahui tidak menghasilkan ROI", () => {
     roiReports: [{ date: "2026-08-02", pic: "Godek", spending: 1000000, totalSpending: 1000000 }],
     adAccounts,
     range,
+    mode: "advertiser",
     whitelistTopup: [{ date: "2026-08-01", pic: "Godek", nominal: 1000000 }],
   });
   const [godek] = report.rows;
@@ -68,4 +70,24 @@ test("earning yang tidak diketahui tidak menghasilkan ROI", () => {
   assert.equal(godek.roiAdvertiser, "");
   assert.equal(godek.profitFounder, "");
   assert.equal(godek.profitAdvertiser, "");
+});
+
+test("mode default menggabungkan metrik ke akun whitelist BD R 16 tanpa PIC", () => {
+  const report = buildFounderRoi({
+    roiReports: rows(),
+    adAccounts: [{ name: "BD R 16", spendCap: 5000000, amountSpent: 2000000 }],
+    range,
+    whitelistTopup: [
+      { date: "2026-08-01", nominal: 2000 },
+    ],
+  });
+
+  assert.equal(report.rows.length, 1);
+  const [wl] = report.rows;
+  assert.equal(wl.name, "BD R 16");
+  assert.equal(wl.topup, 2000);
+  assert.equal(wl.totalSpending, 3400000); // 1000000 + 2000000 + 400000
+  assert.equal(wl.earning, 9900000); // 3000000 + 6000000 + 900000
+  assert.equal(wl.profitAdvertiser, 6500000);
+  assert.equal(wl.profitFounder, 9898000);
 });

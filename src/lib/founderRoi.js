@@ -1,4 +1,5 @@
 import { roiPercent } from "./adTax.js";
+import { filterByDateWindow } from "./dateRange.js";
 import { round } from "./numbers.js";
 import { buildSpendingPlan, NO_PIC } from "./spendingPlan.js";
 import { toAmount } from "./toAmount.js";
@@ -36,8 +37,76 @@ export function buildFounderRoi({
   users = [],
   range = {},
   rate = 0,
+  mode = "account", // Default: "account" untuk menampilkan baris akun Whitelist (WL BD R 16) tanpa breakdown per PIC
 } = {}) {
   const plan = buildSpendingPlan({ roiReports, whitelistTopup, adAccounts, users, range, rate });
+
+  if (mode === "account") {
+    // Mode Whitelist Account: satukan metrik ke akun ads WL, bukan dipecah per PIC
+    const accounts = Array.isArray(adAccounts) ? adAccounts.filter((a) => !a.syncDisabled) : [];
+    const primaryAccount = accounts[0];
+    let accountName =
+      primaryAccount?.name || primaryAccount?.accountName || primaryAccount?.nama || "BD R 16";
+    if (
+      !accountName ||
+      accountName.includes(",") ||
+      accountName.toLowerCase() === "semua user" ||
+      accountName.toLowerCase().includes("superadmin")
+    ) {
+      accountName = "BD R 16";
+    }
+
+    let totalBalance = 0;
+    for (const acc of accounts) {
+      const cap = Number(acc.spendCap ?? acc.spend_cap ?? 0);
+      const spent = Number(acc.amountSpent ?? acc.amount_spent ?? 0);
+      const accBalance =
+        cap > 0 ? Math.max(0, Math.round((cap - spent) * 100) / 100) : Number(acc.balance || 0);
+      totalBalance += accBalance;
+    }
+    if (totalBalance === 0 && plan.totals.balance) {
+      totalBalance = plan.totals.balance;
+    }
+
+    // Hitung seluruh topup whitelist di rentang tanggal
+    const topupList = Array.isArray(whitelistTopup)
+      ? whitelistTopup
+      : Object.values(whitelistTopup || {});
+    const topupsInRange = filterByDateWindow(topupList, range);
+    let totalTopup = 0;
+    for (const t of topupsInRange) {
+      totalTopup += toAmount(t?.nominal ?? t?.amount ?? t?.topup ?? 0);
+    }
+    if (totalTopup === 0 && plan.totals.topup) {
+      totalTopup = plan.totals.topup;
+    }
+
+    const earning = plan.totals.earning;
+    const totalSpending = plan.totals.totalSpending;
+    const topup = totalTopup;
+
+    const accountRow = {
+      key: "bd_r_16",
+      name: accountName,
+      topup,
+      totalSpending,
+      balance: totalBalance,
+      earning,
+      profitAdvertiser:
+        earning === "" || totalSpending === "" ? "" : round(earning - totalSpending),
+      profitFounder: earning === "" ? "" : round(earning - toAmount(topup)),
+      roiAdvertiser:
+        earning === "" || totalSpending === "" ? "" : roiPercent(earning, totalSpending),
+      roiFounder: earning === "" ? "" : roiPercent(earning, topup),
+    };
+
+    return {
+      rows: [accountRow],
+      firstDay: plan.firstDay,
+      lastDay: plan.lastDay,
+      totals: accountRow,
+    };
+  }
 
   const rows = plan.rows.map((row) => withRoi(row, row.key));
   rows.sort(byFounderProfit);

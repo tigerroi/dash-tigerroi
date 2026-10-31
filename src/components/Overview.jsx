@@ -998,7 +998,7 @@ function founderColumns(totals) {
   return [
     {
       accessorKey: "name",
-      header: "Nama Akun / Advertiser",
+      header: "Nama Akun (Whitelist)",
       footer: "Total",
       cell: ({ getValue }) => {
         const val = String(getValue() || "");
