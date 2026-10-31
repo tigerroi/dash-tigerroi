@@ -158,6 +158,30 @@ function matchSubDomain(campaignName, subdomains, defaultSubDomain = "") {
   return defaultSubDomain || "unmapped";
 }
 
+let regionNames = null;
+try {
+  regionNames = new Intl.DisplayNames(["en"], { type: "region" });
+} catch {
+  regionNames = null;
+}
+
+function resolveCountryName(codeOrName) {
+  const str = String(codeOrName || "").trim();
+  if (!str || str === "UNKNOWN") return str || "-";
+  if (str.length === 2 && /^[A-Za-z]{2}$/.test(str)) {
+    const code = str.toUpperCase();
+    if (regionNames) {
+      try {
+        const name = regionNames.of(code);
+        if (name && name !== code) return name;
+      } catch {
+        // Abaikan jika tidak terdaftar
+      }
+    }
+  }
+  return str;
+}
+
 // Menyamakan nama subdomain antara GAM (domain utuh: keto.ihopmenuwithprices.us) dan Meta (slug: keto)
 // Keduanya akan selalu dinormalkan menjadi FQDN resmi yang sama persis (misal: keto.ihopmenuwithprices.us)
 function resolveCanonicalSubDomain(rawName, subdomains) {
@@ -419,7 +443,7 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
       const rowDate = spendItem.date || earnItem.date || start;
       const subDomain = spendItem.subDomain || earnItem.subDomain || "unknown";
       const countryCode = spendItem.countryCode || earnItem.countryCode || "UNKNOWN";
-      const countryName = earnItem.countryName || countryCode;
+      const countryName = resolveCountryName(earnItem.countryName || countryCode);
 
       const spend = Number(spendItem.spend || 0);
       const impressions = Number(earnItem.impressions || spendItem.impressions || 0);

@@ -8,10 +8,40 @@ import { toAmount } from "./toAmount.js";
 // dengan ad tax di antaranya. Formulanya sendiri tinggal di adTax.js — dipakai tabel ini dan
 // tabel ROI subdomain, dan dua tabel yang menghitung uang yang sama tidak boleh punya dua rumus.
 
+let regionNames = null;
+try {
+  regionNames = new Intl.DisplayNames(["en"], { type: "region" });
+} catch {
+  regionNames = null;
+}
+
+/**
+ * Menormalkan kode negara ISO 2-huruf (misal 'RS', 'RO', 'BG') menjadi nama negara lengkap resmi (misal 'Serbia', 'Romania', 'Bulgaria')
+ * seperti halnya yang digunakan pada Google Ad Manager (GAM).
+ */
+export function resolveCountryName(codeOrName) {
+  const str = String(codeOrName || "").trim();
+  if (!str || str === "UNKNOWN") return str || "-";
+  if (str.length === 2 && /^[A-Za-z]{2}$/.test(str)) {
+    const code = str.toUpperCase();
+    if (regionNames) {
+      try {
+        const name = regionNames.of(code);
+        if (name && name !== code) return name;
+      } catch {
+        // Abaikan jika tidak terdaftar
+      }
+    }
+  }
+  return str;
+}
+
 export function normalizeCountryRoiRow(item, rate) {
+  const resolved = resolveCountryName(item?.country || item?.countryName || item?.countryCode || item?.isoCode);
   return {
     ...item,
-    countryLabel: `${item?.country || "-"}${item?.isoCode ? ` (${item.isoCode})` : ""}`,
+    country: resolved,
+    countryLabel: `${resolved || "-"}${item?.isoCode ? ` (${item.isoCode})` : ""}`,
     ...withAdTax(item, rate),
   };
 }

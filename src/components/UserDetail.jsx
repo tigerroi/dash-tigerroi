@@ -8,7 +8,7 @@ import { toCommandMap } from "../lib/campaignCommands";
 import { describeMappingSource, normalizeCampaignRows } from "../lib/campaignRows";
 import { getCampaignTone } from "../lib/campaignTone";
 import { buildCountryBreakdown, buildCountryBreakdownFromRows } from "../lib/countryBreakdown";
-import { formatCtrPercent, normalizeCountryRoiRow, summarizeCountryRoi } from "../lib/countryRoi";
+import { formatCtrPercent, normalizeCountryRoiRow, resolveCountryName, summarizeCountryRoi } from "../lib/countryRoi";
 import {
   filterByDateField,
   filterByDateWindow,
@@ -865,7 +865,7 @@ function CountryRoiTable({ items }) {
     <DataTable
       className="country-roi-table"
       columns={[
-        ["countryLabel", "Negara"],
+        ["country", "Negara"],
         ["spending", "Spend (Meta)"],
         ["adTax", "Ad Tax"],
         ["totalSpending", "Total Spend"],
@@ -1089,12 +1089,14 @@ function buildProfileFromStore(user, store) {
     const cpc = clicks > 0 ? Math.round((spending / clicks) * 100) / 100 : Number(row.cpc || 0);
 
     const fullSubDomain = canonicalSubDomain(rawSub, store.subDomains);
+    const countryFullName = resolveCountryName(row.countryName || row.country_name || row.countryCode || row.country_code);
 
     return {
       id: row.id || `${row.date}_${fullSubDomain}_${row.countryCode || row.country_code}`,
       date: row.date,
       subDomain: fullSubDomain,
-      country: row.countryName || row.country_name || row.countryCode || row.country_code,
+      country: countryFullName,
+      countryName: countryFullName,
       countryCode: row.countryCode || row.country_code,
       spending,
       earning,
