@@ -42,6 +42,32 @@ test("normalizeAdAccountRow detects INACTIVE status as syncDisabled", () => {
   assert.equal(normalized.syncStatus, "Nonaktif");
 });
 
+test("normalizeAdAccountRow calculates balance from account spending limit (spend_cap - amount_spent)", () => {
+  const row = {
+    id: "acc-3",
+    account_id: "act_78605197914174",
+    name: "Akun Meta",
+    spend_cap: 31000000,
+    amount_spent: 31000000,
+    balance: 146741, // invoice due di Meta
+  };
+
+  const normalized = normalizeAdAccountRow(row);
+  // Sisa saldo limit harus 0, bukan 146741 (tagihan berjalan)
+  assert.equal(normalized.balance, 0);
+  assert.equal(normalized.amountDue, 146741);
+  assert.equal(normalized.spendCap, 31000000);
+  assert.equal(normalized.amountSpent, 31000000);
+
+  // Jika limit masih tersisa
+  const remainingRow = {
+    ...row,
+    amount_spent: 25000000,
+  };
+  const normalizedRemaining = normalizeAdAccountRow(remainingRow);
+  assert.equal(normalizedRemaining.balance, 6000000);
+});
+
 test("formatAdAccountPayload builds valid DB payload", () => {
   const values = {
     name: "Akun Baru",

@@ -994,24 +994,31 @@ function buildProfileFromStore(user, store) {
     const metaAcc = toArray(store.metaAccounts).find(
       (m) => normalizeActId(m.accountId || m.account_id) === actId,
     );
-    const balance =
-      account.balance !== undefined && account.balance !== 0
-        ? account.balance
-        : (metaAcc?.balance ?? 0);
-    const spendToday =
-      account.spendToday !== undefined && account.spendToday !== 0
-        ? account.spendToday
-        : (account.spend_today ?? metaAcc?.spendToday ?? metaAcc?.spend_today ?? 0);
     const spendCap =
       account.spendCap !== undefined && account.spendCap !== 0
         ? account.spendCap
         : (account.spend_cap ?? metaAcc?.spendCap ?? metaAcc?.spend_cap ?? 0);
+    const amountSpent =
+      account.amountSpent !== undefined && account.amountSpent !== 0
+        ? account.amountSpent
+        : (account.amount_spent ?? metaAcc?.amountSpent ?? metaAcc?.amount_spent ?? 0);
+    const balance =
+      spendCap > 0
+        ? Math.max(0, Math.round((spendCap - amountSpent) * 100) / 100)
+        : (account.balance !== undefined && account.balance !== 0
+            ? account.balance
+            : (metaAcc?.balance ?? 0));
+    const spendToday =
+      account.spendToday !== undefined && account.spendToday !== 0
+        ? account.spendToday
+        : (account.spend_today ?? metaAcc?.spendToday ?? metaAcc?.spend_today ?? 0);
 
     return {
       ...account,
       balance,
       spendToday,
       spendCap,
+      amountSpent,
     };
   });
 

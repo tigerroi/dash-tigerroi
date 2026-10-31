@@ -125,14 +125,24 @@ export function Overview({ store, navigate, tab, role, viewer }) {
       const rawOwner = String(acc.userOwner || "").trim();
       if (!rawOwner) continue;
 
-      const owners = rawOwner.includes(",")
-        ? rawOwner.split(",").map((s) => s.trim()).filter(Boolean)
-        : [rawOwner];
+      const isAllUsers = rawOwner.toLowerCase() === "semua user";
+      const owners = isAllUsers
+        ? users.map((u) => u.name).filter(Boolean)
+        : (rawOwner.includes(",")
+            ? rawOwner.split(",").map((s) => s.trim()).filter(Boolean)
+            : [rawOwner]);
+
+      const cap = Number(acc.spendCap ?? acc.spend_cap ?? 0);
+      const spent = Number(acc.amountSpent ?? acc.amount_spent ?? 0);
+      const accountSisaSaldo =
+        cap > 0
+          ? Math.max(0, Math.round((cap - spent) * 100) / 100)
+          : Number(acc.balance || 0);
 
       for (const owner of owners) {
         const key = owner.toLowerCase();
         const prevBal = balanceByPic.get(key) || 0;
-        balanceByPic.set(key, prevBal + Number(acc.balance || 0));
+        balanceByPic.set(key, prevBal + accountSisaSaldo);
 
         if (Number(acc.spendToday || 0) > 0) {
           const prevSpend = spendTodayByPic.get(key) || 0;

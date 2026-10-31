@@ -170,7 +170,8 @@ export async function fetchAccountOverview(actId, token) {
     accountStatus: acc.account_status,
     spendCap,
     amountSpent,
-    balance: toMajor(acc.balance),
+    balance: (toMajor(acc.spend_cap) > 0 ? Math.max(0, Math.round((toMajor(acc.spend_cap) - toMajor(acc.amount_spent)) * 100) / 100) : toMajor(acc.balance)),
+    amountDue: toMajor(acc.balance),
     remainingBudget:
       spendCap > 0 ? Math.max(0, Math.round((spendCap - amountSpent) * 100) / 100) : 0,
   };

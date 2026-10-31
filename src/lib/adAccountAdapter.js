@@ -21,6 +21,14 @@ export function normalizeAdAccountRow(row) {
   const rawOwner = String(row.userOwner || row.user_owner || "").trim();
   const userOwner = !rawOwner || rawOwner.toLowerCase() === "tanpa pemilik (opsional)" ? "Semua User" : rawOwner;
 
+  const spendCap = Number(row.spendCap ?? row.spend_cap ?? 0);
+  const amountSpent = Number(row.amountSpent ?? row.amount_spent ?? 0);
+  const rawBalance = Number(row.balance ?? 0);
+
+  // Sisa saldo dihitung dari Account Spending Limit (spend_cap - amount_spent) sesuai aturan Meta Ads
+  const remainingBudget =
+    spendCap > 0 ? Math.max(0, Math.round((spendCap - amountSpent) * 100) / 100) : rawBalance;
+
   return {
     ...row,
     actId,
@@ -28,6 +36,10 @@ export function normalizeAdAccountRow(row) {
     userOwner,
     syncDisabled: isDisabled,
     syncStatus: row.syncStatus || (isDisabled ? "Nonaktif" : "Aktif"),
+    spendCap,
+    amountSpent,
+    balance: remainingBudget,
+    amountDue: rawBalance,
   };
 }
 
