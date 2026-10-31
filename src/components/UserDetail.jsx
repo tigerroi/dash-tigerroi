@@ -2,11 +2,12 @@ import { ArrowLeft, Mail, MessageSquare, UserRound } from "lucide-react";
 import { useMemo } from "react";
 import { canToggleCampaign, isSuperAdmin } from "../config/access";
 import { useUrlRange, useUrlState } from "../hooks/useUrlState";
+import { normalizeActId } from "../lib/adAccountAdapter";
 import { adTaxRateOf, earningAccountType, formatRoiPercent, withAdTax } from "../lib/adTax";
 import { toCommandMap } from "../lib/campaignCommands";
 import { describeMappingSource, normalizeCampaignRows } from "../lib/campaignRows";
 import { getCampaignTone } from "../lib/campaignTone";
-import { buildCountryBreakdown } from "../lib/countryBreakdown";
+import { buildCountryBreakdown, buildCountryBreakdownFromRows } from "../lib/countryBreakdown";
 import { formatCtrPercent, normalizeCountryRoiRow, summarizeCountryRoi } from "../lib/countryRoi";
 import {
   filterByDateField,
@@ -126,15 +127,23 @@ export function UserDetail({
   const todayRevenueBySub = useMemo(() => {
     const map = new Map();
     for (const row of filterRunningDay(masterRoiRows)) {
-      const name = firstValue(row.subDomain);
-      if (name && !map.has(name)) map.set(name, row);
+      const name = firstValue(row.subDomain, row.sub_domain);
+      if (name) {
+        const lower = String(name).trim().toLowerCase();
+        map.set(lower, row);
+        if (lower.includes(".")) {
+          map.set(lower.split(".")[0], row);
+        }
+      }
     }
     return map;
   }, [masterRoiRows]);
   const subDomainItems = useMemo(
     () =>
       toArray(profile.subDomains).map((sub) => {
-        const today = todayRevenueBySub.get(sub.name);
+        const nameLower = String(sub?.name || "").trim().toLowerCase();
+        const slug = nameLower.includes(".") ? nameLower.split(".")[0] : nameLower;
+        const today = todayRevenueBySub.get(nameLower) || todayRevenueBySub.get(slug);
         if (!today) return sub;
         return {
           ...sub,
@@ -176,15 +185,13 @@ export function UserDetail({
     [filteredCountryRoi, adTaxRate],
   );
   // Rincian negara tiap baris tabel realtime — kolom Negara, sama dengan tabel ROI di Overview.
-  // Dikumpulkan dari SELURUH user, bukan cuma dari profil yang sedang dibuka: baris negara
-  // dimiliki lewat PIC subdomain, jadi subdomain yang baru berpindah tangan masih meninggalkan
-  // baris hari itu di user sebelumnya — dan lencana yang membaca satu user saja akan kosong
-  // persis pada baris yang paling baru berubah. `store.userReports` memang sudah dilanggan di
-  // route ini (`needsUserReports` di lib/heavyData.js), jadi tidak ada unduhan tambahan.
-  const countryBreakdown = useMemo(
-    () => buildCountryBreakdown(countryRoiSources(store.users, store.userReports), adTaxRate),
-    [store.users, store.userReports, adTaxRate],
-  );
+  // Didukung data real-time Supabase country_roi dengan fallback ke userReports.
+  const countryBreakdown = useMemo(() => {
+    if (Array.isArray(store.countryRoi) && store.countryRoi.length > 0) {
+      return buildCountryBreakdownFromRows(store.countryRoi, adTaxRate);
+    }
+    return buildCountryBreakdown(countryRoiSources(store.users, store.userReports), adTaxRate);
+  }, [store.countryRoi, store.users, store.userReports, adTaxRate]);
 
   return (
     <div className="page-stack user-detail-page">
@@ -910,17 +917,23 @@ function ProfileMetric({ icon: Icon, label, value, tone }) {
 
 function buildProfileFromStore(user, store) {
   // Riwayat panel-panel di halaman ini, dari pohonnya sendiri — bukan lagi dari bawah `users/{id}`.
-  // Aturan "yang baru menang, yang lama jadi cadangan" tinggal di lib/userReports.js, satu tempat
-  // dengan yang dipakai rincian negara di tab "Laporan ROI Realtime".
-  //
-  // Dilanggan hanya waktu halaman ini terbuka (`needsUserReports`), jadi pada render pertama ia
-  // masih kosong dan panelnya berbunyi "Tidak ada data" sekejap — perilaku yang sama dengan panel
-  // "Report Master Realtime ROI" di halaman ini juga, yang sumbernya `roiSnapshots`.
+  // Didukung data relasional Supabase dengan fallback riwayat userReports.
   const history = (key) => userReportBranch(user, store.userReports, key);
 
   const nestedSubDomains = toArray(user.subDomains);
   const assigned = assignedSubDomains(user, toArray(store.subDomains));
-  const profileSubDomains = assigned.length > 0 ? assigned : nestedSubDomains;
+  const isUserSuperAdmin =
+    String(user?.role || "").includes("superadmin") ||
+    String(user?.email || "").includes("superadmin") ||
+    String(user?.name || "").toLowerCase().includes("superadmin");
+
+  const profileSubDomains =
+    assigned.length > 0
+      ? assigned
+      : isUserSuperAdmin && toArray(store.subDomains).length > 0
+        ? toArray(store.subDomains)
+        : nestedSubDomains;
+
   // Baris ROI milik user ini = baris subdomain-subdomain itu. Menyaringnya lewat `pic` baris akan
   // memotong riwayat setiap subdomain yang pernah berpindah PIC — lihat src/lib/userSubDomains.js.
   const ownedKeys = subDomainNameKeys(profileSubDomains);
@@ -945,7 +958,7 @@ function buildProfileFromStore(user, store) {
   };
 
   const owned = store.adAccounts.filter(checkOwnerMatch);
-  const adAccounts =
+  const matchedAccounts =
     owned.length > 0
       ? owned
       : store.adAccounts.filter((item) =>
@@ -955,6 +968,44 @@ function buildProfileFromStore(user, store) {
               .includes(uk),
           ),
         );
+
+  const fallbackAdAccounts =
+    matchedAccounts.length > 0
+      ? matchedAccounts
+      : isUserSuperAdmin
+        ? store.adAccounts
+        : [];
+
+  const rawProfileAdAccounts =
+    toArray(user.adAccounts).length > 0 ? toArray(user.adAccounts) : fallbackAdAccounts;
+
+  // Enrich data akun iklan dengan saldo dan pengeluaran terbaru dari meta_accounts
+  const profileAdAccounts = rawProfileAdAccounts.map((account) => {
+    const actId = normalizeActId(account.actId || account.accountId || account.account_id);
+    const metaAcc = toArray(store.metaAccounts).find(
+      (m) => normalizeActId(m.accountId || m.account_id) === actId,
+    );
+    const balance =
+      account.balance !== undefined && account.balance !== 0
+        ? account.balance
+        : (metaAcc?.balance ?? 0);
+    const spendToday =
+      account.spendToday !== undefined && account.spendToday !== 0
+        ? account.spendToday
+        : (account.spend_today ?? metaAcc?.spendToday ?? metaAcc?.spend_today ?? 0);
+    const spendCap =
+      account.spendCap !== undefined && account.spendCap !== 0
+        ? account.spendCap
+        : (account.spend_cap ?? metaAcc?.spendCap ?? metaAcc?.spend_cap ?? 0);
+
+    return {
+      ...account,
+      balance,
+      spendToday,
+      spendCap,
+    };
+  });
+
   const profileReports =
     toArray(user.masterRoiReports).length > 0
       ? toArray(user.masterRoiReports)
@@ -962,8 +1013,96 @@ function buildProfileFromStore(user, store) {
         ? toArray(user.roiReports)
         : rowsForSubDomains(toArray(store.roiReports), ownedKeys);
 
-  const profileAdAccounts =
-    toArray(user.adAccounts).length > 0 ? toArray(user.adAccounts) : adAccounts;
+  // Sinkronisasi Breakdown ROI per Negara dari tabel Supabase country_roi
+  const userCountryRoiRows = rowsForSubDomains(toArray(store.countryRoi), ownedKeys);
+  const mappedDbCountryRoi = userCountryRoiRows.map((row) => ({
+    id: row.id || `${row.date}_${row.subDomain || row.sub_domain}_${row.countryCode || row.country_code}`,
+    date: row.date,
+    subDomain: row.subDomain || row.sub_domain,
+    country: row.countryName || row.country_name || row.countryCode || row.country_code,
+    countryCode: row.countryCode || row.country_code,
+    spending: Number(row.spend ?? row.spending ?? 0),
+    earning: Number(row.earning ?? row.revenue ?? 0),
+    profit: Number(row.profit ?? 0),
+    roi: Number(row.roiPercent ?? row.roi_percent ?? row.roi ?? 0),
+    cpc: Number(row.cpc ?? 0),
+    clicks: Number(row.clicks ?? 0),
+    impressions: Number(row.impressions ?? 0),
+  }));
+  const profileCountryRoi =
+    mappedDbCountryRoi.length > 0 ? mappedDbCountryRoi : toArray(history("countryRoi"));
+
+  // Manajemen Campaign
+  let userCampaigns = toArray(user.campaigns);
+  if (userCampaigns.length === 0 && isUserSuperAdmin) {
+    const allUserCamps = (store.users || []).flatMap((u) => toArray(u.campaigns));
+    if (allUserCamps.length > 0) userCampaigns = allUserCamps;
+  }
+
+  // Riwayat Spend Campaign
+  const rawCampaignHistory = toArray(history("campaignHistory"));
+  const derivedCampaignHistory =
+    rawCampaignHistory.length > 0
+      ? rawCampaignHistory
+      : toArray(profileReports)
+          .filter((r) => r.campaign && (r.spending || r.spend || r.date))
+          .map((r) => ({
+            id: r.id || `${r.date}__${r.campaign}`,
+            date: r.date,
+            campaign: r.campaign,
+            subDomain: r.subDomain || "",
+            spend: Number(r.spending || r.spend || 0),
+            impressions: Number(r.impressions || 0),
+            clicks: Number(r.clicks || 0),
+            cpc: Number(r.cpc || 0),
+            cpr: Number(r.cpr || 0),
+            result: Number(r.earning || r.revenue || 0),
+            status: r.status || "Active",
+          }));
+
+  // Rekap Riwayat Saldo Berkurang (Daily Spend)
+  const rawDailySpend = toArray(history("dailySpend"));
+  let finalDailySpend = rawDailySpend;
+  if (finalDailySpend.length === 0) {
+    const spendMap = new Map();
+    for (const r of toArray(profileReports)) {
+      const d = r.date;
+      const spend = Number(r.spending || r.spend || 0);
+      if (d && spend > 0) {
+        const acc = r.account || r.adAccount || "Meta Ads";
+        const key = `${d}__${acc}`;
+        if (!spendMap.has(key)) {
+          spendMap.set(key, {
+            id: key,
+            date: d,
+            account: acc,
+            campaign: r.campaign || "-",
+            amount: 0,
+            note: "Sinkronisasi otomatis Meta",
+          });
+        }
+        spendMap.get(key).amount += spend;
+      }
+    }
+    finalDailySpend = Array.from(spendMap.values());
+  }
+
+  // Riwayat Snapshot Saldo (Log Per-Sync)
+  const rawSnapshots = history("balanceSnapshots");
+  const finalSnapshots =
+    rawSnapshots && toArray(rawSnapshots).length > 0
+      ? normalizeBalanceSnapshots(rawSnapshots, finalDailySpend)
+      : profileAdAccounts
+          .filter((a) => a.balance !== undefined)
+          .map((a) => ({
+            id: `snap_${a.actId || a.name}`,
+            syncedAt: a.updatedAt || a.lastSyncedAt || new Date().toISOString(),
+            account: a.name || a.actId,
+            balance: a.balance || 0,
+            dailyReduction: a.spendToday || 0,
+            source: "Sync Meta",
+            note: a.syncStatus || "Aktif",
+          }));
 
   return {
     ...user,
@@ -977,23 +1116,15 @@ function buildProfileFromStore(user, store) {
       toArray(user.roiReports).length > 0
         ? toArray(user.roiReports)
         : rowsForSubDomains(toArray(store.roiReports), ownedKeys),
-    campaigns: buildUserCampaigns(user.campaigns, profileReports),
-    // Terbaru di atas. Kunci RTDB-nya diawali tanggal (`2026-08-07__akun__campaign`), jadi
-    // urutan bawaannya adalah urutan kunci: hari paling lama duluan, dan hari ini terdorong
-    // ke halaman terakhir — persis baris yang dicari orang saat membuka panel ini.
-    dailySpend: sortTableItems(toArray(history("dailySpend")), { key: "date", direction: "desc" }),
-    // Kunci RTDB berurut naik (sync terlama duluan), jadi tanpa pengurutan snapshot terbaru
-    // terdorong ke halaman terakhir. Diurutkan turun lewat `syncedAt` — persis baris yang dicari
-    // orang saat membuka panel, sama dengan dailySpend di atasnya.
-    balanceSnapshots: sortTableItems(
-      normalizeBalanceSnapshots(history("balanceSnapshots"), history("dailySpend")),
-      { key: "syncedAt", direction: "desc" },
-    ),
+    campaigns: buildUserCampaigns(userCampaigns, profileReports),
+    // Terbaru di atas. Diurutkan turun lewat tanggal
+    dailySpend: sortTableItems(finalDailySpend, { key: "date", direction: "desc" }),
+    // Snapshot terbaru teratas
+    balanceSnapshots: sortTableItems(finalSnapshots, { key: "syncedAt", direction: "desc" }),
     masterRoiReports: normalizeMasterReports(profileReports),
-    countryRoi: toArray(history("countryRoi")),
-    // Riwayat spend campaign per-hari — kunci RTDB berawalan tanggal, jadi diurutkan turun supaya
-    // hari terbaru di atas. Filter rentang tanggal + Kode Keitaro-nya bekerja di tabelnya sendiri.
-    campaignHistory: sortTableItems(toArray(history("campaignHistory")), {
+    countryRoi: profileCountryRoi,
+    // Riwayat spend campaign per-hari
+    campaignHistory: sortTableItems(derivedCampaignHistory, {
       key: "date",
       direction: "desc",
     }),

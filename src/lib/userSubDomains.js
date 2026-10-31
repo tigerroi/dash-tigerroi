@@ -68,8 +68,14 @@ export function assignedSubDomains(user, subDomains) {
 export function subDomainNameKeys(subDomains) {
   const keys = new Set();
   for (const item of Array.isArray(subDomains) ? subDomains : []) {
-    const key = nameKey(item?.name ?? item);
-    if (key) keys.add(key);
+    const rawKey = nameKey(item?.name ?? item);
+    if (rawKey) {
+      keys.add(rawKey);
+      if (rawKey.includes(".")) {
+        const slug = rawKey.split(".")[0].trim().toLowerCase();
+        if (slug) keys.add(slug);
+      }
+    }
   }
   return keys;
 }
@@ -85,5 +91,14 @@ export function rowsForSubDomains(rows, nameKeys) {
   const keys = nameKeys instanceof Set ? nameKeys : subDomainNameKeys(nameKeys);
   if (keys.size === 0) return [];
 
-  return (Array.isArray(rows) ? rows : []).filter((row) => keys.has(nameKey(row?.subDomain)));
+  return (Array.isArray(rows) ? rows : []).filter((row) => {
+    const sub = row?.subDomain || row?.sub_domain || row?.name;
+    const nk = nameKey(sub);
+    if (keys.has(nk)) return true;
+    if (nk && nk.includes(".")) {
+      const slug = nk.split(".")[0].trim().toLowerCase();
+      if (keys.has(slug)) return true;
+    }
+    return false;
+  });
 }

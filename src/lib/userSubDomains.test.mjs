@@ -78,6 +78,18 @@ test("nama sel yang datang sebagai array atau { value } dibandingkan sebagai nam
   assert.equal(rowsForSubDomains(rows, ["care.petcins.com"]).length, 1);
 });
 
+test("nama subdomain cocok baik dengan FQDN maupun slug pendek", () => {
+  const rows = [
+    { subDomain: "keto", earning: 100 },
+    { subDomain: "keto.ihopmenuwithprices.us", earning: 200 },
+    { subDomain: "other.domain.com", earning: 50 },
+  ];
+  const keys = subDomainNameKeys([{ name: "keto.ihopmenuwithprices.us" }]);
+  const matched = rowsForSubDomains(rows, keys);
+  assert.equal(matched.length, 2);
+  assert.deepEqual(matched.map((r) => r.earning), [100, 200]);
+});
+
 test("tanpa subdomain, tabelnya kosong — bukan jatuh kembali ke pencocokan pic", () => {
   const rows = [{ subDomain: "ads.designingaround.com", pic: "Lightman" }];
   assert.deepEqual(rowsForSubDomains(rows, new Set()), []);
