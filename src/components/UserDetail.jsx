@@ -24,7 +24,7 @@ import { sortTableItems } from "../lib/sortTableItems";
 import { subDomainOwnerIndex } from "../lib/subDomainOwners";
 import { toAmount } from "../lib/toAmount";
 import { countryRoiSources, userReportBranch } from "../lib/userReports";
-import { assignedSubDomains, rowsForSubDomains, subDomainNameKeys } from "../lib/userSubDomains";
+import { assignedSubDomains, canonicalSubDomain, rowsForSubDomains, subDomainNameKeys } from "../lib/userSubDomains";
 import { CampaignAdSets } from "./CampaignAdSets";
 import { CampaignStatusCell } from "./campaigns/CampaignStatusCell";
 import { DataTable } from "./ui/DataTable";
@@ -181,8 +181,8 @@ export function UserDetail({
     (item) => item.subDomain === selectedSubDomain,
   );
   const countryRoiGroups = useMemo(
-    () => groupBySubDomain(filteredCountryRoi, adTaxRate),
-    [filteredCountryRoi, adTaxRate],
+    () => groupBySubDomain(filteredCountryRoi, adTaxRate, store.subDomains),
+    [filteredCountryRoi, adTaxRate, store.subDomains],
   );
   // Rincian negara tiap baris tabel realtime — kolom Negara, sama dengan tabel ROI di Overview.
   // Didukung data real-time Supabase country_roi dengan fallback ke userReports.
@@ -1088,10 +1088,12 @@ function buildProfileFromStore(user, store) {
     const roi = totalSpending > 0 ? Math.round(((earning - totalSpending) / totalSpending) * 10000) / 100 : 0;
     const cpc = clicks > 0 ? Math.round((spending / clicks) * 100) / 100 : Number(row.cpc || 0);
 
+    const fullSubDomain = canonicalSubDomain(rawSub, store.subDomains);
+
     return {
-      id: row.id || `${row.date}_${row.subDomain || row.sub_domain}_${row.countryCode || row.country_code}`,
+      id: row.id || `${row.date}_${fullSubDomain}_${row.countryCode || row.country_code}`,
       date: row.date,
-      subDomain: row.subDomain || row.sub_domain,
+      subDomain: fullSubDomain,
       country: row.countryName || row.country_name || row.countryCode || row.country_code,
       countryCode: row.countryCode || row.country_code,
       spending,
@@ -1315,14 +1317,15 @@ function buildSubDomainSummaries(subDomains, reports, rate) {
   });
 }
 
-function groupBySubDomain(items, rate) {
+function groupBySubDomain(items, rate, allSubDomains = []) {
   const groups = new Map();
 
   for (const item of toArray(items)) {
-    const key = item.subDomain || "Tanpa Subdomain";
+    const rawSub = item.subDomain || item.sub_domain || "Tanpa Subdomain";
+    const key = canonicalSubDomain(rawSub, allSubDomains) || "Tanpa Subdomain";
     const current = groups.get(key) || { subDomain: key, items: [] };
 
-    current.items.push(normalizeCountryRoiRow(item, rate));
+    current.items.push(normalizeCountryRoiRow({ ...item, subDomain: key }, rate));
     groups.set(key, current);
   }
 

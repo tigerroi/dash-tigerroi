@@ -2,6 +2,7 @@
 // countryBreakdown.test.mjs); Vite menerima keduanya.
 import { normalizeCountryRoiRow } from "./countryRoi.js";
 import { toAmount } from "./toAmount.js";
+import { canonicalSubDomain } from "./userSubDomains.js";
 
 // Rincian negara untuk tabel ROI di Overview.
 //
@@ -15,7 +16,7 @@ import { toAmount } from "./toAmount.js";
 
 function countryBreakdownKey(date, subDomain) {
   const day = String(date || "").slice(0, 10);
-  const name = String(subDomain || "")
+  const name = String(canonicalSubDomain(subDomain) || "")
     .trim()
     .toLowerCase();
   return day && name ? `${day}__${name}` : "";

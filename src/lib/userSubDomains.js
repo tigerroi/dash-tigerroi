@@ -102,3 +102,51 @@ export function rowsForSubDomains(rows, nameKeys) {
     return false;
   });
 }
+
+/** Pemetaan resmi 17 subdomain TigerROI ke nama domain lengkap (FQDN) */
+export const OFFICIAL_SUBDOMAINS_MAP = {
+  menu: "menu.ihopmenuwithprices.us",
+  deals: "deals.ihopmenuwithprices.us",
+  keto: "keto.ihopmenuwithprices.us",
+  hacks: "hacks.ihopmenuwithprices.us",
+  news: "news.ihopmenuwithprices.us",
+  cantina: "cantina.tacobellmenuu.us",
+  burrito: "burrito.tacobellmenuu.us",
+  fries: "fries.tacobellmenuu.us",
+  insurance: "insurance.tiktokmodapk.net",
+  careers: "careers.tiktokmodapk.net",
+  rewards: "rewards.tiktokmodapk.net",
+  mod: "mod.tiktokmodapk.net",
+  decor: "decor.trayedit.com",
+  materials: "materials.trayedit.com",
+  cabinets: "cabinets.trayedit.com",
+  guides: "guides.trayedit.com",
+  styling: "styling.trayedit.com",
+};
+
+/**
+ * Menormalkan nama subdomain ke nama lengkap (FQDN) resmi.
+ * Jika menerima slug pendek (misal 'cabinets'), mengembalikan 'cabinets.trayedit.com'.
+ */
+export function canonicalSubDomain(raw, subDomainsList = []) {
+  const clean = String(raw || "").trim().toLowerCase().replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
+  if (!clean || clean === "unmapped" || clean === "tanpa subdomain") return raw || "";
+  if (clean.includes(".")) return clean;
+
+  if (OFFICIAL_SUBDOMAINS_MAP[clean]) {
+    return OFFICIAL_SUBDOMAINS_MAP[clean];
+  }
+
+  for (const s of Array.isArray(subDomainsList) ? subDomainsList : []) {
+    const sName = String(s?.name || "").trim().toLowerCase();
+    const sSlug = sName.includes(".") ? sName.split(".")[0].trim() : sName;
+    if (sSlug === clean) {
+      if (sName.includes(".")) return sName;
+      const parent = String(s.parent_domain || s.parentDomain || "").trim().toLowerCase().replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
+      if (parent) return `${sSlug}.${parent}`;
+    }
+  }
+
+  return clean;
+}
+
