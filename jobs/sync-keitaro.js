@@ -180,10 +180,12 @@ async function run() {
     }
 
     matchedCount++;
-    const key = `${dateStr}__${matched.site_code}`;
+    const subdomain = matched.subdomain || matched.domain || "";
+    const key = `${dateStr}__${matched.site_code}__${subdomain}`;
     const prev = aggregated.get(key) || {
       date: dateStr,
       site_code: matched.site_code,
+      subdomain,
       source: "keitaro",
       clicks: 0,
       impressions: 0,
@@ -208,7 +210,7 @@ async function run() {
   console.log(`\n📊 Ringkasan Pemetaan:`);
   console.log(` - Baris Cocok       : ${matchedCount}`);
   console.log(` - Baris Tidak Cocok : ${unmatchedCount}`);
-  console.log(` - Hasil Agregasi    : ${aggregated.size} baris unik (date × site_code)`);
+  console.log(` - Hasil Agregasi    : ${aggregated.size} baris unik (date × site_code × subdomain)`);
 
   const recordsToUpsert = Array.from(aggregated.values()).map((item) => {
     const roi_percent =
@@ -220,6 +222,7 @@ async function run() {
     return {
       date: item.date,
       site_code: item.site_code,
+      subdomain: item.subdomain || "",
       source: "keitaro",
       clicks: item.clicks,
       impressions: item.impressions,
@@ -242,7 +245,7 @@ async function run() {
 
   console.log(`\n💾 Menyimpan ${recordsToUpsert.length} baris ke tabel public.daily_stats...`);
   const { error: upsertErr } = await supabase.from("daily_stats").upsert(recordsToUpsert, {
-    onConflict: "date,site_code,source",
+    onConflict: "date,site_code,subdomain,source",
   });
 
   if (upsertErr) {
