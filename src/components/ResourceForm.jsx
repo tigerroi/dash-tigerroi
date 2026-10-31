@@ -14,21 +14,49 @@ export function ResourceForm({
   store = {},
   siblings = [],
   only,
+  role,
 }) {
   const [submitting, setSubmitting] = useState(false);
-  // createOnly fields (a new team member's password) have nothing to show when editing —
-  // the value was never stored and cannot be changed from here.
+  const isSuperAdmin = String(role || "").toLowerCase().includes("superadmin");
+
+  // createOnly fields (a new team member's password) disembunyikan saat editing,
+  // KECUALI jika user yang login adalah Superadmin yang diizinkan mereset password anggota tim.
   const fields = useMemo(
     () =>
       config.fields
-        .filter((field) => !field.createOnly || !item)
-        .filter((field) => !only || only.includes(field.name))
-        .map((field) => resolveFieldOptions(field, store, item?.[field.name])),
-    [config.fields, store, item, only],
+        .filter((field) => {
+          if (field.createOnly && item) {
+            if (field.name === "password" && isSuperAdmin) {
+              return true;
+            }
+            return false;
+          }
+          return !only || only.includes(field.name);
+        })
+        .map((field) => {
+          if (field.name === "password" && item) {
+            return resolveFieldOptions(
+              {
+                ...field,
+                label: "Password Baru (minimal 6 karakter, kosongkan jika tidak ingin diubah)",
+                required: false,
+                placeholder: "Ketik password baru...",
+              },
+              store,
+              "",
+            );
+          }
+          return resolveFieldOptions(field, store, item?.[field.name]);
+        }),
+    [config.fields, store, item, only, isSuperAdmin],
   );
   const [values, setValues] = useState(() => {
     const initialValues = {};
     fields.forEach((field) => {
+      if (field.name === "password" && item) {
+        initialValues[field.name] = "";
+        return;
+      }
       const stored = item && field.load ? field.load(item) : item?.[field.name];
       initialValues[field.name] = stored || getInitialFieldValue(field);
     });

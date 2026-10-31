@@ -39,6 +39,7 @@ import { completionUpdate, expenseFromReminder } from "../lib/reminders";
 import { valueSubscriptionsFor } from "../lib/storeSubscriptions";
 import { targetMonthUpdate } from "../lib/targets";
 import { createTeamAccount } from "../lib/teamAccounts";
+import { supabase } from "../config/supabase";
 import { detectedContactEntry, dismissUpdate } from "../lib/telegramInbox";
 
 // Callable di balik tombol "Impor dari Google", per jenis data. Jalur KEDUA sejak server kontrol
@@ -326,11 +327,27 @@ export function useFirebaseStore(navigate, resources, user, enabled = true, rout
 
   const update = async (key, id, values) => {
     try {
-      const { password: _ignored, ...profile } = values;
+      const { password, ...profile } = values;
       await updateResource(key, id, key === "users" ? profile : values, actor);
       // Changing the Role dropdown has to reach /roles or it changes nothing that matters.
       if (key === "users") {
-        const uid = (store.users || []).find((entry) => entry.id === id)?.uid;
+        const uid = (store.users || []).find((entry) => entry.id === id)?.uid || id;
+        if (password && String(password).trim().length >= 6) {
+          try {
+            const { error: rpcErr } = await supabase.rpc("admin_set_user_password", {
+              target_user_id: uid,
+              new_password: String(password).trim(),
+            });
+            if (rpcErr) {
+              console.warn("Gagal update password via RPC:", rpcErr.message);
+              notifyWarning(`Profil tersimpan, tetapi update password auth gagal: ${rpcErr.message}`);
+            } else {
+              notifySuccess(`Password untuk ${profile.name || profile.email} berhasil diperbarui.`);
+            }
+          } catch (passErr) {
+            console.warn("Exception update password:", passErr.message);
+          }
+        }
         if (uid) await writeRole(uid, profile.role);
       }
       notifySuccess("Perubahan berhasil disimpan.");

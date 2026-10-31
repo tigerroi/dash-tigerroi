@@ -602,6 +602,7 @@ function App() {
                 store={dataStore.store}
                 siblings={dataStore.store[route.key]}
                 only={restrictedFields}
+                role={role}
                 onCancel={() => navigate(resources[route.key].path)}
                 onSubmit={(values) => {
                   // The restricted save writes the named fields alone. `update` would send
