@@ -429,8 +429,22 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
       const adTax = spend * AD_TAX_RATE;
       const totalSpending = spend + adTax;
       const profit = earning - totalSpending;
-      const roi = totalSpending > 0 ? ((earning - totalSpending) / totalSpending) * 100 : 0;
-      const cpc = clicks > 0 ? (spend > 0 ? spend / clicks : earning / clicks) : 0;
+
+      let roi = 0;
+      if (totalSpending >= 100) {
+        roi = ((earning - totalSpending) / totalSpending) * 100;
+      } else if (totalSpending > 0) {
+        roi = Math.min(((earning - totalSpending) / totalSpending) * 100, 999999.99);
+      } else if (earning > 0) {
+        roi = 999999.99;
+      }
+      roi = Math.min(Math.max(roi, -100), 999999.99);
+
+      let cpc = 0;
+      if (clicks > 0) {
+        const rawCpc = spend > 0 ? spend / clicks : earning / clicks;
+        cpc = Math.min(rawCpc, 999999.99);
+      }
 
       recordsToUpsert.push({
         date: rowDate,
