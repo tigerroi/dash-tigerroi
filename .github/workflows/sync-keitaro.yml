@@ -1,0 +1,39 @@
+name: TigerROI Sync Keitaro Tracker
+
+on:
+  # Terjadwal setiap 30 menit
+  schedule:
+    - cron: "*/30 * * * *"
+  # Pemicu manual dari tab Actions di GitHub
+  workflow_dispatch:
+
+concurrency:
+  group: sync-keitaro
+  cancel-in-progress: false
+
+jobs:
+  sync-keitaro:
+    name: Sinkronisasi Keitaro ke Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Kode Repositori
+        uses: actions/checkout@v4
+
+      - name: Siapkan Lingkungan Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Pasang Dependensi
+        run: npm ci --omit=dev || npm install --omit=dev
+
+      - name: Jalankan Sinkronisasi Keitaro
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          KEITARO_URL: ${{ secrets.KEITARO_URL || 'https://appscity.tech' }}
+          KEITARO_API_KEY: ${{ secrets.KEITARO_API_KEY }}
+        run: node jobs/sync-keitaro.js

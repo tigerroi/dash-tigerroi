@@ -17,6 +17,7 @@
     "test:gateway": "node --test tigerroi-gateway/src/index.test.mjs",
     "sync:meta": "node jobs/sync-meta.js",
     "sync:gam": "node jobs/sync-gam.js",
+    "sync:keitaro": "node jobs/sync-keitaro.js",
     "import:keitaro": "node jobs/import-keitaro-csv.js",
     "test:meta": "node jobs/test-meta-read.js",
     "test:gam": "node jobs/test-gam-read.js",
