@@ -1,6 +1,14 @@
 import { supabase } from "../config/supabase.js";
 import { logActivity } from "./activityRecorder";
 import { formatAdAccountPayload, normalizeAdAccountRow } from "./adAccountAdapter.js";
+import {
+  formatAdxCostPayload,
+  formatBonusPercentPayload,
+  formatInvalidTrafficPayload,
+  normalizeAdxCostRow,
+  normalizeBonusPercentRow,
+  normalizeInvalidTrafficRow,
+} from "./accountingAdapter.js";
 
 /**
  * Peta resource frontend TigerROI ke tabel PostgreSQL Supabase.
@@ -79,6 +87,15 @@ export function toSnakeCasePayload(payload) {
 function prepareResourcePayload(key, values) {
   if (key === "adAccounts") {
     return formatAdAccountPayload(values);
+  }
+  if (key === "bonusPercents") {
+    return formatBonusPercentPayload(values);
+  }
+  if (key === "adxCosts") {
+    return formatAdxCostPayload(values);
+  }
+  if (key === "invalidTraffic") {
+    return formatInvalidTrafficPayload(values);
   }
 
   const payload = toSnakeCasePayload(values);
@@ -292,6 +309,12 @@ export function subscribeResource(key, callback, onError) {
         let rows = (data || []).map(toCamelCaseRow);
         if (key === "adAccounts") {
           rows = rows.map(normalizeAdAccountRow);
+        } else if (key === "bonusPercents") {
+          rows = rows.map(normalizeBonusPercentRow);
+        } else if (key === "adxCosts") {
+          rows = rows.map(normalizeAdxCostRow);
+        } else if (key === "invalidTraffic") {
+          rows = rows.map(normalizeInvalidTrafficRow);
         }
         callback(rows);
       }

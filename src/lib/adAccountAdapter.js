@@ -46,3 +46,4 @@ export function formatAdAccountPayload(values = {}) {
     sync_disabled: isSyncDisabled,
   };
 }
+

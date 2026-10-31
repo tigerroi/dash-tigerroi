@@ -119,3 +119,4 @@ WHERE account_id IS NOT NULL
 ON CONFLICT (account_id) DO UPDATE SET
     name = EXCLUDED.name,
     is_active = EXCLUDED.is_active;
+
