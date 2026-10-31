@@ -29,10 +29,11 @@ export function CountryBreakdownBadge({ rows, subDomain }) {
 
   const summary = summarizeCountryRoi(rows);
   const [top] = rows;
+  const topDisplayName = top.country || top.countryLabel;
 
   return (
     <>
-      <strong title={top.countryLabel}>{top.countryLabel}</strong>
+      <strong title={top.countryLabel || topDisplayName}>{topDisplayName}</strong>
       <CellPopover
         badgeClassName="country-breakdown-badge"
         label={`${rows.length} negara`}
@@ -49,8 +50,8 @@ export function CountryBreakdownBadge({ rows, subDomain }) {
           <span className="head num">ROI</span>
           {rows.map((row) => (
             <Fragment key={row.id}>
-              <span className="name" title={row.countryLabel}>
-                {row.countryLabel}
+              <span className="name" title={row.countryLabel || row.country}>
+                {row.country || row.countryLabel}
               </span>
               <span className="num">{renderCell(row.totalSpending, "totalSpending")}</span>
               {/* Earning yang tidak diketahui bukan nol: laporan GAM yang gagal datang tanpa

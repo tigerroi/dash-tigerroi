@@ -23,6 +23,7 @@ import { realtimeRoiRows } from "../lib/roiRealtime";
 import { sortTableItems } from "../lib/sortTableItems";
 import { subDomainOwnerIndex } from "../lib/subDomainOwners";
 import { toAmount } from "../lib/toAmount";
+import { buildCampaignsBySubDomain } from "../lib/toCampaignList";
 import { countryRoiSources, userReportBranch } from "../lib/userReports";
 import { assignedSubDomains, canonicalSubDomain, rowsForSubDomains, subDomainNameKeys } from "../lib/userSubDomains";
 import { CampaignAdSets } from "./CampaignAdSets";
@@ -51,6 +52,7 @@ export function UserDetail({
     () => subDomainOwnerIndex(store.subDomains, store.domains),
     [store.subDomains, store.domains],
   );
+  const campaignsMap = useMemo(() => buildCampaignsBySubDomain(store.users), [store.users]);
   const initials = getInitials(profile.name);
   // Hari berjalan, sama dengan tabel ROI di Overview: yang dicari saat membuka halaman ini adalah
   // keadaan sekarang. Pemilih periode di tiap panel yang menyebutkan hari mana yang sedang tampil.
@@ -403,6 +405,7 @@ export function UserDetail({
           </div>
         </div>
         <RealtimeRoiTable
+          campaignsMap={campaignsMap}
           countryBreakdown={countryBreakdown}
           formatSubDomain={subDomainOwners.fullOf}
           items={shownMasterRoi}

@@ -54,9 +54,20 @@ function withRoi(source, key) {
   const earning = source.earning;
   const totalSpending = source.totalSpending;
   const topup = source.topup;
+  let name = source.name;
+  if (
+    name &&
+    (name.includes(",") ||
+      name.toLowerCase() === "semua user" ||
+      name.toLowerCase().includes("mas def (superadmin), nurjaman") ||
+      (name.toLowerCase().includes("superadmin") && name.toLowerCase().includes("nurjaman")))
+  ) {
+    name = "BD R 16";
+  }
+
   return {
     key,
-    name: source.name,
+    name,
     topup,
     totalSpending,
     balance: source.balance,

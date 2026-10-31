@@ -7,6 +7,7 @@ import {
   normalizeRealtimeRoiRow,
   realtimeRoiColumnTone,
 } from "../../lib/roiRealtime";
+import { canonicalSubDomain } from "../../lib/userSubDomains";
 import { CountryBreakdownBadge } from "./CountryBreakdownBadge";
 import { DataTable } from "./DataTable";
 import { MergedCampaignsBadge } from "./MergedCampaignsBadge";
@@ -23,20 +24,54 @@ import { MetaSpendNote } from "./MetaSpendNote";
  * META BAL. — enam kolom, plus kepala kelompok berwarna yang membedakan sisi Meta dari sisi
  * earning. Yang membacanya tidak punya cara tahu bahwa kolomnya ADA di halaman sebelah.
  */
-export function RealtimeRoiTable({ items, rate, countryBreakdown, picOf, formatSubDomain }) {
+export function RealtimeRoiTable({
+  items,
+  rate,
+  countryBreakdown,
+  picOf,
+  formatSubDomain,
+  campaignsMap,
+}) {
   // `picOf` (opsional) menambal PIC baris yang ditulis sebelum subdomainnya diberi PIC, lewat
   // indeks pemilik yang sama dengan filter PIC — kolom dan filter tidak boleh menyebut dua nama.
   const rows = useMemo(
     () =>
       items.map((item) => {
         const row = normalizeRealtimeRoiRow(item, rate, countryBreakdown);
+        const subKey = String(row.subDomain || "").trim().toLowerCase();
+        const campKey = String(row.campaign || "").trim().toLowerCase();
+        const subSlug = subKey.includes(".") ? subKey.split(".")[0] : subKey;
+
+        let campaigns = row.campaigns;
+        if (!campaigns || campaigns.length === 0) {
+          const fromMap =
+            campaignsMap?.get(subKey) ||
+            campaignsMap?.get(subSlug) ||
+            campaignsMap?.get(campKey);
+          if (fromMap && fromMap.length > 0) {
+            campaigns = fromMap;
+          } else if (Number(row.metaSpend || 0) > 0 || Number(row.gamRevenue || 0) > 0) {
+            campaigns = [
+              {
+                name:
+                  canonicalSubDomain(row.subDomain) ||
+                  row.subDomain ||
+                  row.campaign ||
+                  "Campaign Utama",
+                spend: row.metaSpend || 0,
+              },
+            ];
+          }
+        }
+
         return {
           ...row,
+          campaigns: campaigns || [],
           pic: picOf ? picOf(row.subDomain, item.pic) : item.pic || "",
           displaySubDomain: formatSubDomain ? formatSubDomain(row.subDomain) : row.subDomain,
         };
       }),
-    [items, rate, countryBreakdown, picOf, formatSubDomain],
+    [items, rate, countryBreakdown, picOf, formatSubDomain, campaignsMap],
   );
   // Judul kelompok kolom earning dibaca dari `source` barisnya sendiri, bukan ditulis tetap.
   // Sebelumnya ia selalu berbunyi "ADSENSE" padahal seluruh angkanya datang dari laporan Google
@@ -128,16 +163,24 @@ function realtimeRoiColumns(earningSource) {
     fixed({
       accessorKey: "campaign",
       header: "Campaign",
-      cell: ({ row }) => (
-        <>
-          <strong>{row.original.campaign}</strong>
-          <MergedCampaignsBadge
-            campaigns={row.original.campaigns}
-            spend={row.original.metaSpend}
-            subDomain={row.original.subDomain}
-          />
-        </>
-      ),
+      cell: ({ row }) => {
+        const fullDomain =
+          canonicalSubDomain(row.original.subDomain) ||
+          canonicalSubDomain(row.original.campaign) ||
+          row.original.displaySubDomain ||
+          row.original.subDomain ||
+          row.original.campaign;
+        return (
+          <>
+            <strong>{fullDomain}</strong>
+            <MergedCampaignsBadge
+              campaigns={row.original.campaigns}
+              spend={row.original.metaSpend}
+              subDomain={fullDomain}
+            />
+          </>
+        );
+      },
       meta: { className: "master-campaign-cell" },
     }),
     {

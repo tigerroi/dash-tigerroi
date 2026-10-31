@@ -1,6 +1,6 @@
 // Ekstensi ditulis penuh supaya modul ini bisa dijalankan node --test apa adanya (lihat
 // countryBreakdown.test.mjs); Vite menerima keduanya.
-import { normalizeCountryRoiRow } from "./countryRoi.js";
+import { normalizeCountryRoiRow, resolveCountryName } from "./countryRoi.js";
 import { toAmount } from "./toAmount.js";
 import { canonicalSubDomain } from "./userSubDomains.js";
 
@@ -146,15 +146,17 @@ export function buildCountryBreakdownFromRows(countryRoiRows, rate, roiReports =
     }
 
     const code = String(item.country_code || item.countryCode || "").toUpperCase();
-    const name = item.country_name || item.countryName || item.country || code;
+    const rawName = item.country_name || item.countryName || item.country || code;
+    const name = resolveCountryName(rawName || code);
     const profit = earning - totalSpending;
     const roi = (item.roi !== undefined && item.roi !== null && earning === Number(item.earning || 0)) ? Number(item.roi) : totalSpending > 0 ? Math.round(((earning - totalSpending) / totalSpending) * 100 * 100) / 100 : 0;
+    const countryLabel = name && name !== code ? `${name} (${code})` : (name || code);
 
     rows.push({
       id: item.id || `${key}__${code}`,
       country: name,
       isoCode: code,
-      countryLabel: `${name}${code ? ` (${code})` : ""}`,
+      countryLabel,
       spending,
       adTax,
       totalSpending,

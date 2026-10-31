@@ -137,11 +137,21 @@ export function normalizeRealtimeRoiRow(item, rate, countryBreakdown) {
     flukRoi: firstValue(item.flukRoi, item.roiFluctuation),
     clicks: firstValue(item.clicks),
     cpc: firstValue(item.cpc),
-    // Satu kunci untuk kolom eCPM, dibaca dari dua nama yang pernah ditulis sisi sync. Dua tabel
-    // yang memakai kunci berbeda (`pageRpm` di sini, `ecpm` di sana) berarti pengurutan kolomnya
-    // membaca field yang tidak ada di salah satunya, dan kolomnya diam saja saat diklik.
-    pageRpm: firstValue(item.pageRpm, item.ecpm),
-    cpr: firstValue(item.cpr),
+    // Satu kunci untuk kolom eCPM (Google Ad Manager / AdSense): jika belum terisi, dihitung dari (earning ÷ impressions) × 1000
+    pageRpm: firstValue(
+      item.pageRpm,
+      item.ecpm,
+      Number(item.impressions || 0) > 0 && Number(money.earning || 0) > 0
+        ? Math.round((Number(money.earning) / Number(item.impressions)) * 1000)
+        : "",
+    ),
+    // CPR (Cost Per Result / Meta Ads): jika belum terisi, dihitung dari spend ÷ clicks/results
+    cpr: firstValue(
+      item.cpr,
+      Number(item.clicks || item.adClicks || 0) > 0 && Number(money.spending || 0) > 0
+        ? Math.round((Number(money.spending) / Number(item.clicks || item.adClicks)) * 100) / 100
+        : "",
+    ),
     metaBalance: firstValue(item.metaBalance, item.balance),
     campaigns: toCampaignList(item.campaigns),
     // Dijodohkan dari `item` yang mentah — tanggal ISO dan nama subdomain apa adanya, dua hal yang

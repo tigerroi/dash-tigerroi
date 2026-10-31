@@ -29,6 +29,7 @@ import { renderCell } from "../lib/renderCell";
 import { realtimeRoiRows } from "../lib/roiRealtime";
 import { filterRowsByOwner, ownerChoices, subDomainOwnerIndex } from "../lib/subDomainOwners";
 import { subDomainRoiSeries } from "../lib/subDomainRoiSeries";
+import { buildCampaignsBySubDomain } from "../lib/toCampaignList";
 import { countryRoiSources } from "../lib/userReports";
 import { KeitaroCsvImportDialog } from "./campaigns/KeitaroCsvImportDialog";
 import { FillRate } from "./FillRate";
@@ -230,6 +231,7 @@ export function Overview({ store, navigate, tab, role, viewer }) {
     () => subDomainOwnerIndex(store.subDomains, store.domains),
     [store.subDomains, store.domains],
   );
+  const campaignsMap = useMemo(() => buildCampaignsBySubDomain(store.users), [store.users]);
   // Isi ketiga dropdown — aturannya di `ownerChoices` (lib/subDomainOwners.js), satu tempat untuk
   // semua tab Overview. Lewat indeks pemilik yang sama dengan penyaring isi grafik, jadi tidak ada
   // nama di dropdown yang tidak punya satu baris pun di belakangnya.
@@ -970,6 +972,7 @@ export function Overview({ store, navigate, tab, role, viewer }) {
             </div>
           </div>
           <RealtimeRoiTable
+            campaignsMap={campaignsMap}
             countryBreakdown={countryBreakdown}
             formatSubDomain={subDomainOwners.fullOf}
             items={filteredRoiReports}
@@ -995,9 +998,17 @@ function founderColumns(totals) {
   return [
     {
       accessorKey: "name",
-      header: "Nama Advertiser",
+      header: "Nama Akun / Advertiser",
       footer: "Total",
-      cell: ({ getValue }) => <strong>{getValue()}</strong>,
+      cell: ({ getValue }) => {
+        const val = String(getValue() || "");
+        const isCombined =
+          val.includes(",") ||
+          val.toLowerCase() === "semua user" ||
+          val.toLowerCase().includes("mas def (superadmin), nurjaman") ||
+          (val.toLowerCase().includes("superadmin") && val.toLowerCase().includes("nurjaman"));
+        return <strong>{isCombined ? "BD R 16" : val}</strong>;
+      },
     },
     moneyColumn("topup", "Total TopUp (TU)", "nominal", { total: totals.topup }),
     moneyColumn("totalSpending", "Total Spending + Tax (ST)", "spending", {
@@ -1063,7 +1074,7 @@ function FounderRoiPanel({ store }) {
     <section className="panel">
       <div className="panel-header">
         <div>
-          <h2>ROI Founder</h2>
+          <h2>ROI Founder (BD R 16)</h2>
           <p>
             {report.firstDay
               ? `${formatDate(report.firstDay)} – ${formatDate(report.lastDay)}`
