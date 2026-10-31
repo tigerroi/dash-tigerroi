@@ -944,10 +944,25 @@ function buildProfileFromStore(user, store) {
 
   const checkOwnerMatch = (item) => {
     if (!item) return false;
-    const owner = String(item.userOwner || item.pic || "").trim().toLowerCase();
+    const owner = String(item.userOwner || item.user_owner || item.pic || "").trim().toLowerCase();
+    // Akun bersama armada (1 akun Meta untuk semua user) atau akun tanpa pembatasan pemilik
+    if (
+      !owner ||
+      owner === "semua user" ||
+      owner === "semua" ||
+      owner === "all" ||
+      owner === "tanpa pemilik" ||
+      owner === "tanpa pemilik (opsional)"
+    ) {
+      return true;
+    }
     const actUserId = item.picUserId || item.pic_user_id || item.userId;
     if (actUserId && (actUserId === user.id || actUserId === user.name)) return true;
-    if (owner && userKeys.includes(owner)) return true;
+    if (userKeys.includes(owner)) return true;
+    if (owner.includes(",")) {
+      const parts = owner.split(",").map((s) => s.trim().toLowerCase());
+      if (parts.some((p) => userKeys.includes(p))) return true;
+    }
     for (const uk of userKeys) {
       if (owner.length >= 3 && uk.length >= 3 && (uk.startsWith(owner) || owner.startsWith(uk))) return true;
       if (owner === "sul" && uk.includes("zulfan")) return true;
@@ -958,23 +973,17 @@ function buildProfileFromStore(user, store) {
   };
 
   const owned = store.adAccounts.filter(checkOwnerMatch);
+  // Karena 1 akun Meta digunakan untuk semua user, jika tidak ada akun yang disaring khusus,
+  // seluruh akun iklan armada tampil di halaman profil user
   const matchedAccounts =
     owned.length > 0
       ? owned
-      : store.adAccounts.filter((item) =>
-          userKeys.some((uk) =>
-            String(item.name || "")
-              .toLowerCase()
-              .includes(uk),
-          ),
-        );
+      : store.adAccounts;
 
   const fallbackAdAccounts =
     matchedAccounts.length > 0
       ? matchedAccounts
-      : isUserSuperAdmin
-        ? store.adAccounts
-        : [];
+      : store.adAccounts;
 
   const rawProfileAdAccounts =
     toArray(user.adAccounts).length > 0 ? toArray(user.adAccounts) : fallbackAdAccounts;

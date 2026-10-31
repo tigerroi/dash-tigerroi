@@ -18,11 +18,14 @@ export function normalizeAdAccountRow(row) {
     row.syncDisabled !== undefined
       ? Boolean(row.syncDisabled)
       : row.status === "INACTIVE" || row.sync_disabled === true;
+  const rawOwner = String(row.userOwner || row.user_owner || "").trim();
+  const userOwner = !rawOwner || rawOwner.toLowerCase() === "tanpa pemilik (opsional)" ? "Semua User" : rawOwner;
 
   return {
     ...row,
     actId,
     accountId: actId,
+    userOwner,
     syncDisabled: isDisabled,
     syncStatus: row.syncStatus || (isDisabled ? "Nonaktif" : "Aktif"),
   };
@@ -35,12 +38,14 @@ export function formatAdAccountPayload(values = {}) {
   const rawId = values.actId || values.accountId || values.account_id || values.act_id || "";
   const normalizedId = normalizeActId(rawId);
   const isSyncDisabled = Boolean(values.syncDisabled);
+  const rawOwner = values.userOwner ? String(values.userOwner).trim() : "";
+  const userOwner = !rawOwner || rawOwner.toLowerCase() === "tanpa pemilik (opsional)" ? "Semua User" : rawOwner;
 
   return {
     name: values.name ? String(values.name).trim() : "",
     account_id: normalizedId,
     act_id: normalizedId,
-    user_owner: values.userOwner ? String(values.userOwner).trim() : null,
+    user_owner: userOwner,
     currency: values.currency || "IDR",
     status: isSyncDisabled ? "INACTIVE" : "ACTIVE",
     sync_disabled: isSyncDisabled,

@@ -67,7 +67,11 @@ export const topupPic = (values, store = {}) => {
  * berdampingan yang selalu bisa dibaca dari satu sama lain. Saklarnya tetap ada di form.
  */
 const adAccountRows = (items = []) =>
-  items.map((row) => (row?.syncDisabled ? { ...row, syncStatus: "Nonaktif" } : row));
+  items.map((row) => ({
+    ...row,
+    userOwner: row?.userOwner || "Semua User",
+    syncStatus: row?.syncDisabled ? "Nonaktif" : (row?.syncStatus || "Aktif"),
+  }));
 
 /**
  * Akun GAM yang menaungi sebuah domain, dicari lewat NAMA domainnya (`gamAccounts.name` memang
@@ -352,7 +356,7 @@ export const resources = {
         optionsFrom: "users",
         optionLabel: "name",
         optionValue: "name",
-        emptyLabel: "Tanpa pemilik (opsional)",
+        emptyLabel: "Semua User (Akun Bersama)",
       },
       {
         // Matikan sync untuk akun yang disuspend Meta: sync berhenti menembak akun ini (dan berhenti
