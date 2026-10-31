@@ -15,3 +15,4 @@ WHERE user_owner IS NULL
 -- 2. Jadikan 'Semua User' sebagai nilai bawaan (default) pada kolom user_owner
 ALTER TABLE public.ad_accounts 
 ALTER COLUMN user_owner SET DEFAULT 'Semua User';
+

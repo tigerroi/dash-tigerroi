@@ -351,12 +351,11 @@ export const resources = {
         // belum/tidak dimiliki siapa pun — ia tidak muncul di halaman user mana pun dan campaign-nya
         // tak terpetakan sampai owner diisi. Berguna untuk akun yang sedang dilepas dari seseorang.
         name: "userOwner",
-        label: "User Pemilik",
-        type: "select",
+        label: "User Pemilik (bisa pilih lebih dari satu)",
+        type: "multiselect",
         optionsFrom: "users",
         optionLabel: "name",
         optionValue: "name",
-        emptyLabel: "Semua User (Akun Bersama)",
       },
       {
         // Matikan sync untuk akun yang disuspend Meta: sync berhenti menembak akun ini (dan berhenti

@@ -47,40 +47,74 @@ export function Field({
     <div className="field">
       <label htmlFor={id}>{label}</label>
       {type === "multiselect" ? (
-        <div className="control checkbox-group">
-          {normalizedOptions.map((option) => {
-            const selected = String(value || "")
-              .split(",")
-              .map((r) => r.trim())
-              .includes(option.value);
-            return (
-              <label key={option.value} className="checkbox-option">
-                <input
-                  type="checkbox"
-                  checked={selected}
-                  onChange={() => {
-                    const current = new Set(
-                      String(value || "")
-                        .split(",")
-                        .map((r) => r.trim())
-                        .filter(Boolean),
-                    );
-                    current.has(option.value)
-                      ? current.delete(option.value)
-                      : current.add(option.value);
-                    // Rejoin in the option order so the stored string is stable.
-                    onChange(
-                      normalizedOptions
+        <div className="multiselect-container">
+          <div className="multiselect-actions" style={{ marginBottom: 8, display: "flex", gap: 8 }}>
+            <button
+              type="button"
+              className="ghost-button compact"
+              style={{ fontSize: "11px", padding: "2px 8px", height: "auto" }}
+              onClick={() =>
+                onChange(
+                  normalizedOptions
+                    .map((o) => o.value)
+                    .filter(Boolean)
+                    .join(", "),
+                )
+              }
+            >
+              Pilih Semua
+            </button>
+            <button
+              type="button"
+              className="ghost-button compact"
+              style={{ fontSize: "11px", padding: "2px 8px", height: "auto" }}
+              onClick={() => onChange("")}
+            >
+              Hapus Semua
+            </button>
+          </div>
+          <div className="control checkbox-group">
+            {normalizedOptions.map((option) => {
+              const rawStr = String(value || "").trim();
+              const isAll = rawStr.toLowerCase() === "semua user" || rawStr.toLowerCase() === "all";
+              const selected =
+                isAll ||
+                rawStr
+                  .split(",")
+                  .map((r) => r.trim().toLowerCase())
+                  .includes(String(option.value).toLowerCase());
+
+              return (
+                <label key={option.value} className="checkbox-option">
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={() => {
+                      const current = isAll
+                        ? new Set(normalizedOptions.map((o) => o.value))
+                        : new Set(
+                            rawStr
+                              .split(",")
+                              .map((r) => r.trim())
+                              .filter(Boolean),
+                          );
+
+                      current.has(option.value)
+                        ? current.delete(option.value)
+                        : current.add(option.value);
+
+                      const next = normalizedOptions
                         .filter((o) => current.has(o.value))
                         .map((o) => o.value)
-                        .join(","),
-                    );
-                  }}
-                />
-                {option.label}
-              </label>
-            );
-          })}
+                        .join(", ");
+                      onChange(next);
+                    }}
+                  />
+                  {option.label}
+                </label>
+              );
+            })}
+          </div>
         </div>
       ) : type === "select" ? (
         <SelectField

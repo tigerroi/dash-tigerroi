@@ -38,8 +38,12 @@ export function formatAdAccountPayload(values = {}) {
   const rawId = values.actId || values.accountId || values.account_id || values.act_id || "";
   const normalizedId = normalizeActId(rawId);
   const isSyncDisabled = Boolean(values.syncDisabled);
-  const rawOwner = values.userOwner ? String(values.userOwner).trim() : "";
-  const userOwner = !rawOwner || rawOwner.toLowerCase() === "tanpa pemilik (opsional)" ? "Semua User" : rawOwner;
+  let rawOwner = values.userOwner;
+  if (Array.isArray(rawOwner)) {
+    rawOwner = rawOwner.filter(Boolean).join(", ");
+  }
+  const strOwner = String(rawOwner || "").trim();
+  const userOwner = !strOwner || strOwner.toLowerCase() === "tanpa pemilik (opsional)" ? "Semua User" : strOwner;
 
   return {
     name: values.name ? String(values.name).trim() : "",

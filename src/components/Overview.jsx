@@ -122,16 +122,22 @@ export function Overview({ store, navigate, tab, role, viewer }) {
     const balanceByPic = new Map();
     for (const acc of adAccounts) {
       if (acc.syncDisabled) continue;
-      const owner = String(acc.userOwner || "").trim();
-      if (!owner) continue;
+      const rawOwner = String(acc.userOwner || "").trim();
+      if (!rawOwner) continue;
 
-      const key = owner.toLowerCase();
-      const prevBal = balanceByPic.get(key) || 0;
-      balanceByPic.set(key, prevBal + Number(acc.balance || 0));
+      const owners = rawOwner.includes(",")
+        ? rawOwner.split(",").map((s) => s.trim()).filter(Boolean)
+        : [rawOwner];
 
-      if (Number(acc.spendToday || 0) > 0) {
-        const prevSpend = spendTodayByPic.get(key) || 0;
-        spendTodayByPic.set(key, Math.max(prevSpend, Number(acc.spendToday || 0)));
+      for (const owner of owners) {
+        const key = owner.toLowerCase();
+        const prevBal = balanceByPic.get(key) || 0;
+        balanceByPic.set(key, prevBal + Number(acc.balance || 0));
+
+        if (Number(acc.spendToday || 0) > 0) {
+          const prevSpend = spendTodayByPic.get(key) || 0;
+          spendTodayByPic.set(key, Math.max(prevSpend, Number(acc.spendToday || 0)));
+        }
       }
     }
 
@@ -143,9 +149,14 @@ export function Overview({ store, navigate, tab, role, viewer }) {
     }
     for (const acc of adAccounts) {
       if (acc.userOwner) {
-        const k = acc.userOwner.toLowerCase();
-        if (!picSet.has(k)) {
-          picSet.set(k, { name: acc.userOwner, userId: acc.id });
+        const owners = String(acc.userOwner).includes(",")
+          ? String(acc.userOwner).split(",").map((s) => s.trim()).filter(Boolean)
+          : [String(acc.userOwner).trim()];
+        for (const o of owners) {
+          const k = o.toLowerCase();
+          if (!picSet.has(k)) {
+            picSet.set(k, { name: o, userId: acc.id });
+          }
         }
       }
     }

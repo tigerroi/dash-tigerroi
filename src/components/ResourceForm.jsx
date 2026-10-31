@@ -179,7 +179,7 @@ function resolveFieldOptions(field, store, currentValue) {
   // sudah keluar) tetap ditawarkan sebagai pilihan. Tanpa ini <select> menampilkannya sebagai
   // kosong, dan baris lama yang hanya diedit nominalnya akan tertahan validasi "wajib diisi" —
   // atau tersimpan dengan nama yang hilang diam-diam.
-  if (saved && !options.some((option) => option.value === saved)) {
+  if (field.type !== "multiselect" && saved && !options.some((option) => option.value === saved)) {
     options.unshift({ value: saved, label: saved });
   }
 
