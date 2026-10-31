@@ -1,5 +1,6 @@
-import { supabase } from "../config/supabase";
+import { supabase } from "../config/supabase.js";
 import { logActivity } from "./activityRecorder";
+import { formatAdAccountPayload, normalizeAdAccountRow } from "./adAccountAdapter.js";
 
 /**
  * Peta resource frontend TigerROI ke tabel PostgreSQL Supabase.
@@ -54,6 +55,12 @@ export function toCamelCaseRow(row) {
   for (const [key, value] of Object.entries(row)) {
     result[toCamelCaseKey(key)] = value;
   }
+  if (result.accountId && !result.actId) {
+    result.actId = result.accountId;
+  }
+  if (result.actId && !result.accountId) {
+    result.accountId = result.actId;
+  }
   return result;
 }
 
@@ -64,6 +71,42 @@ export function toSnakeCasePayload(payload) {
     result[toSnakeCaseKey(key)] = value;
   }
   return result;
+}
+
+/**
+ * Menyiapkan payload agar cocok dengan skema tabel PostgreSQL Supabase
+ */
+function prepareResourcePayload(key, values) {
+  if (key === "adAccounts") {
+    return formatAdAccountPayload(values);
+  }
+
+  const payload = toSnakeCasePayload(values);
+  delete payload.id;
+  delete payload.created_at;
+  return payload;
+}
+
+/**
+ * Sinkronisasi otomatis ke meta_accounts agar terbaca oleh job sinkronisasi Meta
+ */
+async function syncToMetaAccountsIfNeeded(key, payload, values) {
+  if (key !== "adAccounts") return;
+  const actId = payload.account_id || payload.act_id;
+  if (!actId) return;
+
+  try {
+    const metaPayload = {
+      account_id: actId,
+      name: payload.name || values?.name || "Meta Account",
+      currency: payload.currency || "IDR",
+      is_active: payload.status !== "INACTIVE" && !payload.sync_disabled,
+      updated_at: new Date().toISOString(),
+    };
+    await supabase.from("meta_accounts").upsert(metaPayload, { onConflict: "account_id" });
+  } catch (err) {
+    console.warn("[meta_accounts] Gagal sinkronisasi ke meta_accounts:", err?.message);
+  }
 }
 
 /**
@@ -246,7 +289,10 @@ export function subscribeResource(key, callback, onError) {
             return;
           }
         }
-        const rows = (data || []).map(toCamelCaseRow);
+        let rows = (data || []).map(toCamelCaseRow);
+        if (key === "adAccounts") {
+          rows = rows.map(normalizeAdAccountRow);
+        }
         callback(rows);
       }
     } catch (err) {
@@ -372,8 +418,7 @@ export async function createResource(key, values, actor = "system") {
   const table = TABLE_MAP[key];
   if (!table) throw new Error(`Tabel Supabase tidak ditemukan untuk resource: ${key}`);
 
-  const payload = toSnakeCasePayload(values);
-  delete payload.id; // Biarkan database menghasilkan UUID
+  const payload = prepareResourcePayload(key, values);
 
   return tracked(`create:${key}`, table, nameOf(values), async () => {
     let { data, error } = await supabase.from(table).insert(payload).select().single();
@@ -388,6 +433,7 @@ export async function createResource(key, values, actor = "system") {
       }
     }
     if (error) throw error;
+    await syncToMetaAccountsIfNeeded(key, payload, values);
     return toCamelCaseRow(data);
   });
 }
@@ -399,7 +445,7 @@ export async function createResourceAt(key, id, values, actor = "system") {
   const table = TABLE_MAP[key];
   if (!table) throw new Error(`Tabel Supabase tidak ditemukan untuk resource: ${key}`);
 
-  const payload = toSnakeCasePayload(values);
+  const payload = prepareResourcePayload(key, values);
   payload.id = id;
 
   return tracked(`create:${key}`, `${table}/${id}`, nameOf(values), async () => {
@@ -415,6 +461,7 @@ export async function createResourceAt(key, id, values, actor = "system") {
       }
     }
     if (error) throw error;
+    await syncToMetaAccountsIfNeeded(key, payload, values);
     return toCamelCaseRow(data);
   });
 }
@@ -426,11 +473,7 @@ export async function createManyResources(key, rows, actor = "system") {
   const table = TABLE_MAP[key];
   if (!table) throw new Error(`Tabel Supabase tidak ditemukan untuk resource: ${key}`);
 
-  const payloads = rows.map((r) => {
-    const p = toSnakeCasePayload(r);
-    delete p.id;
-    return p;
-  });
+  const payloads = rows.map((r) => prepareResourcePayload(key, r));
 
   return tracked(`import:${key}`, table, { baris: rows.length }, async () => {
     const { error } = await supabase.from(table).insert(payloads);
@@ -445,9 +488,7 @@ export async function updateResource(key, id, values, actor = "system") {
   const table = TABLE_MAP[key];
   if (!table) throw new Error(`Tabel Supabase tidak ditemukan untuk resource: ${key}`);
 
-  const payload = toSnakeCasePayload(values);
-  delete payload.id;
-  delete payload.created_at;
+  const payload = prepareResourcePayload(key, values);
 
   return tracked(`update:${key}`, `${table}/${id}`, changedFields(values), async () => {
     let { error } = await supabase.from(table).update(payload).eq("id", id);
@@ -461,6 +502,7 @@ export async function updateResource(key, id, values, actor = "system") {
       }
     }
     if (error) throw error;
+    await syncToMetaAccountsIfNeeded(key, payload, values);
   });
 }
 
@@ -481,8 +523,30 @@ export async function deleteResource(key, id, actor = "system") {
   if (!table) throw new Error(`Tabel Supabase tidak ditemukan untuk resource: ${key}`);
 
   return tracked(`archive:${key}`, `${table}/${id}`, null, async () => {
+    let accountIdToDelete = null;
+    if (key === "adAccounts") {
+      try {
+        const { data: existing } = await supabase
+          .from(table)
+          .select("account_id, act_id")
+          .eq("id", id)
+          .maybeSingle();
+        accountIdToDelete = existing?.account_id || existing?.act_id;
+      } catch {
+        // Lanjutkan penghapusan utama
+      }
+    }
+
     const { error } = await supabase.from(table).delete().eq("id", id);
     if (error) throw error;
+
+    if (accountIdToDelete) {
+      try {
+        await supabase.from("meta_accounts").delete().eq("account_id", accountIdToDelete);
+      } catch {
+        // Abaikan error cleanup meta_accounts
+      }
+    }
   });
 }
 

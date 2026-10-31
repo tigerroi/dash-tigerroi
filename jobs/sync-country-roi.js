@@ -172,6 +172,31 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
       .eq("is_active", true);
 
     const accounts = metaAccounts || [];
+    if (accounts.length === 0) {
+      try {
+        const { data: adAccList } = await supabase
+          .from("ad_accounts")
+          .select("id, account_id, act_id, status, sync_disabled")
+          .or("status.eq.ACTIVE,sync_disabled.eq.false");
+        if (adAccList && adAccList.length > 0) {
+          console.log(`ℹ️ Menemukan ${adAccList.length} akun aktif dari ad_accounts.`);
+          for (const a of adAccList) {
+            const actId = a.account_id || a.act_id;
+            if (actId) {
+              accounts.push({
+                id: a.id,
+                account_id: actId,
+                access_token: null,
+                is_active: true,
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.warn(`Gagal memeriksa ad_accounts: ${err.message}`);
+      }
+    }
+
     if (accounts.length === 0 && process.env.META_ACCOUNT_ID && GLOBAL_META_TOKEN) {
       accounts.push({
         id: "env-account",

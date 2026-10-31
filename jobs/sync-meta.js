@@ -138,7 +138,37 @@ export async function runSyncMeta() {
     const accounts = accountsList || [];
     if (accounts.length === 0) {
       console.log(
-        "ℹ️ Tidak ada akun aktif di meta_accounts. Memeriksa META_ACCOUNT_ID dari environment...",
+        "ℹ️ Tidak ada akun aktif di meta_accounts. Memeriksa ad_accounts...",
+      );
+      try {
+        const { data: adAccList } = await supabase
+          .from("ad_accounts")
+          .select("id, account_id, act_id, name, currency, status, sync_disabled")
+          .or("status.eq.ACTIVE,sync_disabled.eq.false");
+        if (adAccList && adAccList.length > 0) {
+          console.log(`ℹ️ Menemukan ${adAccList.length} akun aktif dari ad_accounts.`);
+          for (const a of adAccList) {
+            const actId = a.account_id || a.act_id;
+            if (actId) {
+              accounts.push({
+                id: a.id,
+                account_id: actId,
+                name: a.name || actId,
+                access_token: null,
+                currency: a.currency || "IDR",
+                is_active: true,
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.warn(`Gagal memeriksa ad_accounts: ${err.message}`);
+      }
+    }
+
+    if (accounts.length === 0) {
+      console.log(
+        "ℹ️ Memeriksa META_ACCOUNT_ID dari environment...",
       );
       if (process.env.META_ACCOUNT_ID && GLOBAL_META_TOKEN) {
         accounts.push({
@@ -187,7 +217,7 @@ export async function runSyncMeta() {
           `    Saldo/Limit: ${overview.currency} ${overview.remainingBudget.toLocaleString()} | Spent: ${overview.amountSpent}`,
         );
 
-        // Update informasi saldo di meta_accounts jika baris ada di database
+        // Update informasi saldo di meta_accounts & ad_accounts jika baris ada di database
         if (account.id !== "env-account") {
           await supabase
             .from("meta_accounts")
@@ -199,7 +229,23 @@ export async function runSyncMeta() {
               last_synced_at: new Date().toISOString(),
               last_error: null,
             })
-            .eq("id", account.id);
+            .eq("account_id", account.account_id);
+
+          try {
+            await supabase
+              .from("ad_accounts")
+              .update({
+                currency: overview.currency,
+                balance: overview.balance,
+                spend_cap: overview.spendCap,
+                amount_spent: overview.amountSpent,
+                status: "ACTIVE",
+                updated_at: new Date().toISOString(),
+              })
+              .or(`account_id.eq.${account.account_id},act_id.eq.${account.account_id}`);
+          } catch {
+            // Lanjutkan jika tabel ad_accounts belum diperbarui
+          }
         }
 
         // B. Ambil insights campaign (spend harian)
