@@ -211,7 +211,6 @@ async function run() {
   console.log(` - Hasil Agregasi    : ${aggregated.size} baris unik (date × site_code)`);
 
   const recordsToUpsert = Array.from(aggregated.values()).map((item) => {
-    const profit = Math.round((item.revenue - item.spend) * 100) / 100;
     const roi_percent =
       item.spend > 0
         ? Math.round(((item.revenue - item.spend) / item.spend) * 10000) / 100
@@ -226,7 +225,6 @@ async function run() {
       impressions: item.impressions,
       spend: Math.round(item.spend * 100) / 100,
       revenue: Math.round(item.revenue * 100) / 100,
-      profit,
       roi_percent,
       cpc,
       metadata: {
@@ -268,3 +266,4 @@ run().catch((err) => {
   console.error("❌ Fatal Error:", err);
   process.exit(1);
 });
+
