@@ -88,6 +88,90 @@ export function Overview({ store, navigate, tab, role, viewer }) {
   const roiReports = store.roiReports || [];
   const roiSnapshots = store.roiSnapshots || [];
 
+  // Helper kanonisasi nama advertiser (Ade Suparman = Man, Zulfan = Sul, Superadmin bukan PIC)
+  function canonicalAdvertiserInfo(rawName, userList = []) {
+    if (!rawName) return null;
+    const lower = String(rawName).trim().toLowerCase();
+
+    // 1. Mas Def adalah Superadmin, BUKAN advertiser / PIC
+    if (
+      lower.includes("superadmin") ||
+      lower.includes("mas def") ||
+      lower.includes("masdef") ||
+      lower.includes("defri") ||
+      lower === "admin"
+    ) {
+      return null;
+    }
+
+    // 2. Ade Suparman dan man adalah orang yang sama
+    if (lower === "man" || lower.includes("ade suparman") || lower.includes("suparman")) {
+      const match = userList.find(
+        (u) =>
+          (u.name && (u.name.toLowerCase().includes("ade suparman") || u.name.toLowerCase() === "man")) ||
+          (u.email && u.email.toLowerCase().includes("man@"))
+      );
+      return {
+        key: "ade suparman",
+        name: "Ade Suparman",
+        userId: match?.id || match?.uid || null,
+      };
+    }
+
+    // 3. Sul dan Zulfan adalah orang yang sama
+    if (lower === "sul" || lower.includes("zulfan")) {
+      const match = userList.find(
+        (u) =>
+          (u.name && (u.name.toLowerCase().includes("zulfan") || u.name.toLowerCase() === "sul")) ||
+          (u.email && (u.email.toLowerCase().includes("zulfan") || u.email.toLowerCase().includes("sul")))
+      );
+      return {
+        key: "zulfan",
+        name: "Zulfan",
+        userId: match?.id || match?.uid || null,
+      };
+    }
+
+    // 4. Mulyana dan Mul adalah orang yang sama
+    if (lower === "mul" || lower === "amul" || lower.includes("mulyana")) {
+      const match = userList.find(
+        (u) =>
+          (u.name && (u.name.toLowerCase().includes("mulyana") || u.name.toLowerCase() === "mul")) ||
+          (u.email && u.email.toLowerCase().includes("amul"))
+      );
+      return {
+        key: "mulyana",
+        name: "Mulyana",
+        userId: match?.id || match?.uid || null,
+      };
+    }
+
+    // 5. Nurjaman dan Nur adalah orang yang sama
+    if (lower === "nur" || lower.includes("nurjaman")) {
+      const match = userList.find(
+        (u) =>
+          (u.name && u.name.toLowerCase().includes("nurjaman")) ||
+          (u.email && u.email.toLowerCase().includes("nurjaman"))
+      );
+      return {
+        key: "nurjaman",
+        name: "Nurjaman",
+        userId: match?.id || match?.uid || null,
+      };
+    }
+
+    const match = userList.find((u) => u.name && u.name.toLowerCase() === lower);
+    if (match && (match.role || "").includes("superadmin")) {
+      return null;
+    }
+
+    return {
+      key: lower,
+      name: match?.name || rawName.trim(),
+      userId: match?.id || match?.uid || null,
+    };
+  }
+
   const advertiserSpend = useMemo(() => {
     if (Array.isArray(store.advertiserSpend) && store.advertiserSpend.length > 0) {
       return store.advertiserSpend;
@@ -101,21 +185,21 @@ export function Overview({ store, navigate, tab, role, viewer }) {
     const spendTodayByPic = new Map();
     for (const snap of roiSnapshots) {
       if (!snap?.date || snap?.date === today) {
-        const pic = String(snap?.pic || "").trim();
-        if (pic) {
-          const current = spendTodayByPic.get(pic.toLowerCase()) || 0;
+        const canonical = canonicalAdvertiserInfo(snap?.pic, users);
+        if (canonical) {
+          const current = spendTodayByPic.get(canonical.key) || 0;
           const val = Number(snap.spending || snap.metaSpend || snap.totalSpending || 0);
-          if (val > current) spendTodayByPic.set(pic.toLowerCase(), val);
+          if (val > current) spendTodayByPic.set(canonical.key, val);
         }
       }
     }
     for (const rep of roiReports) {
       if (rep?.date === today) {
-        const pic = String(rep?.pic || "").trim();
-        if (pic) {
-          const current = spendTodayByPic.get(pic.toLowerCase()) || 0;
+        const canonical = canonicalAdvertiserInfo(rep?.pic, users);
+        if (canonical) {
+          const current = spendTodayByPic.get(canonical.key) || 0;
           const val = Number(rep.spending || rep.metaSpend || rep.totalSpending || 0);
-          spendTodayByPic.set(pic.toLowerCase(), current + val);
+          spendTodayByPic.set(canonical.key, current + val);
         }
       }
     }
@@ -127,7 +211,7 @@ export function Overview({ store, navigate, tab, role, viewer }) {
       if (!rawOwner) continue;
 
       const isAllUsers = rawOwner.toLowerCase() === "semua user";
-      const owners = isAllUsers
+      const rawOwners = isAllUsers
         ? users.map((u) => u.name).filter(Boolean)
         : (rawOwner.includes(",")
             ? rawOwner.split(",").map((s) => s.trim()).filter(Boolean)
@@ -140,40 +224,41 @@ export function Overview({ store, navigate, tab, role, viewer }) {
           ? Math.max(0, Math.round((cap - spent) * 100) / 100)
           : Number(acc.balance || 0);
 
-      for (const owner of owners) {
-        const key = owner.toLowerCase();
-        const prevBal = balanceByPic.get(key) || 0;
-        balanceByPic.set(key, prevBal + accountSisaSaldo);
+      for (const owner of rawOwners) {
+        const canonical = canonicalAdvertiserInfo(owner, users);
+        if (!canonical) continue;
+
+        const prevBal = balanceByPic.get(canonical.key) || 0;
+        balanceByPic.set(canonical.key, prevBal + accountSisaSaldo);
 
         if (Number(acc.spendToday || 0) > 0) {
-          const prevSpend = spendTodayByPic.get(key) || 0;
-          spendTodayByPic.set(key, Math.max(prevSpend, Number(acc.spendToday || 0)));
+          const prevSpend = spendTodayByPic.get(canonical.key) || 0;
+          spendTodayByPic.set(canonical.key, Math.max(prevSpend, Number(acc.spendToday || 0)));
         }
       }
     }
 
     const picSet = new Map();
     for (const u of users) {
-      if (u.name) {
-        picSet.set(u.name.toLowerCase(), { name: u.name, userId: u.id || u.uid });
+      const canonical = canonicalAdvertiserInfo(u.name, users);
+      if (canonical && !picSet.has(canonical.key)) {
+        picSet.set(canonical.key, { name: canonical.name, userId: canonical.userId || u.id || u.uid });
       }
     }
-    for (const acc of adAccounts) {
-      if (acc.userOwner) {
-        const owners = String(acc.userOwner).includes(",")
-          ? String(acc.userOwner).split(",").map((s) => s.trim()).filter(Boolean)
-          : [String(acc.userOwner).trim()];
-        for (const o of owners) {
-          const k = o.toLowerCase();
-          if (!picSet.has(k)) {
-            picSet.set(k, { name: o, userId: acc.id });
-          }
+    for (const key of balanceByPic.keys()) {
+      if (!picSet.has(key)) {
+        const canonical = canonicalAdvertiserInfo(key, users);
+        if (canonical && !picSet.has(canonical.key)) {
+          picSet.set(canonical.key, canonical);
         }
       }
     }
-    for (const pic of spendTodayByPic.keys()) {
-      if (!picSet.has(pic)) {
-        picSet.set(pic, { name: pic, userId: null });
+    for (const key of spendTodayByPic.keys()) {
+      if (!picSet.has(key)) {
+        const canonical = canonicalAdvertiserInfo(key, users);
+        if (canonical && !picSet.has(canonical.key)) {
+          picSet.set(canonical.key, canonical);
+        }
       }
     }
 
