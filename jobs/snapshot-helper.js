@@ -134,9 +134,9 @@ export async function recordRoiSnapshot(supabase, targetDate) {
 
   console.log(`✅ [SNAPSHOT] Berhasil menyimpan ${snapshotRows.length} baris snapshot waktu ${currentTimeWib} WIB.`);
 
-  // 5. Pembersihan riwayat lama (retensi 7 hari agar kapasitas Supabase Free tetap hemat)
+  // 5. Pembersihan riwayat lama (retensi 60 hari agar riwayat bulan berjalan & bulan lalu tetap utuh)
   try {
-    const cutoffDate = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+    const cutoffDate = new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10);
     const { error: pruneErr } = await supabase
       .from("roi_snapshots")
       .delete()

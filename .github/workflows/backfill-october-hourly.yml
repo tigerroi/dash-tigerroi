@@ -1,0 +1,39 @@
+name: TigerROI Backfill October Hourly Snapshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: "Tanggal mulai (YYYY-MM-DD)"
+        required: true
+        default: "2026-10-01"
+      end_date:
+        description: "Tanggal akhir (YYYY-MM-DD)"
+        required: true
+        default: "2026-10-31"
+
+jobs:
+  backfill:
+    name: Rekonstruksi Snapshot Per Jam ke Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Kode Repositori
+        uses: actions/checkout@v4
+
+      - name: Siapkan Lingkungan Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Pasang Dependensi
+        run: npm ci --omit=dev || npm install --omit=dev
+
+      - name: Jalankan Skrip Backfill
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          node jobs/backfill-october-hourly-snapshots.js --start="${{ github.event.inputs.start_date }}" --end="${{ github.event.inputs.end_date }}"
