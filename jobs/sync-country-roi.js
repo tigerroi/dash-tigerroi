@@ -388,7 +388,7 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
               endDate: end,
             });
 
-            const fxRate = GAM_FX_RATES[net.networkCode] || 1;
+            // Pendapatan GAM ditarik langsung dalam mata uang IDR murni resmi (tidak dikalikan kurs ganda)
             for (const gr of gamRows) {
               const rowDate = gr.date || start;
               const mapped = mapGamRowToSite(
@@ -414,7 +414,7 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
                 clicks: 0,
               };
 
-              existing.earning += gr.totalRevenue * fxRate;
+              existing.earning += gr.totalRevenue;
               existing.impressions += gr.impressions;
               existing.clicks += gr.clicks;
               earnMap.set(key, existing);

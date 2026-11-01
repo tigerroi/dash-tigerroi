@@ -1075,6 +1075,10 @@ function buildProfileFromStore(user, store) {
     const gamRev = gamRevBySubDate.get(gKey) || gamRevBySubDate.get(`${d}__${rawSub}`) || 0;
 
     let earning = Number(row.earning ?? row.revenue ?? 0);
+    // Normalisasi guardrail jika data lama di Supabase terkalikan ganda kurs USD 18.155,28
+    if (earning > 10000000 && impressions < 10000) {
+      earning = Math.round((earning / 18155.28) * 100) / 100;
+    }
     const spending = Number(row.spend ?? row.spending ?? 0);
     const clicks = Number(row.clicks || 0);
     const impressions = Number(row.impressions || 0);
