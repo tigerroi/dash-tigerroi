@@ -123,25 +123,60 @@ async function run() {
     return;
   }
 
-  console.log(`✅ Ditemukan ${dailyRows.length} baris data harian per subdomain.`);
+  console.log(`✅ Ditemukan ${dailyRows.length} baris data harian dari view_daily_roi.`);
 
-  // 2. Susun baris snapshot per jam (24 titik per baris harian)
-  const allSnapshotRows = [];
+  // 1b. Agregasi baris harian per (date × site_code × sub_domain) untuk mencegah duplikasi key
+  const aggregatedDaily = new Map();
+  for (const row of dailyRows) {
+    const dateStr = String(row.date).slice(0, 10);
+    const siteCode = row.site_code || "";
+    const subDomain = row.sub_domain || row.subdomain || row.site_name || "";
+    const key = `${dateStr}__${siteCode}__${subDomain}`;
 
-  for (const daily of dailyRows) {
-    const dateStr = String(daily.date).slice(0, 10);
-    const siteCode = daily.site_code || "";
-    const subDomain = daily.sub_domain || daily.subdomain || daily.site_name || "";
-    const campaign = daily.campaign || siteCode;
-    const domain = daily.domain || "-";
-    const pic = daily.pic || "-";
-    const currency = daily.currency || daily.currency_code || "IDR";
-    const fxRate = Number(daily.fx_rate || 1.0);
+    const prev = aggregatedDaily.get(key) || {
+      date: dateStr,
+      site_code: siteCode,
+      sub_domain: subDomain,
+      campaign: row.campaign || siteCode,
+      domain: row.domain || "-",
+      pic: row.pic || "-",
+      currency: row.currency || row.currency_code || "IDR",
+      fx_rate: Number(row.fx_rate || 1.0),
+      totalSpend: 0,
+      totalEarning: 0,
+      totalClicks: 0,
+      totalImpressions: 0,
+    };
 
-    const totalSpend = Number(daily.spending || daily.spend_idr || daily.meta_spend || 0);
-    const totalEarning = Number(daily.earning || daily.raw_revenue || daily.gam_revenue || 0);
-    const totalClicks = Number(daily.clicks || 0);
-    const totalImpressions = Number(daily.impressions || 0);
+    prev.totalSpend += Number(row.spending || row.spend_idr || row.meta_spend || 0);
+    prev.totalEarning += Number(row.earning || row.raw_revenue || row.gam_revenue || 0);
+    prev.totalClicks += Number(row.clicks || 0);
+    prev.totalImpressions += Number(row.impressions || 0);
+    if (row.pic && row.pic !== "-" && prev.pic === "-") prev.pic = row.pic;
+    if (row.domain && row.domain !== "-" && prev.domain === "-") prev.domain = row.domain;
+
+    aggregatedDaily.set(key, prev);
+  }
+
+  console.log(`✅ Hasil konsolidasi harian unik: ${aggregatedDaily.size} entri.`);
+
+  // 2. Susun baris snapshot per jam (24 titik per entri harian)
+  const snapshotMap = new Map();
+
+  for (const daily of aggregatedDaily.values()) {
+    const dateStr = daily.date;
+    const siteCode = daily.site_code;
+    const subDomain = daily.sub_domain;
+    const campaign = daily.campaign;
+    const domain = daily.domain;
+    const pic = daily.pic;
+    const currency = daily.currency;
+    const fxRate = daily.fx_rate;
+
+    const totalSpend = daily.totalSpend;
+    const totalEarning = daily.totalEarning;
+    const totalClicks = daily.totalClicks;
+    const totalImpressions = daily.totalImpressions;
 
     let prevSpend = 0;
     let prevEarning = 0;
@@ -166,7 +201,7 @@ async function run() {
       const flukEarn = Math.round((cumEarning - prevEarning) * 100) / 100;
       const flukRoi = Math.round((cumRoi - prevRoi) * 100) / 100;
 
-      allSnapshotRows.push({
+      snapshotMap.set(snapshotId, {
         id: snapshotId,
         date: dateStr,
         time: h.time,
@@ -200,6 +235,8 @@ async function run() {
       prevRoi = cumRoi;
     }
   }
+
+  const allSnapshotRows = Array.from(snapshotMap.values());
 
   console.log(`\n📊 Total snapshot yang akan di-upsert: ${allSnapshotRows.length} baris.`);
 
@@ -237,3 +274,4 @@ run().catch((err) => {
   console.error("❌ Fatal Error:", err);
   process.exit(1);
 });
+
