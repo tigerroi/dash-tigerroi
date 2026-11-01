@@ -132,17 +132,25 @@ async function run() {
 
   const range = getDateRange(daysCount);
 
-  // Ambil daftar situs terdaftar
-  const { data: sitesList, error: siteError } = await supabase
-    .from("sites")
-    .select("site_code, name, domain, campaign_pattern, is_active");
+  // Ambil daftar situs dan subdomain terdaftar
+  const [{ data: sitesList, error: siteError }, { data: subdomainsList, error: subError }] =
+    await Promise.all([
+      supabase
+        .from("sites")
+        .select("site_code, name, domain, campaign_pattern, is_active"),
+      supabase
+        .from("subdomains")
+        .select("id, name, site_code, parent_domain"),
+    ]);
 
   if (siteError) {
     console.error(`❌ Gagal mengambil tabel sites: ${siteError.message}`);
     process.exit(1);
   }
 
-  console.log(`✅ Berhasil memuat ${sitesList?.length || 0} situs terdaftar dari Supabase.`);
+  console.log(
+    `✅ Berhasil memuat ${sitesList?.length || 0} situs dan ${subdomainsList?.length || 0} subdomain terdaftar dari Supabase.`
+  );
 
   let rawRows = [];
   try {
@@ -158,7 +166,7 @@ async function run() {
     return;
   }
 
-  // Agregasi per (date, site_code)
+  // Agregasi per (date, site_code, subdomain)
   const aggregated = new Map();
   let matchedCount = 0;
   let unmatchedCount = 0;
@@ -167,24 +175,47 @@ async function run() {
     const dateStr = String(row.day || row.date || range.to).slice(0, 10);
     const campaignName = String(row.campaign || row.campaign_name || "");
     const subId1 = String(row.sub_id_1 || row.subId1 || "");
-    const siteCandidate = subId1 || campaignName;
 
     const matched = matchSiteCode(
       [subId1, campaignName, String(row.campaign_id || "")],
       sitesList || [],
     );
 
-    if (!matched) {
+    const siteCode = typeof matched === "string" ? matched : (matched?.site_code || "");
+
+    if (!siteCode) {
       unmatchedCount++;
       continue;
     }
 
     matchedCount++;
-    const subdomain = matched.subdomain || matched.domain || "";
-    const key = `${dateStr}__${matched.site_code}__${subdomain}`;
+
+    // Cari subdomain yang cocok
+    let matchedSubName = "";
+    if (subdomainsList && subdomainsList.length > 0) {
+      for (const sub of subdomainsList) {
+        if (!sub.name) continue;
+        const subNameLower = sub.name.toLowerCase();
+        const regex = new RegExp(`(^|[^a-z0-9])${subNameLower}([^a-z0-9]|$)`, "i");
+        if (regex.test(campaignName) || regex.test(subId1)) {
+          matchedSubName = sub.name;
+          break;
+        }
+      }
+
+      if (!matchedSubName) {
+        const matchingSubs = subdomainsList.filter((s) => s.site_code === siteCode);
+        const suffix = siteCode.split("-").pop();
+        const defaultSub = matchingSubs.find((s) => s.name === suffix) || matchingSubs[0];
+        matchedSubName = defaultSub ? defaultSub.name : "";
+      }
+    }
+
+    const subdomain = matchedSubName || "";
+    const key = `${dateStr}__${siteCode}__${subdomain}`;
     const prev = aggregated.get(key) || {
       date: dateStr,
-      site_code: matched.site_code,
+      site_code: siteCode,
       subdomain,
       source: "keitaro",
       clicks: 0,
