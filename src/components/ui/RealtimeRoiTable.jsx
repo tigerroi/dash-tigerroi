@@ -8,6 +8,7 @@ import {
   realtimeRoiColumnTone,
 } from "../../lib/roiRealtime";
 import { canonicalSubDomain } from "../../lib/userSubDomains";
+import { getSubdomainHardcodedCampaigns } from "../../lib/toCampaignList";
 import { CountryBreakdownBadge } from "./CountryBreakdownBadge";
 import { DataTable } from "./DataTable";
 import { MergedCampaignsBadge } from "./MergedCampaignsBadge";
@@ -43,24 +44,45 @@ export function RealtimeRoiTable({
         const subSlug = subKey.includes(".") ? subKey.split(".")[0] : subKey;
 
         let campaigns = row.campaigns;
-        if (!campaigns || campaigns.length === 0) {
-          const fromMap =
-            campaignsMap?.get(subKey) ||
-            campaignsMap?.get(subSlug) ||
-            campaignsMap?.get(campKey);
-          if (fromMap && fromMap.length > 0) {
-            campaigns = fromMap;
-          } else if (Number(row.metaSpend || 0) > 0 || Number(row.gamRevenue || 0) > 0) {
-            campaigns = [
-              {
-                name:
-                  canonicalSubDomain(row.subDomain) ||
-                  row.subDomain ||
-                  row.campaign ||
-                  "Campaign Utama",
-                spend: row.metaSpend || 0,
-              },
-            ];
+        const canonical = canonicalSubDomain(row.subDomain);
+        const isGenericOnly =
+          Array.isArray(campaigns) &&
+          campaigns.length === 1 &&
+          (campaigns[0].name === subKey ||
+            campaigns[0].name === subSlug ||
+            campaigns[0].name === campKey ||
+            campaigns[0].name === canonical ||
+            campaigns[0].name === "Campaign Utama");
+
+        if (!campaigns || campaigns.length === 0 || isGenericOnly) {
+          // 1. Prioritaskan Campaign Meta Hardcode sesuai instruksi masdef (bukan seed/migrasi Supabase)
+          const hardcoded =
+            getSubdomainHardcodedCampaigns(subKey, row.metaSpend) ||
+            getSubdomainHardcodedCampaigns(subSlug, row.metaSpend) ||
+            getSubdomainHardcodedCampaigns(campKey, row.metaSpend);
+
+          if (hardcoded && hardcoded.length > 0) {
+            campaigns = hardcoded;
+          } else {
+            // 2. Fallback ke campaignsMap profil user
+            const fromMap =
+              campaignsMap?.get(subKey) ||
+              campaignsMap?.get(subSlug) ||
+              campaignsMap?.get(campKey);
+            if (fromMap && fromMap.length > 0) {
+              campaigns = fromMap;
+            } else if (Number(row.metaSpend || 0) > 0 || Number(row.gamRevenue || 0) > 0) {
+              campaigns = [
+                {
+                  name:
+                    canonical ||
+                    row.subDomain ||
+                    row.campaign ||
+                    "Campaign Utama",
+                  spend: row.metaSpend || 0,
+                },
+              ];
+            }
           }
         }
 
