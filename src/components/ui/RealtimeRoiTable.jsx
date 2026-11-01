@@ -55,22 +55,43 @@ export function RealtimeRoiTable({
             campaigns[0].name === "Campaign Utama");
 
         if (!campaigns || campaigns.length === 0 || isGenericOnly) {
-          // 1. Prioritaskan Campaign Meta Hardcode sesuai instruksi masdef (bukan seed/migrasi Supabase)
-          const hardcoded =
-            getSubdomainHardcodedCampaigns(subKey, row.metaSpend) ||
-            getSubdomainHardcodedCampaigns(subSlug, row.metaSpend) ||
-            getSubdomainHardcodedCampaigns(campKey, row.metaSpend);
+          // 1. PRIORITAS UTAMA: Ambil data dinamis hasil sinkronisasi Meta tiap 60 menit (dari store.users)
+          const fromMap =
+            campaignsMap?.get(subKey) ||
+            campaignsMap?.get(subSlug) ||
+            campaignsMap?.get(campKey);
 
-          if (hardcoded && hardcoded.length > 0) {
-            campaigns = hardcoded;
+          if (fromMap && fromMap.length > 0) {
+            // Jika ada baris total spend di tabel realtime, alokasikan secara proporsional bila spend item masih 0
+            const totalSpendRow = Number(row.metaSpend || 0);
+            const totalBudget = fromMap.reduce((s, c) => s + (Number(c.budget || c.dailyBudget) || 1), 0);
+            let allocatedSum = 0;
+
+            campaigns = fromMap.map((c, idx) => {
+              let spend = Number(c.spend || c.spendToday || 0);
+              if (spend === 0 && totalSpendRow > 0) {
+                if (idx === fromMap.length - 1) {
+                  spend = Math.max(0, totalSpendRow - allocatedSum);
+                } else {
+                  spend = Math.round(((Number(c.budget || c.dailyBudget || 1)) / totalBudget) * totalSpendRow);
+                  allocatedSum += spend;
+                }
+              }
+              return {
+                name: c.name || c.campaign,
+                spend,
+                status: c.status || "ACTIVE",
+              };
+            });
           } else {
-            // 2. Fallback ke campaignsMap profil user
-            const fromMap =
-              campaignsMap?.get(subKey) ||
-              campaignsMap?.get(subSlug) ||
-              campaignsMap?.get(campKey);
-            if (fromMap && fromMap.length > 0) {
-              campaigns = fromMap;
+            // 2. FALLBACK CADANGAN: Gunakan data default jika sync Meta belum tersedia atau belum selesai
+            const hardcoded =
+              getSubdomainHardcodedCampaigns(subKey, row.metaSpend) ||
+              getSubdomainHardcodedCampaigns(subSlug, row.metaSpend) ||
+              getSubdomainHardcodedCampaigns(campKey, row.metaSpend);
+
+            if (hardcoded && hardcoded.length > 0) {
+              campaigns = hardcoded;
             } else if (Number(row.metaSpend || 0) > 0 || Number(row.gamRevenue || 0) > 0) {
               campaigns = [
                 {

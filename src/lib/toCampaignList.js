@@ -236,7 +236,9 @@ export function buildCampaignsBySubDomain(users) {
 
       const item = {
         name: campaignName,
-        spend: Number(c.spend || c.spending || 0),
+        spend: Number(c.spend || c.spending || c.spendToday || 0),
+        budget: Number(c.dailyBudget || c.budget || 0),
+        spendToday: Number(c.spendToday || 0),
         status: c.status || "ACTIVE",
       };
 
