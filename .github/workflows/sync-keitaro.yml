@@ -6,6 +6,15 @@ on:
     - cron: "*/30 * * * *"
   # Pemicu manual dari tab Actions di GitHub
   workflow_dispatch:
+    inputs:
+      start_date:
+        description: "Tanggal mulai (YYYY-MM-DD) - kosongkan untuk hari berjalan"
+        required: false
+        default: "2026-10-01"
+      end_date:
+        description: "Tanggal akhir (YYYY-MM-DD) - kosongkan untuk hari berjalan"
+        required: false
+        default: "2026-10-31"
 
 concurrency:
   group: sync-keitaro
@@ -36,4 +45,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           KEITARO_URL: ${{ secrets.KEITARO_URL || 'https://appscity.tech' }}
           KEITARO_API_KEY: ${{ secrets.KEITARO_API_KEY }}
+          START_DATE: ${{ github.event.inputs.start_date }}
+          END_DATE: ${{ github.event.inputs.end_date }}
         run: node jobs/sync-keitaro.js
+

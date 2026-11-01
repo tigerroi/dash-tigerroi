@@ -54,10 +54,18 @@ const KEITARO_API_KEY = process.env.KEITARO_API_KEY || "";
 
 const args = process.argv.slice(2);
 const isDryRun = args.includes("--dry-run");
+const startArg = args.find((a) => a.startsWith("--start="));
+const endArg = args.find((a) => a.startsWith("--end="));
 const daysArg = args.find((a) => a.startsWith("--days="));
+
+const customStart = startArg ? startArg.split("=")[1] : (process.env.START_DATE || "").trim();
+const customEnd = endArg ? endArg.split("=")[1] : (process.env.END_DATE || "").trim();
 const daysCount = daysArg ? Math.max(1, parseInt(daysArg.split("=")[1], 10) || 1) : 1;
 
 function getDateRange(days) {
+  if (customStart && customEnd) {
+    return { from: customStart, to: customEnd };
+  }
   const to = new Date();
   const from = new Date();
   from.setDate(from.getDate() - (days - 1));
@@ -275,13 +283,17 @@ async function run() {
   }
 
   console.log(`\n💾 Menyimpan ${recordsToUpsert.length} baris ke tabel public.daily_stats...`);
-  const { error: upsertErr } = await supabase.from("daily_stats").upsert(recordsToUpsert, {
-    onConflict: "date,site_code,subdomain,source",
-  });
+  const BATCH_SIZE = 500;
+  for (let i = 0; i < recordsToUpsert.length; i += BATCH_SIZE) {
+    const batch = recordsToUpsert.slice(i, i + BATCH_SIZE);
+    const { error: upsertErr } = await supabase.from("daily_stats").upsert(batch, {
+      onConflict: "date,site_code,subdomain,source",
+    });
 
-  if (upsertErr) {
-    console.error(`❌ Gagal menyimpan ke daily_stats: ${upsertErr.message}`);
-    process.exit(1);
+    if (upsertErr) {
+      console.error(`❌ Gagal menyimpan batch ke-${i} ke daily_stats: ${upsertErr.message}`);
+      process.exit(1);
+    }
   }
 
   console.log("✅ Berhasil menyimpan data Keitaro ke database Supabase!");
