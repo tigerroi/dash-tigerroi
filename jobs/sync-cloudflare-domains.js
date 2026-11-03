@@ -10,6 +10,7 @@ import { listDnsRecords, listZones } from "../functions/cloudflare.js";
  * Mengambil seluruh Domain Induk (Zones) dan Subdomain (DNS Record A/CNAME)
  * dari akun Cloudflare, kemudian secara otomatis mendaftarkan domain dan subdomain
  * baru ke tabel `public.domains` dan `public.subdomains` di Supabase.
+ * Nama domain disimpan bersih tanpa protokol http:// atau https://.
  *
  * Penggunaan:
  *   node jobs/sync-cloudflare-domains.js [--dry-run]
@@ -113,6 +114,32 @@ export async function run() {
   if (domErr) throw new Error(`Gagal membaca tabel domains: ${domErr.message}`);
   if (subErr) throw new Error(`Gagal membaca tabel subdomains: ${subErr.message}`);
 
+  // 1b. Bersihkan protokol https:// atau http:// dari entri domain dan subdomain yang sudah ada
+  if (!isDryRun) {
+    for (const d of existingDomains || []) {
+      const clean = cleanHost(d.domain_url);
+      if (clean && d.domain_url !== clean) {
+        console.log(`   🧹 Membersihkan format domain: '${d.domain_url}' -> '${clean}'`);
+        await supabase
+          .from("domains")
+          .update({ domain_url: clean, updated_at: new Date().toISOString() })
+          .eq("id", d.id);
+        d.domain_url = clean;
+      }
+    }
+
+    for (const s of existingSubdomains || []) {
+      const cleanParent = cleanHost(s.parent_domain);
+      if (cleanParent && s.parent_domain !== cleanParent) {
+        await supabase
+          .from("subdomains")
+          .update({ parent_domain: cleanParent, updated_at: new Date().toISOString() })
+          .eq("id", s.id);
+        s.parent_domain = cleanParent;
+      }
+    }
+  }
+
   const dbDomainsMap = new Map();
   for (const d of existingDomains || []) {
     dbDomainsMap.set(cleanHost(d.domain_url), d);
@@ -133,14 +160,14 @@ export async function run() {
   let newDomainsCount = 0;
   let newSubdomainsCount = 0;
 
-  // 3. Proses Sinkronisasi Domain Induk ke public.domains
+  // 3. Proses Sinkronisasi Domain Induk ke public.domains (bersih tanpa https/http)
   for (const zone of zones) {
     const host = cleanHost(zone.name);
     if (!host) continue;
 
     if (!dbDomainsMap.has(host)) {
       console.log(`   ➕ Menemukan Domain Induk baru: ${host}`);
-      const domainUrl = `https://${host}`;
+      const domainUrl = host; // Murni nama host tanpa https:// atau http://
 
       if (!isDryRun) {
         const { data: insertedDom, error: insertDomErr } = await supabase
@@ -172,7 +199,7 @@ export async function run() {
   for (const zone of zones) {
     const zoneHost = cleanHost(zone.name);
     const parentDom = dbDomainsMap.get(zoneHost);
-    const parentDomainUrl = parentDom?.domain_url || `https://${zoneHost}`;
+    const parentDomainUrl = parentDom?.domain_url || zoneHost;
     const parentDomainId = parentDom?.id || null;
 
     // Cari site_code yang umum digunakan oleh subdomain pada domain induk ini
