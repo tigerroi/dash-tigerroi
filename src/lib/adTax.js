@@ -52,9 +52,9 @@ export function withAdTax(row, rate) {
   // earning-nya keuntungan. `totalSpending` ikut dianggap sumber: baris lama membawanya
   // tanpa `spending`.
   const spendingKnown = hasAmount(row?.spending ?? row?.metaAds) || hasAmount(row?.totalSpending);
-  const earningKnown = hasAmount(row?.earning ?? row?.adsense);
+  const earningKnown = hasAmount(row?.earning ?? row?.revenue ?? row?.gamRevenue ?? row?.grossRevenue ?? row?.adsense);
   const spending = toAmount(row?.spending ?? row?.metaAds);
-  const earning = toAmount(row?.earning ?? row?.adsense);
+  const earning = toAmount(row?.earning ?? row?.revenue ?? row?.gamRevenue ?? row?.grossRevenue ?? row?.adsense);
   const adTax = hasAmount(row?.adTax) ? toAmount(row.adTax) : round(spending * rate);
   const totalSpending = hasAmount(row?.totalSpending)
     ? toAmount(row.totalSpending)

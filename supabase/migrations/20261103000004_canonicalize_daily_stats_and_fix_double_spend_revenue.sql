@@ -280,6 +280,7 @@ SELECT
     b.spend_idr AS total_spending,
     
     -- Pendapatan (IDR)
+    ROUND(b.raw_revenue) AS earning,
     b.raw_revenue AS revenue,
     b.raw_revenue AS gross_revenue,
     b.raw_revenue AS gam_revenue,
@@ -328,10 +329,14 @@ CREATE OR REPLACE VIEW public.view_daily_financials
 WITH (security_invoker = true) AS
 SELECT 
     v.date,
-    COALESCE(SUM(v.revenue), 0) AS gross_revenue,
-    COALESCE(SUM(v.spending), 0) AS total_spending,
+    COALESCE(SUM(v.earning), 0) AS gross_revenue,
+    COALESCE(SUM(v.spending), 0) AS total_spend,
+    COALESCE(SUM(v.ad_tax), 0) AS ad_tax,
+    COALESCE(SUM(v.total_spending), 0) AS total_spending,
     COALESCE(SUM(v.profit), 0) AS net_profit
 FROM public.view_daily_roi v
-GROUP BY v.date;
+GROUP BY v.date
+ORDER BY v.date DESC;
 
 GRANT SELECT ON public.view_daily_financials TO anon, authenticated, service_role;
+
