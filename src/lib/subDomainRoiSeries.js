@@ -94,25 +94,42 @@ export function subDomainRoiSeries(rows, rate) {
     label: shortSubDomainLabel(name),
   }));
 
-  const stamps = [
+  const rawStamps = [
     ...new Set(names.flatMap((name) => [...bySubDomain.get(name).points.keys()])),
   ].sort();
   // Sumbu X memuat jam saja selama seluruh titiknya jatuh di hari yang sama — itu bacaan yang
-  // dicari orang saat periodenya "Hari Ini". Begitu rentangnya lebih dari sehari, tanggalnya ikut
-  // disebut: "14:07" dua kali dalam satu sumbu adalah dua hari yang tidak bisa dibedakan.
-  const days = new Set(stamps.map((stamp) => stamp.slice(0, 10)));
+  // dicari orang saat periodenya "Hari Ini". Begitu rentangnya lebih dari sehari, titiknya dirangkum
+  // per HARI (1 titik harian per subdomain) agar kurva tetap bersih dan tidak bertumpuk ratusan jam.
+  const days = new Set(rawStamps.map((stamp) => stamp.slice(0, 10)));
+  const multiDay = days.size > 1;
+
+  const stamps = multiDay
+    ? [...days].sort()
+    : rawStamps;
+
   const points = stamps.map((stamp) => {
+    const date = multiDay ? stamp : stamp.slice(0, 10);
+    const time = multiDay ? "" : stamp.slice(11);
     const point = {
       stamp,
-      date: stamp.slice(0, 10),
-      time: stamp.slice(11),
-      multiDay: days.size > 1,
+      date,
+      time,
+      multiDay,
     };
 
     for (const item of series) {
-      const found = bySubDomain.get(item.name).points.get(stamp);
-      // `null`, bukan 0 dan bukan dibiarkan hilang: subdomain yang belum punya baris pada sync itu
-      // memutus garisnya di sana, alih-alih menariknya turun ke sumbu.
+      const entry = bySubDomain.get(item.name);
+      let found = null;
+      if (multiDay) {
+        // Ambil pembacaan terakhir pada hari tersebut
+        const dayPoints = [...entry.points.values()]
+          .filter((p) => p.date === date)
+          .sort((a, b) => a.stamp.localeCompare(b.stamp));
+        found = dayPoints[dayPoints.length - 1] || null;
+      } else {
+        found = entry.points.get(stamp) || null;
+      }
+
       point[item.key] = found ? found.roi : null;
       point[`${item.key}__spend`] = found ? found.totalSpend : null;
       point[`${item.key}__earning`] = found ? found.earning : null;
@@ -139,7 +156,7 @@ export function subDomainRoiSeries(rows, rate) {
     series,
     points,
     bars,
-    latestStamp: stamps[stamps.length - 1] || "",
-    multiDay: days.size > 1,
+    latestStamp: rawStamps[rawStamps.length - 1] || "",
+    multiDay,
   };
 }

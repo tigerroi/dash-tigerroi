@@ -48,7 +48,7 @@ const formatSignedRupiah = (value) => `${Number(value) < 0 ? "−" : ""}${format
 function stampLabel(point) {
   if (!point) return "";
 
-  return point.multiDay ? `${formatDayMonth(point.date)} ${point.time}`.trim() : point.time;
+  return point.multiDay ? formatDayMonth(point.date) : point.time;
 }
 
 /** Chip pemilih subdomain, dipakai kedua grafik. */
@@ -143,9 +143,9 @@ export function SubDomainRoiCurveChart({
                       stroke: chart.dotStroke,
                       strokeWidth: 2,
                     }}
-                    connectNulls={false}
+                    connectNulls={true}
                     dataKey={item.key}
-                    dot={{ r: 2.5, fill: chart.dotFill, stroke: chart.dotStroke, strokeWidth: 1.5 }}
+                    dot={points.length <= 35 ? { r: 2.5, fill: chart.dotFill, stroke: chart.dotStroke, strokeWidth: 1.5 } : false}
                     key={item.key}
                     name={item.label}
                     stroke={colorOf(item)}
