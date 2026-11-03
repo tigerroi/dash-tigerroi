@@ -185,4 +185,30 @@ describe("dedupeRoiReports", () => {
     // PIC mengambil nama yang valid
     assert.equal(oct21Decor.pic, "Nurjaman");
   });
+
+  test("mengabaikan baris agregat site induk jika tanggal tersebut sudah memiliki rincian subdomain", () => {
+    const rows = [
+      // Baris agregat site induk (total tray-decor)
+      { date: "2026-10-21", site_code: "tray-decor", subDomain: "", earning: 8_327_496, spending: 2_336_689 },
+      // Rincian pecahan per subdomain
+      { date: "2026-10-21", site_code: "tray-decor", subDomain: "decor.trayedit.com", earning: 3_332_970, spending: 1_764_508 },
+      { date: "2026-10-21", site_code: "tray-decor", subDomain: "materials.trayedit.com", earning: 4_994_526, spending: 572_181 },
+      // Tanggal lain yang BELUM ada rincian subdomain (tetap dipertahankan)
+      { date: "2026-10-01", site_code: "tray-decor", subDomain: "", earning: 1_000_000, spending: 200_000 },
+    ];
+
+    const result = dedupeRoiReports(rows);
+    // Hanya ada 3 baris: 2 pecahan subdomain pada 21 Okt, dan 1 baris fallback pada 1 Okt
+    assert.equal(result.length, 3);
+
+    const oct21TotalEarn = result
+      .filter((r) => r.date === "2026-10-21")
+      .reduce((sum, r) => sum + r.earning, 0);
+    // Earning 21 Okt harus 8.327.496, BUKAN 16.654.992 (tidak berlipat 2x)
+    assert.equal(oct21TotalEarn, 8_327_496);
+
+    const oct01 = result.find((r) => r.date === "2026-10-01");
+    assert.ok(oct01, "baris tanggal yang belum ada rincian tetap tersimpan");
+    assert.equal(oct01.earning, 1_000_000);
+  });
 });

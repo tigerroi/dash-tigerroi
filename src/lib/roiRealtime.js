@@ -1,4 +1,5 @@
 import { earningSources, withAdTax } from "./adTax.js";
+import { cellText } from "./cellText.js";
 import { countriesOf } from "./countryBreakdown.js";
 import { firstValue } from "./firstValue.js";
 import { toCampaignList } from "./toCampaignList.js";
@@ -39,11 +40,27 @@ function normalizeRowSubDomain(row) {
 
 /**
  * Deduplikasi baris harian (roiReports) per tanggal dan subdomain resmi.
- * Mencegah pelipatgandaan angka jika terdapat baris slug singkat (misal 'decor')
- * dan baris domain lengkap ('decor.trayedit.com') pada tanggal yang sama.
+ * Mencegah pelipatgandaan angka (2x lipat) jika terdapat baris agregat site induk (tanpa subdomain)
+ * DAN baris pecahan per subdomain ('decor', 'materials', dll) pada tanggal yang sama.
  */
 export function dedupeRoiReports(rows) {
   if (!Array.isArray(rows) || rows.length === 0) return [];
+
+  // Langkah 1: Kumpulkan tanggal & site_code yang sudah memiliki rincian subdomain resmi
+  const datesWithSubdomains = new Set();
+  for (const row of rows) {
+    if (!row) continue;
+    const date = String(row.date || "").slice(0, 10);
+    const rawSub = cellText(row.subDomain || row.subdomain || row.sub_domain);
+    const sub = canonicalSubDomain(rawSub);
+    if (sub && sub.includes(".")) {
+      const siteCode = cellText(row.site_code || row.siteCode);
+      if (siteCode) datesWithSubdomains.add(`${date}__${siteCode}`);
+      datesWithSubdomains.add(`${date}__any`);
+    }
+  }
+
+  // Langkah 2: Kelompokkan baris per tanggal dan per subdomain resmi
   const byDayAndSub = new Map();
 
   for (const row of rows) {
@@ -51,14 +68,27 @@ export function dedupeRoiReports(rows) {
     const date = String(row.date || "").slice(0, 10);
     if (!date) continue;
 
-    const sub = canonicalSubOf(row);
-    if (!sub) continue;
+    const rawSub = cellText(row.subDomain || row.subdomain || row.sub_domain);
+    const sub = canonicalSubDomain(rawSub);
+    const siteCode = cellText(row.site_code || row.siteCode);
 
-    const key = `${date}__${sub}`;
+    // Jika baris ini adalah baris site induk (tanpa rincian subdomain) TAPI pada tanggal tersebut
+    // sudah ada baris rincian subdomain resmi, abaikan baris induk agar tidak terhitung 2x lipat!
+    const isRootRow = !rawSub || rawSub === siteCode || !sub || !sub.includes(".");
+    const hasSubBreakdown =
+      (siteCode && datesWithSubdomains.has(`${date}__${siteCode}`)) ||
+      (isRootRow && datesWithSubdomains.has(`${date}__any`));
+
+    if (isRootRow && hasSubBreakdown) {
+      continue;
+    }
+
+    const finalSub = (sub && sub.includes(".")) ? sub : (sub || rawSub || siteCode || "unmapped");
+    const key = `${date}__${finalSub}`;
     const existing = byDayAndSub.get(key);
 
     if (!existing) {
-      byDayAndSub.set(key, { ...row, subDomain: sub });
+      byDayAndSub.set(key, { ...row, subDomain: finalSub });
     } else {
       // Satukan data belanja dan pendapatan tertinggi agar tidak terhitung dua kali
       const spending = Math.max(
@@ -81,7 +111,7 @@ export function dedupeRoiReports(rows) {
 
       byDayAndSub.set(key, {
         ...existing,
-        subDomain: sub,
+        subDomain: finalSub,
         spending,
         metaSpend: spending,
         totalSpending: spending,
