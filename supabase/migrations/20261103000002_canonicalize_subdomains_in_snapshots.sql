@@ -39,3 +39,4 @@ WHERE s.sub_domain = sub.name
   AND sub.pic IS NOT NULL AND sub.pic != '' AND sub.pic != '-';
 
 COMMIT;
+

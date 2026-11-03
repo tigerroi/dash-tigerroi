@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import { buildCountryBreakdown } from "./countryBreakdown.js";
 import {
+  dedupeRoiReports,
   earningSourceLabel,
   formatRoiTime,
   normalizeRealtimeRoiRow,
@@ -158,5 +159,30 @@ describe("realtimeRoiColumnTone", () => {
     assert.equal(realtimeRoiColumnTone("metaBalance"), "meta");
     assert.equal(realtimeRoiColumnTone("flukRoi"), "roi");
     assert.equal(realtimeRoiColumnTone("flukSpend"), "positive");
+  });
+});
+
+describe("dedupeRoiReports", () => {
+  test("mendeduplikasi baris harian slug dan FQDN pada hari yang sama agar pendapatan tidak terhitung ganda", () => {
+    const mixed = [
+      { date: "2026-10-21", subDomain: "decor", earning: 3_332_970, spending: 262_153, pic: "-" },
+      { date: "2026-10-21", subDomain: "decor.trayedit.com", earning: 3_332_970, spending: 1_764_508, pic: "Nurjaman" },
+      { date: "2026-10-21", subDomain: "careers", earning: 1_798_528, spending: 382_051, pic: "-" },
+      { date: "2026-10-21", subDomain: "careers.tiktokmodapk.net", earning: 1_798_528, spending: 1_421_065, pic: "Mulyana" },
+      { date: "2026-10-20", subDomain: "decor.trayedit.com", earning: 2_000_000, spending: 1_000_000, pic: "Nurjaman" },
+    ];
+
+    const result = dedupeRoiReports(mixed);
+    // Hanya ada 3 entri unik: 2 pada tanggal 21 (decor & careers), 1 pada tanggal 20 (decor)
+    assert.equal(result.length, 3);
+
+    const oct21Decor = result.find((r) => r.date === "2026-10-21" && r.subDomain === "decor.trayedit.com");
+    assert.ok(oct21Decor);
+    // Earning tidak terlipatgandakan (tetap 3.332.970, bukan 6.665.940)
+    assert.equal(oct21Decor.earning, 3_332_970);
+    // Spend mengambil nilai tertinggi (1.764.508)
+    assert.equal(oct21Decor.spending, 1_764_508);
+    // PIC mengambil nama yang valid
+    assert.equal(oct21Decor.pic, "Nurjaman");
   });
 });

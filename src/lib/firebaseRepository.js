@@ -1,5 +1,6 @@
 import { supabase } from "../config/supabase.js";
 import { logActivity } from "./activityRecorder";
+import { dedupeRoiReports } from "./roiRealtime.js";
 import { formatAdAccountPayload, normalizeAdAccountRow } from "./adAccountAdapter.js";
 import {
   formatAdxCostPayload,
@@ -353,6 +354,8 @@ export function subscribeResource(key, callback, onError) {
           rows = rows.map(normalizeExpenseRow);
         } else if (key === "whitelistTopup") {
           rows = rows.map(normalizeWhitelistTopupRow);
+        } else if (key === "roiReports") {
+          rows = dedupeRoiReports(rows);
         }
         callback(rows);
       }

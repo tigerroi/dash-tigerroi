@@ -24,7 +24,7 @@ import { canonicalSubDomain } from "./userSubDomains.js";
 // itu membaca baris HARIAN, bukan hasil fungsi ini.
 
 function canonicalSubOf(row) {
-  const raw = firstValue(row?.subDomain, row?.subdomain, row?.site_code);
+  const raw = firstValue(row?.subDomain, row?.subdomain, row?.sub_domain, row?.site_code);
   return canonicalSubDomain(raw) || raw || "";
 }
 
@@ -35,6 +35,66 @@ function normalizeRowSubDomain(row) {
     return { ...row, subDomain: canonical };
   }
   return row;
+}
+
+/**
+ * Deduplikasi baris harian (roiReports) per tanggal dan subdomain resmi.
+ * Mencegah pelipatgandaan angka jika terdapat baris slug singkat (misal 'decor')
+ * dan baris domain lengkap ('decor.trayedit.com') pada tanggal yang sama.
+ */
+export function dedupeRoiReports(rows) {
+  if (!Array.isArray(rows) || rows.length === 0) return [];
+  const byDayAndSub = new Map();
+
+  for (const row of rows) {
+    if (!row) continue;
+    const date = String(row.date || "").slice(0, 10);
+    if (!date) continue;
+
+    const sub = canonicalSubOf(row);
+    if (!sub) continue;
+
+    const key = `${date}__${sub}`;
+    const existing = byDayAndSub.get(key);
+
+    if (!existing) {
+      byDayAndSub.set(key, { ...row, subDomain: sub });
+    } else {
+      // Satukan data belanja dan pendapatan tertinggi agar tidak terhitung dua kali
+      const spending = Math.max(
+        Number(existing.spending ?? existing.totalSpending ?? existing.metaSpend ?? 0),
+        Number(row.spending ?? row.totalSpending ?? row.metaSpend ?? 0),
+      );
+      const earning = Math.max(
+        Number(existing.earning ?? existing.gamRevenue ?? existing.revenue ?? 0),
+        Number(row.earning ?? row.gamRevenue ?? row.revenue ?? 0),
+      );
+      const impressions = Math.max(
+        Number(existing.impressions || 0),
+        Number(row.impressions || 0),
+      );
+      const clicks = Math.max(
+        Number(existing.clicks || 0),
+        Number(row.clicks || 0),
+      );
+      const pic = String(row.pic || "").trim() && row.pic !== "-" ? row.pic : existing.pic;
+
+      byDayAndSub.set(key, {
+        ...existing,
+        subDomain: sub,
+        spending,
+        metaSpend: spending,
+        totalSpending: spending,
+        earning,
+        gamRevenue: earning,
+        impressions,
+        clicks,
+        pic,
+      });
+    }
+  }
+
+  return [...byDayAndSub.values()];
 }
 
 // Satu hari untuk satu subdomain. Kunci penjodohan snapshot ke baris harian yang digantikannya.

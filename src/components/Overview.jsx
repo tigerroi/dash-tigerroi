@@ -26,7 +26,7 @@ import { formatDate, formatMonth } from "../lib/formatDate";
 import { buildFounderRoi } from "../lib/founderRoi";
 import { hourlyFinancials } from "../lib/hourlyFinancials";
 import { renderCell } from "../lib/renderCell";
-import { realtimeRoiRows } from "../lib/roiRealtime";
+import { dedupeRoiReports, realtimeRoiRows } from "../lib/roiRealtime";
 import { filterRowsByOwner, ownerChoices, subDomainOwnerIndex } from "../lib/subDomainOwners";
 import { subDomainRoiSeries } from "../lib/subDomainRoiSeries";
 import { buildCampaignsBySubDomain } from "../lib/toCampaignList";
@@ -1197,16 +1197,18 @@ function aggregateRoiFinancials(
   { advertiser, subDomain, domain, owners, start, end, rate },
 ) {
   const byDate = new Map();
+  // Deduplikasi reports agar baris ganda slug vs domain lengkap di hari yang sama tidak melipatgandakan pendapatan
+  const dedupedReports = dedupeRoiReports(reports);
   // Penyaring kepemilikan yang SAMA dengan Kalender, dua grafik per subdomain, dan daftar pilihan
   // di dropdown-nya — bukan pembacaan `item.pic` mentah seperti dulu. Sisi sync menulis
   // `pic: sub?.pic || ""`, jadi baris yang ditulis SEBELUM subdomainnya diberi PIC tersimpan
   // dengan pic kosong selamanya; `picOf` menambalnya dari `subDomains.pic`, dan yang membaca
   // barisnya mentah tidak. Akibatnya dua grafik teratas menjatuhkan baris yang tetap dihitung
   // Kalender dan dua grafik di bawahnya — dengan filter yang sama, di layar yang sama.
-  const rows = filterRowsByOwner(reports, owners, { advertiser, domain, subDomain });
+  const rows = filterRowsByOwner(dedupedReports, owners, { advertiser, domain, subDomain });
   // Hari berjalan dibaca dari baris yang BELUM disaring, sepola Kalender: memilih advertiser yang
   // tidak punya baris hari ini tidak boleh memindahkan "hari berjalan" ke tanda lama yang tertinggal.
-  const runningDay = runningDayKey(reports);
+  const runningDay = runningDayKey(dedupedReports);
   for (const item of rows) {
     const date = item.date;
     if (!date || date < start || date > end) {
