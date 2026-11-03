@@ -72,6 +72,22 @@ const IGNORED_PREFIXES = new Set([
   "ns2",
 ]);
 
+// Domain & subdomain infrastruktur internal TigerROI (bukan situs iklan arbitrase WordPress)
+const IGNORED_DOMAINS = new Set([
+  "tigerroi.com",
+]);
+
+function isIgnoredDomain(host) {
+  const clean = cleanHost(host);
+  if (!clean) return true;
+  for (const ign of IGNORED_DOMAINS) {
+    if (clean === ign || clean.endsWith(`.${ign}`)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function cleanHost(val) {
   return String(val || "")
     .trim()
@@ -114,11 +130,21 @@ export async function run() {
   if (domErr) throw new Error(`Gagal membaca tabel domains: ${domErr.message}`);
   if (subErr) throw new Error(`Gagal membaca tabel subdomains: ${subErr.message}`);
 
-  // 1b. Bersihkan protokol https:// atau http:// dari entri domain dan subdomain yang sudah ada
+  // 1b. Bersihkan protokol https:// atau http:// serta hapus domain internal tigerroi.com
   if (!isDryRun) {
+    // Hapus domain internal tigerroi.com jika sempat terdaftar
+    try {
+      console.log("   🧹 Menghapus domain infrastruktur internal (tigerroi.com & asset.tigerroi.com)...");
+      await supabase.from("subdomains").delete().ilike("name", "%tigerroi.com%");
+      await supabase.from("subdomains").delete().ilike("parent_domain", "%tigerroi.com%");
+      await supabase.from("domains").delete().ilike("domain_url", "%tigerroi.com%");
+    } catch (cleanErr) {
+      console.warn(`   ⚠️ Peringatan saat menghapus tigerroi.com: ${cleanErr.message}`);
+    }
+
     for (const d of existingDomains || []) {
       const clean = cleanHost(d.domain_url);
-      if (clean && d.domain_url !== clean) {
+      if (clean && !isIgnoredDomain(clean) && d.domain_url !== clean) {
         console.log(`   🧹 Membersihkan format domain: '${d.domain_url}' -> '${clean}'`);
         await supabase
           .from("domains")
@@ -130,7 +156,7 @@ export async function run() {
 
     for (const s of existingSubdomains || []) {
       const cleanParent = cleanHost(s.parent_domain);
-      if (cleanParent && s.parent_domain !== cleanParent) {
+      if (cleanParent && !isIgnoredDomain(cleanParent) && s.parent_domain !== cleanParent) {
         await supabase
           .from("subdomains")
           .update({ parent_domain: cleanParent, updated_at: new Date().toISOString() })
@@ -163,7 +189,7 @@ export async function run() {
   // 3. Proses Sinkronisasi Domain Induk ke public.domains (bersih tanpa https/http)
   for (const zone of zones) {
     const host = cleanHost(zone.name);
-    if (!host) continue;
+    if (!host || isIgnoredDomain(host)) continue;
 
     if (!dbDomainsMap.has(host)) {
       console.log(`   ➕ Menemukan Domain Induk baru: ${host}`);
@@ -235,7 +261,7 @@ export async function run() {
       if (type !== "A" && type !== "CNAME") continue;
 
       const fullHost = cleanHost(r.name);
-      if (!fullHost || fullHost === zoneHost) continue; // Abaikan domain apex / root
+      if (!fullHost || fullHost === zoneHost || isIgnoredDomain(fullHost)) continue; // Abaikan domain root atau domain internal
       if (!fullHost.endsWith(`.${zoneHost}`)) continue; // Harus subdomain dari zona ini
 
       const subPrefix = fullHost.slice(0, -(zoneHost.length + 1));
