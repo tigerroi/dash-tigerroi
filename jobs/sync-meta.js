@@ -265,12 +265,13 @@ export async function runSyncMeta() {
           const siteCode = matchSiteCode(row.campaignName, sites);
           const nameLower = String(row.campaignName || "").toLowerCase();
 
-          // Cari kecocokan subdomain spesifik
+          // Cari kecocokan subdomain spesifik (cocokkan nama FQDN maupun slug depannya)
           let matchedSubName = "";
           for (const sub of subdomains) {
             if (!sub.name) continue;
             const subName = sub.name.toLowerCase();
-            const regex = new RegExp(`(^|[^a-z0-9])${subName}([^a-z0-9]|$)`, "i");
+            const slug = subName.split(".")[0];
+            const regex = new RegExp(`(^|[^a-z0-9])(${subName}|${slug})([^a-z0-9]|$)`, "i");
             if (regex.test(nameLower)) {
               matchedSubName = sub.name;
               break;
@@ -279,7 +280,7 @@ export async function runSyncMeta() {
           if (!matchedSubName && siteCode && siteCode !== "unmapped") {
             const matchingSubs = subdomains.filter((s) => s.site_code === siteCode);
             const suffix = siteCode.split("-").pop();
-            const defaultSub = matchingSubs.find((s) => s.name === suffix) || matchingSubs[0];
+            const defaultSub = matchingSubs.find((s) => s.name.toLowerCase().startsWith(suffix)) || matchingSubs[0];
             matchedSubName = defaultSub ? defaultSub.name : "";
           }
 
@@ -342,7 +343,8 @@ export async function runSyncMeta() {
               for (const sub of sorted) {
                 if (!sub.name) continue;
                 const subNameLower = sub.name.toLowerCase();
-                const regex = new RegExp(`(^|[^a-z0-9])${subNameLower}([^a-z0-9]|$)`, "i");
+                const slug = subNameLower.split(".")[0];
+                const regex = new RegExp(`(^|[^a-z0-9])(${subNameLower}|${slug})([^a-z0-9]|$)`, "i");
                 if (regex.test(nameLower)) {
                   matchedSub = sub;
                   break;
@@ -352,7 +354,7 @@ export async function runSyncMeta() {
               if (!matchedSub && siteCode && siteCode !== "unmapped") {
                 const matchingBySite = dbSubdomains.filter((s) => s.site_code === siteCode);
                 const suffix = siteCode.split("-").pop();
-                matchedSub = matchingBySite.find((s) => s.name === suffix) || matchingBySite[0] || null;
+                matchedSub = matchingBySite.find((s) => s.name.toLowerCase().startsWith(suffix)) || matchingBySite[0] || null;
               }
             }
 

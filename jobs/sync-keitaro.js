@@ -198,13 +198,14 @@ async function run() {
 
     matchedCount++;
 
-    // Cari subdomain yang cocok
+    // Cari subdomain yang cocok (cocokkan nama FQDN maupun slug depannya)
     let matchedSubName = "";
     if (subdomainsList && subdomainsList.length > 0) {
       for (const sub of subdomainsList) {
         if (!sub.name) continue;
         const subNameLower = sub.name.toLowerCase();
-        const regex = new RegExp(`(^|[^a-z0-9])${subNameLower}([^a-z0-9]|$)`, "i");
+        const slug = subNameLower.split(".")[0];
+        const regex = new RegExp(`(^|[^a-z0-9])(${subNameLower}|${slug})([^a-z0-9]|$)`, "i");
         if (regex.test(campaignName) || regex.test(subId1)) {
           matchedSubName = sub.name;
           break;
@@ -214,7 +215,7 @@ async function run() {
       if (!matchedSubName) {
         const matchingSubs = subdomainsList.filter((s) => s.site_code === siteCode);
         const suffix = siteCode.split("-").pop();
-        const defaultSub = matchingSubs.find((s) => s.name === suffix) || matchingSubs[0];
+        const defaultSub = matchingSubs.find((s) => s.name.toLowerCase().startsWith(suffix)) || matchingSubs[0];
         matchedSubName = defaultSub ? defaultSub.name : "";
       }
     }

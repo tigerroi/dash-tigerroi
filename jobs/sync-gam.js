@@ -159,11 +159,12 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
     }
   }
 
-  // 2. Prioritas 2: Cocokkan nama unit iklan ke subdomain
+  // 2. Prioritas 2: Cocokkan nama unit iklan ke subdomain (FQDN maupun slug depannya)
   for (const sub of subdomainsList || []) {
     if (!sub.name) continue;
     const subName = sub.name.toLowerCase();
-    const regex = new RegExp(`(^|[^a-z0-9])${subName}([^a-z0-9]|$)`, "i");
+    const slug = subName.split(".")[0];
+    const regex = new RegExp(`(^|[^a-z0-9])(${subName}|${slug})([^a-z0-9]|$)`, "i");
     if (regex.test(unit)) {
       return {
         siteCode: sub.site_code || defaultSiteCode,
@@ -179,7 +180,7 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
       // Cari subdomain default untuk site ini
       const matchingSubs = (subdomainsList || []).filter((sub) => sub.site_code === s.site_code);
       const suffix = s.site_code.split("-").pop();
-      const defaultSub = matchingSubs.find((sub) => sub.name === suffix) || matchingSubs[0];
+      const defaultSub = matchingSubs.find((sub) => sub.name.toLowerCase().startsWith(suffix)) || matchingSubs[0];
       return {
         siteCode: s.site_code,
         subdomainName: defaultSub ? defaultSub.name : s.site_code,
