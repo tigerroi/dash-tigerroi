@@ -57,8 +57,9 @@ export function normalizeCampaignRows(items) {
 // yang manual saja yang selamat dari perubahan kode subdomainnya.
 export function describeMappingSource(item) {
   if (item.subDomainSource === "manual") return "Dipetakan manual";
-  if (item.subDomain && item.campaignCode) return `Otomatis dari kode ${item.campaignCode}`;
-  if (item.subDomain) return "Otomatis dari kode";
+  const hasSub = item.subDomain && item.subDomain !== "unmapped" && item.subDomain !== "-";
+  if (hasSub && item.campaignCode) return `Otomatis dari kode ${item.campaignCode}`;
+  if (hasSub) return "Otomatis dari kode";
   return item.campaignCode
     ? `Kode ${item.campaignCode} belum terdaftar di subdomain manapun`
     : "Belum dipetakan — daftarkan kodenya di halaman Sub Domains";
@@ -66,12 +67,34 @@ export function describeMappingSource(item) {
 
 /**
  * Seluruh campaign armada untuk halaman Campaign, dari `store.users` yang sudah dilanggan.
+ * Mendukung pencocokan otomatis realtime dari daftar `store.subDomains`.
  *
  * `id` membawa pemiliknya: satu campaign bisa tertinggal di dua profil selama ad account-nya
  * berpindah tangan, dan dua baris ber-key sama saling menimpa di React. Perintah saklar ikut di
  * barisnya karena ia tinggal di profil pemilik, bukan di campaign.
  */
-export function fleetCampaignRows(users) {
+export function fleetCampaignRows(users, subDomains = []) {
+  // Index kode campaign -> info subdomain dari subDomains
+  const codeMap = new Map();
+  for (const sub of Array.isArray(subDomains) ? subDomains : []) {
+    if (!sub || sub.status === "Archived" || sub.status === "Inactive") continue;
+    const rawCodes = sub.campaignCodes || sub.campaign_codes || "";
+    const codes = String(rawCodes)
+      .split(/[^A-Za-z0-9]+/)
+      .map((k) => k.trim().toLowerCase())
+      .filter(Boolean);
+    for (const code of codes) {
+      if (!codeMap.has(code)) {
+        codeMap.set(code, {
+          subDomain: sub.name || sub.subdomain || "",
+          siteCode: sub.siteCode || sub.site_code || "",
+          pic: sub.pic || "",
+          domain: sub.parentDomain || sub.domain || "",
+        });
+      }
+    }
+  }
+
   const rows = [];
   for (const user of Array.isArray(users) ? users : []) {
     if (!user || user.deletedAt) continue;
@@ -80,11 +103,39 @@ export function fleetCampaignRows(users) {
         ? user.campaignCommands
         : {};
     for (const row of normalizeCampaignRows(user.campaigns)) {
+      let subDomain = row.subDomain;
+      let pic = row.pic || row.owner;
+      let campaignCode = row.campaignCode;
+
+      if (!campaignCode && row.campaign) {
+        campaignCode = String(row.campaign).trim().split(/[\s_-]+/)[0] || "";
+      }
+
+      const codeKey = String(campaignCode || "").trim().toLowerCase();
+      const mapped = codeKey ? codeMap.get(codeKey) : null;
+      if (mapped) {
+        if (!subDomain || subDomain === "unmapped" || subDomain === "-") {
+          subDomain = mapped.subDomain;
+        }
+        if (!pic || pic === "-" || pic === "Belum ada PIC") {
+          pic = mapped.pic;
+        }
+      }
+
+      const isUnmappedSub = !subDomain || subDomain === "unmapped" || subDomain === "-";
+      const finalSubDomain = isUnmappedSub ? "" : subDomain;
+      const finalOwner = (pic && pic !== "-" && pic !== "Belum ada PIC")
+        ? pic
+        : (user.name || user.email || "-");
+
       rows.push({
         ...row,
+        subDomain: finalSubDomain,
+        campaignCode: campaignCode || row.campaignCode || "",
+        pic: pic || row.pic || "",
         id: `${user.id}__${row.campaignId || row.id}`,
         userId: user.id,
-        owner: row.owner || row.pic || user.name || user.email || "-",
+        owner: finalOwner,
         command: commands[row.campaignId] || null,
       });
     }

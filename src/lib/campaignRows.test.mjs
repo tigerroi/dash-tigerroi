@@ -35,4 +35,42 @@ test("sumber pemetaan disebut apa adanya", () => {
     describeMappingSource({ campaignCode: "npjl" }),
     "Kode npjl belum terdaftar di subdomain manapun",
   );
+  assert.equal(
+    describeMappingSource({ subDomain: "unmapped", campaignCode: "7KL2" }),
+    "Kode 7KL2 belum terdaftar di subdomain manapun",
+  );
+});
+
+test("realtime matching: campaign berstatus unmapped otomatis dipetakan dari subDomains", () => {
+  const users = [
+    {
+      id: "superadmin-id",
+      name: "Superadmin",
+      campaigns: [
+        {
+          campaignId: "c1",
+          campaign: "7KL2 01 PROS EU8 CARROU LMP 61",
+          subDomain: "unmapped",
+          campaignCode: "7KL2",
+          owner: "Belum ada PIC",
+        },
+      ],
+    },
+  ];
+
+  const subDomains = [
+    {
+      name: "dosage.cmhhealths.com",
+      campaignCodes: "7KL2",
+      pic: "Mulyana",
+      status: "Active",
+    },
+  ];
+
+  const rows = fleetCampaignRows(users, subDomains);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].subDomain, "dosage.cmhhealths.com");
+  assert.equal(rows[0].owner, "Mulyana");
+  assert.equal(rows[0].campaignCode, "7KL2");
+  assert.equal(describeMappingSource(rows[0]), "Otomatis dari kode 7KL2");
 });

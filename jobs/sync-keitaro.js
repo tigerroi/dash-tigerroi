@@ -148,7 +148,7 @@ async function run() {
         .select("site_code, name, domain, campaign_pattern, is_active"),
       supabase
         .from("subdomains")
-        .select("id, name, site_code, parent_domain"),
+        .select("id, name, site_code, parent_domain, campaign_codes"),
     ]);
 
   if (siteError) {
@@ -198,17 +198,38 @@ async function run() {
 
     matchedCount++;
 
-    // Cari subdomain yang cocok (cocokkan nama FQDN maupun slug depannya)
+    // Cari subdomain yang cocok (prioritaskan campaign_codes, lalu nama FQDN maupun slug depannya)
+    const firstWord = (campaignName.split(/[\s_-]+/)[0] || "").toLowerCase();
+    const subIdWord = (subId1.split(/[\s_-]+/)[0] || "").toLowerCase();
+
     let matchedSubName = "";
     if (subdomainsList && subdomainsList.length > 0) {
-      for (const sub of subdomainsList) {
-        if (!sub.name) continue;
-        const subNameLower = sub.name.toLowerCase();
-        const slug = subNameLower.split(".")[0];
-        const regex = new RegExp(`(^|[^a-z0-9])(${subNameLower}|${slug})([^a-z0-9]|$)`, "i");
-        if (regex.test(campaignName) || regex.test(subId1)) {
-          matchedSubName = sub.name;
-          break;
+      // Prioritas 1: Cocokkan kode campaign dari subdomains.campaign_codes
+      if (firstWord || subIdWord) {
+        for (const sub of subdomainsList) {
+          if (!sub.campaign_codes) continue;
+          const codes = String(sub.campaign_codes)
+            .split(/[^A-Za-z0-9]+/)
+            .map((k) => k.trim().toLowerCase())
+            .filter(Boolean);
+          if ((firstWord && codes.includes(firstWord)) || (subIdWord && codes.includes(subIdWord))) {
+            matchedSubName = sub.name;
+            break;
+          }
+        }
+      }
+
+      // Prioritas 2: Cocokkan nama FQDN maupun slug depannya
+      if (!matchedSubName) {
+        for (const sub of subdomainsList) {
+          if (!sub.name) continue;
+          const subNameLower = sub.name.toLowerCase();
+          const slug = subNameLower.split(".")[0];
+          const regex = new RegExp(`(^|[^a-z0-9])(${subNameLower}|${slug})([^a-z0-9]|$)`, "i");
+          if (regex.test(campaignName) || regex.test(subId1)) {
+            matchedSubName = sub.name;
+            break;
+          }
         }
       }
 

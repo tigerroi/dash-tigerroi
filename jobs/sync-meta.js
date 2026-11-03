@@ -115,10 +115,10 @@ export async function runSyncMeta() {
     if (startError)
       console.warn("Peringatan: Gagal mencatat start ke sync_runs:", startError.message);
 
-    // 3. Ambil daftar pemetaan sites & subdomains
+    // 3. Ambil daftar pemetaan sites & subdomains (termasuk campaign_codes untuk pencocokan otomatis)
     const [{ data: sitesList, error: sitesError }, { data: subdomainsList }] = await Promise.all([
       supabase.from("sites").select("site_code, campaign_pattern, is_active").eq("is_active", true),
-      supabase.from("subdomains").select("id, name, site_code, pic, pic_user_id"),
+      supabase.from("subdomains").select("id, name, site_code, pic, pic_user_id, campaign_codes"),
     ]);
 
     if (sitesError) throw new Error(`Gagal membaca tabel sites: ${sitesError.message}`);
@@ -262,21 +262,46 @@ export async function runSyncMeta() {
         }
 
         for (const row of insights) {
-          const siteCode = matchSiteCode(row.campaignName, sites);
           const nameLower = String(row.campaignName || "").toLowerCase();
+          const firstWord = (nameLower.split(/[\s_-]+/)[0] || "").toLowerCase();
 
-          // Cari kecocokan subdomain spesifik (cocokkan nama FQDN maupun slug depannya)
+          // Cari kecocokan subdomain spesifik (prioritaskan campaign_codes, lalu nama FQDN maupun slug depannya)
           let matchedSubName = "";
-          for (const sub of subdomains) {
-            if (!sub.name) continue;
-            const subName = sub.name.toLowerCase();
-            const slug = subName.split(".")[0];
-            const regex = new RegExp(`(^|[^a-z0-9])(${subName}|${slug})([^a-z0-9]|$)`, "i");
-            if (regex.test(nameLower)) {
-              matchedSubName = sub.name;
-              break;
+          let matchedSiteCode = "";
+
+          // Prioritas 1: Cocokkan kode campaign dari subdomains.campaign_codes
+          if (firstWord) {
+            for (const sub of subdomains) {
+              if (!sub.campaign_codes) continue;
+              const codes = String(sub.campaign_codes)
+                .split(/[^A-Za-z0-9]+/)
+                .map((k) => k.trim().toLowerCase())
+                .filter(Boolean);
+              if (codes.includes(firstWord)) {
+                matchedSubName = sub.name;
+                matchedSiteCode = sub.site_code || "";
+                break;
+              }
             }
           }
+
+          // Prioritas 2: Cocokkan nama FQDN atau slug di campaign name
+          if (!matchedSubName) {
+            for (const sub of subdomains) {
+              if (!sub.name) continue;
+              const subName = sub.name.toLowerCase();
+              const slug = subName.split(".")[0];
+              const regex = new RegExp(`(^|[^a-z0-9])(${subName}|${slug})([^a-z0-9]|$)`, "i");
+              if (regex.test(nameLower)) {
+                matchedSubName = sub.name;
+                matchedSiteCode = sub.site_code || "";
+                break;
+              }
+            }
+          }
+
+          const siteCode = matchedSiteCode || matchSiteCode(row.campaignName, sites);
+
           if (!matchedSubName && siteCode && siteCode !== "unmapped") {
             const matchingSubs = subdomains.filter((s) => s.site_code === siteCode);
             const suffix = siteCode.split("-").pop();
@@ -332,13 +357,28 @@ export async function runSyncMeta() {
           );
 
           for (const c of rawCampaigns) {
-            const siteCode = matchSiteCode(c.campaign, sites);
             const firstToken = c.campaign.split(/[\s_-]+/)[0] || "";
+            const firstTokenLower = firstToken.toLowerCase();
             const nameLower = String(c.campaign || "").toLowerCase();
 
-            // 1. Cari kecocokan nama subdomain spesifik (contoh: "careers", "mod", "deals", "burrito")
+            // 1. Prioritaskan pencocokan dari kode campaign (subdomains.campaign_codes)
             let matchedSub = null;
-            if (dbSubdomains && dbSubdomains.length > 0) {
+            if (firstTokenLower && dbSubdomains && dbSubdomains.length > 0) {
+              for (const sub of dbSubdomains) {
+                if (!sub.campaign_codes) continue;
+                const codes = String(sub.campaign_codes)
+                  .split(/[^A-Za-z0-9]+/)
+                  .map((k) => k.trim().toLowerCase())
+                  .filter(Boolean);
+                if (codes.includes(firstTokenLower)) {
+                  matchedSub = sub;
+                  break;
+                }
+              }
+            }
+
+            // 2. Jika belum cocok kode, cari kecocokan nama subdomain spesifik (contoh: "careers", "mod", "deals", "burrito")
+            if (!matchedSub && dbSubdomains && dbSubdomains.length > 0) {
               const sorted = [...dbSubdomains].sort((a, b) => (b.name || "").length - (a.name || "").length);
               for (const sub of sorted) {
                 if (!sub.name) continue;
@@ -350,23 +390,26 @@ export async function runSyncMeta() {
                   break;
                 }
               }
-              // Jika tidak cocok kata spesifik, cari subdomain dengan site_code yang sama
-              if (!matchedSub && siteCode && siteCode !== "unmapped") {
-                const matchingBySite = dbSubdomains.filter((s) => s.site_code === siteCode);
-                const suffix = siteCode.split("-").pop();
-                matchedSub = matchingBySite.find((s) => s.name.toLowerCase().startsWith(suffix)) || matchingBySite[0] || null;
-              }
+            }
+
+            const siteCode = matchedSub?.site_code || matchSiteCode(c.campaign, sites);
+
+            // 3. Fallback jika tidak cocok kata spesifik, cari subdomain dengan site_code yang sama
+            if (!matchedSub && siteCode && siteCode !== "unmapped" && dbSubdomains) {
+              const matchingBySite = dbSubdomains.filter((s) => s.site_code === siteCode);
+              const suffix = siteCode.split("-").pop();
+              matchedSub = matchingBySite.find((s) => s.name.toLowerCase().startsWith(suffix)) || matchingBySite[0] || null;
             }
 
             const picName = matchedSub?.pic || null;
-            const subName = matchedSub?.name || siteCode || "";
+            const subName = matchedSub?.name || (siteCode !== "unmapped" ? siteCode : "");
 
             const enriched = {
               ...c,
               account: account.name || "Meta Ads",
-              subDomain: subName,
+              subDomain: subName || "unmapped",
               campaignCode: firstToken,
-              subDomainSource: subName ? "otomatis" : "",
+              subDomainSource: (subName && subName !== "unmapped") ? "otomatis" : "",
               pic: picName,
               owner: picName ? picName : "Belum ada PIC",
             };

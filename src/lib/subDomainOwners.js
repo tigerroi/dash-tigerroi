@@ -29,17 +29,29 @@ export function subDomainOwnerIndex(subDomains, domains) {
     const pic = clean(sub?.pic);
 
     // Simpan key slug biasa (contoh "careers")
-    byName.set(rawKey, { domain: parent, pic });
+    byName.set(rawKey, { domain: parent, pic, name: clean(sub?.name) });
 
     // Jika belum ada domain di key-nya dan parent diketahui, daftarkan juga hostname lengkapnya (contoh "careers.tiktokmodapk.net")
     if (parent && !rawKey.includes(".")) {
-      byName.set(`${rawKey}.${parent}`, { domain: parent, pic });
+      byName.set(`${rawKey}.${parent}`, { domain: parent, pic, name: clean(sub?.name) });
     }
     // Jika key berupa hostname lengkap (FQDN), daftarkan juga slug singkatnya (contoh "careers")
     if (rawKey.includes(".")) {
       const slug = rawKey.split(".")[0];
       if (slug && !byName.has(slug)) {
-        byName.set(slug, { domain: parent, pic });
+        byName.set(slug, { domain: parent, pic, name: clean(sub?.name) });
+      }
+    }
+
+    // Daftarkan setiap kode campaign (contoh "7KL2", "TvH1") agar pencarian berdasarkan kode campaign langsung menemukan domain dan PIC-nya
+    const rawCodes = sub?.campaignCodes || sub?.campaign_codes || "";
+    const codes = String(rawCodes)
+      .split(/[^A-Za-z0-9]+/)
+      .map((k) => k.trim().toLowerCase())
+      .filter(Boolean);
+    for (const code of codes) {
+      if (!byName.has(code)) {
+        byName.set(code, { domain: parent, pic, name: clean(sub?.name) });
       }
     }
   }

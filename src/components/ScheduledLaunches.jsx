@@ -69,8 +69,8 @@ export function ScheduledLaunches({ store, viewer }) {
   }, [load]);
 
   const campaignIndex = useMemo(
-    () => campaignIndexOf(fleetCampaignRows(store.users)),
-    [store.users],
+    () => campaignIndexOf(fleetCampaignRows(store.users, store.subDomains)),
+    [store.users, store.subDomains],
   );
   const allRows = useMemo(
     () => launchRows(state.data?.rows, { campaignIndex }),

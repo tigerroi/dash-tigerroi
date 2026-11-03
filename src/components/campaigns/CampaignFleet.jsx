@@ -74,7 +74,10 @@ export function CampaignFleet({
   // Naik tiap ad set berhasil diubah: panelnya dipasang ulang dan membaca ke Meta, bukan ditambal.
   const [adSetVersion, setAdSetVersion] = useState(0);
 
-  const rows = useMemo(() => fleetCampaignRows(store.users), [store.users]);
+  const rows = useMemo(
+    () => fleetCampaignRows(store.users, store.subDomains),
+    [store.users, store.subDomains],
+  );
   const options = useMemo(() => fleetFilterOptions(rows), [rows]);
   const visible = useMemo(
     () => sortFleetRows(filterFleetRows(rows, { q, owner, account, subDomain, status })),
