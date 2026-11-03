@@ -36,6 +36,15 @@ describe("realtimeRoiRows", () => {
     assert.ok(ids(realtimeRoiRows(snapshots, daily)).includes("2026-08-10__b"));
   });
 
+  test("kanonisasi slug subdomain ke FQDN mencegah baris ganda antara snapshot dan daily", () => {
+    const snap = [{ id: "snap1", date: "2026-10-21", time: "21:58", subDomain: "decor.trayedit.com" }];
+    const d = [{ id: "daily1", date: "2026-10-21", time: "23:59", subDomain: "decor" }];
+    const res = realtimeRoiRows(snap, d);
+    assert.equal(res.length, 1);
+    assert.equal(res[0].id, "snap1");
+    assert.equal(res[0].subDomain, "decor.trayedit.com");
+  });
+
   test("terbaru dulu: hari turun, lalu jam turun", () => {
     assert.deepEqual(ids(realtimeRoiRows(snapshots, daily)), [
       "2026-08-12T15-00__a",

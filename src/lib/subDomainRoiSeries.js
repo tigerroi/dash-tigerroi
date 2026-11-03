@@ -1,5 +1,6 @@
 import { withAdTax } from "./adTax.js";
 import { cellText } from "./cellText.js";
+import { canonicalSubDomain } from "./userSubDomains.js";
 
 // Deret ROI per subdomain untuk dua grafik detail di Overview: kurva ROI tiap subdomain sepanjang
 // hari, dan perbandingan ROI vs Total Spend pada sync terakhir.
@@ -40,30 +41,49 @@ export function subDomainRoiSeries(rows, rate) {
   const bySubDomain = new Map();
 
   for (const row of list) {
-    const name = cellText(row?.subDomain);
-    if (!name) continue;
+    const rawName = cellText(row?.subDomain || row?.subdomain || row?.site_code);
+    if (!rawName) continue;
+    const name = canonicalSubDomain(rawName) || rawName;
 
     const money = withAdTax(row, rate);
     if (money.roi === "") continue;
 
     const stamp = stampOf(row);
     const entry = bySubDomain.get(name) || { name, points: new Map() };
-    // Satu titik per stempel waktu. Dua baris dengan stempel sama untuk satu subdomain adalah
-    // sync yang menulis dua kali; yang belakangan yang berlaku.
-    entry.points.set(stamp, {
-      stamp,
-      date: String(row?.date || "").slice(0, 10),
-      time: String(row?.time || ""),
-      roi: money.roi,
-      totalSpend: money.totalSpending,
-      earning: money.earning,
-      // Ikut dibawa karena tabel di bawah grafiknya mengurut dengannya. Baris yang sampai di sini
-      // sudah lolos `money.roi === ""`, jadi earning dan belanjanya sama-sama diketahui dan
-      // profitnya selalu angka — bukan `""` yang akan terurut sebagai teks.
-      profit: money.profit,
-      // PIC mentah baris itu; pemanggil menambalnya lewat `picOf` untuk kolom Advertiser.
-      pic: cellText(row?.pic),
-    });
+    const existing = entry.points.get(stamp);
+
+    if (existing) {
+      // Jika stempel waktu sama untuk subdomain yang sama (misal gabungan baris slug dan FQDN),
+      // satukan spend dan earning agar data lengkap dan tidak saling menimpa ke 0.
+      const totalSpend = Math.max(Number(existing.totalSpend) || 0, Number(money.totalSpending) || 0);
+      const earning = Math.max(Number(existing.earning) || 0, Number(money.earning) || 0);
+      const profit = earning - totalSpend;
+      const roi = totalSpend > 0 ? ((earning - totalSpend) / totalSpend) * 100 : existing.roi;
+      const pic = cellText(row?.pic) || existing.pic;
+
+      entry.points.set(stamp, {
+        stamp,
+        date: String(row?.date || existing.date || "").slice(0, 10),
+        time: String(row?.time || existing.time || ""),
+        roi,
+        totalSpend,
+        earning,
+        profit,
+        pic,
+      });
+    } else {
+      entry.points.set(stamp, {
+        stamp,
+        date: String(row?.date || "").slice(0, 10),
+        time: String(row?.time || ""),
+        roi: money.roi,
+        totalSpend: money.totalSpending,
+        earning: money.earning,
+        profit: money.profit,
+        pic: cellText(row?.pic),
+      });
+    }
+
     bySubDomain.set(name, entry);
   }
 

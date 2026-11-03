@@ -2,6 +2,7 @@ import { earningSources, withAdTax } from "./adTax.js";
 import { countriesOf } from "./countryBreakdown.js";
 import { firstValue } from "./firstValue.js";
 import { toCampaignList } from "./toCampaignList.js";
+import { canonicalSubDomain } from "./userSubDomains.js";
 
 // Baris tabel ROI per sync: "Laporan ROI Realtime" di Overview, dan "Report Master Realtime ROI"
 // di /users/{uid} (yang sama, disaring ke subdomain yang dipegang user itu — lihat
@@ -22,9 +23,23 @@ import { toCampaignList } from "./toCampaignList.js";
 // menjumlahkan uang (grafik Overview, Targets, kartu ringkasan subdomain di /users/{uid}) karena
 // itu membaca baris HARIAN, bukan hasil fungsi ini.
 
+function canonicalSubOf(row) {
+  const raw = firstValue(row?.subDomain, row?.subdomain, row?.site_code);
+  return canonicalSubDomain(raw) || raw || "";
+}
+
+function normalizeRowSubDomain(row) {
+  if (!row) return row;
+  const canonical = canonicalSubOf(row);
+  if (canonical && canonical !== row.subDomain) {
+    return { ...row, subDomain: canonical };
+  }
+  return row;
+}
+
 // Satu hari untuk satu subdomain. Kunci penjodohan snapshot ke baris harian yang digantikannya.
 function dayScopeOf(row) {
-  return `${String(row?.date || "").slice(0, 10)}__${firstValue(row?.subDomain) || ""}`;
+  return `${String(row?.date || "").slice(0, 10)}__${canonicalSubOf(row)}`;
 }
 
 // Hari + jam sebagai satu teks yang bisa diurutkan. Baris harian tidak punya jam yang berarti
@@ -78,8 +93,8 @@ export function formatRoiTime(item) {
  * membukanya adalah sync barusan, bukan sync pertama tiga hari lalu.
  */
 export function realtimeRoiRows(snapshots, dailyRows) {
-  const snaps = Array.isArray(snapshots) ? snapshots : [];
-  const daily = Array.isArray(dailyRows) ? dailyRows : [];
+  const snaps = (Array.isArray(snapshots) ? snapshots : []).map(normalizeRowSubDomain);
+  const daily = (Array.isArray(dailyRows) ? dailyRows : []).map(normalizeRowSubDomain);
   const covered = new Set(snaps.map(dayScopeOf));
   const rows = [...snaps, ...daily.filter((row) => !covered.has(dayScopeOf(row)))];
 
@@ -178,7 +193,7 @@ export function normalizeRealtimeRoiRow(item, rate, countryBreakdown) {
     currency: item.currency,
     fxRate: item.fxRate,
     flukEarn: firstValue(item.flukEarn, item.fluctuationEarn, item.earningFluctuation),
-    subDomain: firstValue(item.subDomain),
+    subDomain: canonicalSubOf(item) || firstValue(item.subDomain),
     flukRoi: firstValue(item.flukRoi, item.roiFluctuation),
     clicks: firstValue(item.clicks),
     cpc: firstValue(item.cpc),

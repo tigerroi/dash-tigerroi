@@ -1,4 +1,5 @@
 import { cellText } from "./cellText.js";
+import { canonicalSubDomain } from "./userSubDomains.js";
 
 // Pemilik sebuah baris ROI: advertiser (PIC) dan domain induknya. Baris ROI membawa nama subdomain
 // dan PIC-nya sendiri, tapi TIDAK membawa domain induk — yang tahu itu `subDomains.parentDomain`.
@@ -33,6 +34,13 @@ export function subDomainOwnerIndex(subDomains, domains) {
     // Jika belum ada domain di key-nya dan parent diketahui, daftarkan juga hostname lengkapnya (contoh "careers.tiktokmodapk.net")
     if (parent && !rawKey.includes(".")) {
       byName.set(`${rawKey}.${parent}`, { domain: parent, pic });
+    }
+    // Jika key berupa hostname lengkap (FQDN), daftarkan juga slug singkatnya (contoh "careers")
+    if (rawKey.includes(".")) {
+      const slug = rawKey.split(".")[0];
+      if (slug && !byName.has(slug)) {
+        byName.set(slug, { domain: parent, pic });
+      }
     }
   }
 
@@ -125,11 +133,25 @@ export function filterRowsByOwner(
 ) {
   if (!advertiser && !domain && !subDomain) return rows || [];
 
+  const targetSub = canonicalSubDomain(subDomain) || subDomain;
+
   return (rows || []).filter((row) => {
-    const name = cellText(row?.subDomain);
-    if (subDomain && name !== subDomain) return false;
-    if (advertiser && owners.picOf(name, row?.pic) !== advertiser) return false;
-    if (domain && owners.domainOf(name) !== domain) return false;
+    const rawName = cellText(row?.subDomain || row?.subdomain || row?.site_code);
+    const name = canonicalSubDomain(rawName) || rawName;
+
+    if (targetSub && name !== targetSub && rawName !== subDomain) return false;
+    if (
+      advertiser &&
+      owners.picOf(name, row?.pic) !== advertiser &&
+      owners.picOf(rawName, row?.pic) !== advertiser
+    )
+      return false;
+    if (
+      domain &&
+      owners.domainOf(name) !== domain &&
+      owners.domainOf(rawName) !== domain
+    )
+      return false;
 
     return true;
   });
@@ -141,8 +163,10 @@ export function filterRowsByOwner(
 export function subDomainNames(rows) {
   const names = new Set();
   for (const row of rows || []) {
-    const name = cellText(row?.subDomain);
-    if (name) names.add(name);
+    const rawName = cellText(row?.subDomain || row?.subdomain || row?.site_code);
+    if (!rawName) continue;
+    const name = canonicalSubDomain(rawName) || rawName;
+    names.add(name);
   }
   return [...names].sort((a, b) => a.localeCompare(b));
 }

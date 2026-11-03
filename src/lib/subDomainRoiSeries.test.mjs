@@ -113,3 +113,27 @@ test("tanggal ikut disebut hanya saat rentangnya lebih dari sehari", () => {
     true,
   );
 });
+
+test("kanonisasi dan deduplikasi baris slug pendek vs FQDN menghasilkan satu deret dan satu baris batang", () => {
+  const mixedRows = [
+    { date: "2026-10-20", time: "23:59", subDomain: "decor", spending: 262_153, earning: 300_000 },
+    { date: "2026-10-21", time: "21:58", subDomain: "decor.trayedit.com", spending: 1_764_508, earning: 3_332_970, pic: "Nurjaman" },
+    { date: "2026-10-20", time: "23:59", subDomain: "careers", spending: 382_051, earning: 500_000 },
+    { date: "2026-10-21", time: "21:58", subDomain: "careers.tiktokmodapk.net", spending: 1_421_065, earning: 1_798_528, pic: "Mulyana" },
+  ];
+
+  const { series, bars } = subDomainRoiSeries(mixedRows, 0);
+
+  // Hanya ada 2 subdomain unik: decor.trayedit.com dan careers.tiktokmodapk.net
+  assert.deepEqual(
+    series.map((s) => s.name),
+    ["careers.tiktokmodapk.net", "decor.trayedit.com"],
+  );
+
+  // Bars hanya ada 2 baris (bacaan terakhir per subdomain resmi)
+  assert.equal(bars.length, 2);
+  assert.equal(bars[0].name, "careers.tiktokmodapk.net");
+  assert.equal(bars[0].pic, "Mulyana");
+  assert.equal(bars[1].name, "decor.trayedit.com");
+  assert.equal(bars[1].pic, "Nurjaman");
+});
