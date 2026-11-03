@@ -1,0 +1,49 @@
+name: TigerROI Sync Cloudflare Domains
+
+on:
+  # Terjadwal setiap 1 jam
+  schedule:
+    - cron: "0 * * * *"
+  # Pemicu manual dari tab Actions di GitHub untuk sinkronisasi seketika (realtime)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (hanya cek tanpa menyimpan ke database)?"
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: sync-cloudflare
+  cancel-in-progress: false
+
+jobs:
+  sync-cloudflare:
+    name: Sinkronisasi Domain & Subdomain Cloudflare ke Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Kode Repositori
+        uses: actions/checkout@v4
+
+      - name: Siapkan Lingkungan Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Pasang Dependensi
+        run: npm ci --omit=dev || npm install --omit=dev
+
+      - name: Jalankan Sinkronisasi Cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            node jobs/sync-cloudflare-domains.js --dry-run
+          else
+            node jobs/sync-cloudflare-domains.js
+          fi
