@@ -121,8 +121,15 @@ export function isGuestOnly(role) {
   return roles.length > 0 && roles.every((r) => r === "guest");
 }
 
+// Role "overview": hanya boleh membuka halaman Overview (/dashboard) saja. Menu lainnya diatur oleh superadmin.
+export function isOverviewOnly(role) {
+  const roles = parseRoles(role);
+  return roles.length > 0 && roles.every((r) => r === "overview");
+}
+
 // Halaman yang boleh dibuka. Untuk semua role selain tamu murni ini persis `canReadResource`.
 export function canOpenPage(role, key) {
+  if (isOverviewOnly(role)) return key === "dashboard";
   if (isGuestOnly(role)) return GUEST_PAGES.includes(key);
 
   return canReadResource(role, key);
@@ -227,7 +234,7 @@ export const SUPERADMIN_PAGES = [
 // Daftar ini adalah nilai yang DIKENALI sistem, bukan yang ditawarkan ke layar. `normalizeRole`
 // (useFirebaseAuth & useFirebaseStore) membuang role di luar daftar ini dan menjadikannya "user" —
 // jadi menghapus "superadmin" dari sini akan mengunci pemegangnya keluar dari dashboardnya sendiri.
-export const ROLE_OPTIONS = ["superadmin", "admin", "user", "advertiser", "keuangan", "guest"];
+export const ROLE_OPTIONS = ["superadmin", "admin", "user", "advertiser", "keuangan", "guest", "overview"];
 
 // Yang boleh dipilih di form Team. "superadmin" sengaja tidak ada di sini: ia tidak diberikan
 // lewat dashboard, dan sebuah pilihan di dropdown adalah pengumuman bahwa role itu ada kepada
@@ -239,7 +246,7 @@ export const ASSIGNABLE_ROLES = ROLE_OPTIONS.filter((role) => role !== "superadm
 // sync) adalah urusan operasional. Cerminan `.validate` pada `settings/notifications/$topic/roles`
 // di database.rules.json, yang juga tidak menyebutnya — pilihan yang tampil di sini tapi ditolak di
 // sana cuma berbunyi "permission denied".
-export const BROADCAST_ROLES = ASSIGNABLE_ROLES.filter((role) => role !== "guest");
+export const BROADCAST_ROLES = ASSIGNABLE_ROLES.filter((role) => role !== "guest" && role !== "overview");
 
 // Role yang berlaku sebagai admin. Cerminan `(admin|superadmin)` di setiap aturan
 // database.rules.json — kalau salah satunya berubah, yang lain harus ikut.
@@ -291,6 +298,22 @@ export function isAdmin(role) {
 
 export function canReadResource(role, key) {
   if (isSuperAdmin(role)) return true;
+
+  if (isOverviewOnly(role)) {
+    return [
+      "dashboard",
+      "dashboardStats",
+      "weeklyFinancials",
+      "advertiserSpend",
+      "roiReports",
+      "countryRoi",
+      "roiSnapshots",
+      "roiSettings",
+      "syncStatus",
+      "adAccounts",
+      "users",
+    ].includes(key);
+  }
 
   // Sebelum cabang admin, bukan sesudah: yang di daftar ini justru tertutup UNTUK admin, dan
   // pemeriksaan yang datang belakangan tidak akan pernah tercapai.
@@ -408,6 +431,10 @@ export function canWriteTargets(role) {
 // untuk admin"), yang keliru begitu ada halaman milik Keuangan — dan orang yang sebenarnya
 // berhak akan berhenti mencoba karena pesannya bilang ia tidak berhak.
 export function accessDeniedReason(key, role) {
+  if (isOverviewOnly(role)) {
+    return "Akun ini hanya memiliki akses untuk melihat Overview.";
+  }
+
   if (isGuestOnly(role) && !GUEST_PAGES.includes(key)) {
     return "Akun tamu hanya bisa membuka Laba Rugi, Cash Flow, dan Laba per Domain.";
   }
