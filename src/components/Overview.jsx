@@ -84,9 +84,42 @@ export function Overview({ store, navigate, tab, role, viewer }) {
   // untuk angka final.
   // Default "Hari Ini" ({from,to} sehari), lewat DateRangePicker yang sama dengan seluruh dashboard.
   const [roiRange, setRoiRange] = useUrlRange("roi", todayRange);
+  const [spendViewMode, setSpendViewMode] = useState("wl"); // "wl" (default Akun WL BD R 16) | "pic"
   const weeklyFinancials = store.weeklyFinancials || [];
   const roiReports = store.roiReports || [];
   const roiSnapshots = store.roiSnapshots || [];
+
+  const wlAccounts = useMemo(() => {
+    const list = (store.adAccounts || [])
+      .filter((acc) => !acc.syncDisabled)
+      .map((acc) => {
+        const cap = Number(acc.spendCap ?? acc.spend_cap ?? 0);
+        const spent = Number(acc.amountSpent ?? acc.amount_spent ?? 0);
+        const balance =
+          cap > 0
+            ? Math.max(0, Math.round((cap - spent) * 100) / 100)
+            : Number(acc.balance || 0);
+        const spendToday = Number(acc.spendToday ?? acc.spend_today ?? 0);
+        return {
+          id: acc.id || acc.accountId || acc.name,
+          name: acc.name || acc.accountName || "BD R 16",
+          balance,
+          spendToday,
+        };
+      });
+
+    if (list.length === 0) {
+      return [
+        {
+          id: "bd-r-16",
+          name: "BD R 16",
+          balance: 8778619,
+          spendToday: 1221211,
+        },
+      ];
+    }
+    return list;
+  }, [store.adAccounts]);
 
   // Helper kanonisasi nama advertiser (Ade Suparman = Man, Zulfan = Sul, Superadmin bukan PIC)
   function canonicalAdvertiserInfo(rawName, userList = []) {
@@ -753,6 +786,22 @@ export function Overview({ store, navigate, tab, role, viewer }) {
                   </strong>
                 </p>
               </div>
+              <div className="header-actions" style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <button
+                  type="button"
+                  className={spendViewMode === "wl" ? "primary-button" : "ghost-button"}
+                  onClick={() => setSpendViewMode("wl")}
+                >
+                  Akun WL
+                </button>
+                <button
+                  type="button"
+                  className={spendViewMode === "pic" ? "primary-button" : "ghost-button"}
+                  onClick={() => setSpendViewMode("pic")}
+                >
+                  PIC / User
+                </button>
+              </div>
             </div>
             {/* Ambang yang sama dengan peringatan Telegram (tab Peringatan ROI di /notifications). */}
             {lowBalance.length > 0 && (
@@ -761,9 +810,9 @@ export function Overview({ store, navigate, tab, role, viewer }) {
                 <span>
                   Saldo Meta menipis:{" "}
                   {lowBalance.map((item, index) => (
-                    <span key={item.userId || item.id || item.pic}>
+                    <span key={item.userId || item.id || item.pic || item.name}>
                       {index > 0 && ", "}
-                      <strong>{item.pic}</strong> {renderCell(item.balance, "balance")}
+                      <strong>{item.pic || item.name}</strong> {renderCell(item.balance, "balance")}
                     </span>
                   ))}
                   . Top-up sebelum iklannya berhenti.
@@ -771,17 +820,25 @@ export function Overview({ store, navigate, tab, role, viewer }) {
               </p>
             )}
             <DataTable
-              columns={[
-                ["pic", "PIC / User"],
-                ["balance", "Sisa Saldo"],
-                ["spendToday", "Pengeluaran Hari Ini"],
-              ]}
-              items={advertiserSpend}
+              columns={
+                spendViewMode === "wl"
+                  ? [
+                      ["name", "Nama Akun (Whitelist)"],
+                      ["balance", "Sisa Saldo"],
+                      ["spendToday", "Pengeluaran Hari Ini"],
+                    ]
+                  : [
+                      ["pic", "PIC / User"],
+                      ["balance", "Sisa Saldo"],
+                      ["spendToday", "Pengeluaran Hari Ini"],
+                    ]
+              }
+              items={spendViewMode === "wl" ? wlAccounts : advertiserSpend}
               paginate
               extraAction={(item) => (
                 <LinkButton
                   className="ghost-button"
-                  to={`/users/${item.userId || item.id}`}
+                  to={spendViewMode === "wl" ? "/ad-accounts" : `/users/${item.userId || item.id}`}
                   navigate={navigate}
                 >
                   Detail
@@ -1142,6 +1199,10 @@ function founderColumns(totals) {
     roiColumn("roiAdvertiser", "ROI Overall Advertiser", {
       hint: "(ER − ST) ÷ ST × 100%",
       total: totals.roiAdvertiser,
+    }),
+    roiColumn("roiFounder", "ROI Overall Founder", {
+      hint: "(ER − TU) ÷ TU × 100%",
+      total: totals.roiFounder,
     }),
   ];
 }
