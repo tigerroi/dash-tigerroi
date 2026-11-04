@@ -31,13 +31,35 @@ export function SyncStatus({ status, syncRuns = [] }) {
       latestRun?.started_at ||
       new Date(Date.now() - (now.getMinutes() || 15) * 60 * 1000).toISOString();
 
+    // Kumpulkan status run terbaru untuk setiap job (sync-meta, sync-gam, sync-country-roi, sync-keitaro)
+    const latestByJob = new Map();
+    for (const r of runs) {
+      if (r?.job_name && !latestByJob.has(r.job_name)) {
+        latestByJob.set(r.job_name, r);
+      }
+    }
+
+    // Modul inti TigerROI adalah Meta Ads (sync-meta) dan GAM (sync-gam)
+    const coreJobs = ["sync-meta", "sync-gam"];
+    const coreRuns = coreJobs.map((j) => latestByJob.get(j)).filter(Boolean);
+
+    let isLastOk = true;
+    if (coreRuns.length > 0) {
+      // Jika setidaknya salah satu modul utama sukses dan tidak semua modul utama gagal, anggap sinkronisasi berhasil
+      const hasCoreSuccess = coreRuns.some((r) => r.status === "success");
+      const hasAllCoreFailed = coreRuns.every((r) => r.status === "failed");
+      isLastOk = hasCoreSuccess || !hasAllCoreFailed;
+    } else if (latestRun) {
+      isLastOk = latestRun.status === "success";
+    }
+
     return {
       ...status,
       running: status?.running ?? isRunning,
       startedAt: status?.startedAt || latestRun?.started_at,
       lastRunAt: status?.lastRunAt || lastRunAt,
       nextRunAt: status?.nextRunAt || nextHour.toISOString(),
-      lastOk: status?.lastOk ?? (latestRun ? latestRun.status === "success" : true),
+      lastOk: status?.lastOk ?? isLastOk,
       schedule: "0 * * * * (Tepat per jam)",
       lastSummary: latestRun
         ? `Sync ${latestRun.job_name || "otomatis"} selesai`
@@ -116,7 +138,7 @@ export function SyncStatus({ status, syncRuns = [] }) {
   const late = due && -remaining > LATE_GRACE_MS;
   let label = "Jadwal tidak terbaca";
   if (Number.isFinite(nextRunAt) && remaining > 0) {
-    label = `Sync berikutnya ${formatCountdown(remaining)}`;
+    label = `Sync berikutnya dalam ${formatCountdown(remaining)}`;
   } else if (late) {
     label = `Jadwal terlewat ${formatCountdown(-remaining)}`;
   } else if (due) {
@@ -148,5 +170,5 @@ function formatCountdown(ms) {
     return `${Math.floor(minutes / 60)}j ${String(minutes % 60).padStart(2, "0")}m`;
   }
 
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
 }
