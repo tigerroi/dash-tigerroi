@@ -203,21 +203,34 @@ export function buildCountryBreakdownFromRows(countryRoiRows, rate, roiReports =
 // tidak perlu membedakan "tidak ada kuncinya" dari "kuncinya kosong".
 export function countriesOf(index, item) {
   if (!index || !item) return [];
-  const primary = index.get(countryBreakdownKey(item?.date, item?.subDomain));
-  if (primary && primary.length > 0) return primary;
 
-  const rawSub = String(item?.subDomain || "").trim().toLowerCase();
+  const rawSub = String(
+    item?.subDomain || item?.sub_domain || item?.subdomain || item?.campaign || "",
+  )
+    .trim()
+    .toLowerCase();
   const rawDay = String(item?.date || "").slice(0, 10);
   if (!rawDay || !rawSub) return [];
 
-  // Jika item.subDomain membawa domain (contoh: "insurance.tiktokmodapk.net" -> "insurance")
-  const slug = rawSub.split(".")[0];
+  // 1. Coba cari dengan kunci persis
+  const exact = index.get(`${rawDay}__${rawSub}`);
+  if (exact && exact.length > 0) return exact;
+
+  // 2. Coba cari dengan canonicalSubDomain
+  const canonical = canonicalSubDomain(rawSub);
+  if (canonical) {
+    const byCanonical = index.get(`${rawDay}__${canonical.toLowerCase()}`);
+    if (byCanonical && byCanonical.length > 0) return byCanonical;
+  }
+
+  // 3. Coba cari dengan slug (jika rawSub membawa domain: "health.uniqueinfo24.com" -> "health")
+  const slug = rawSub.includes(".") ? rawSub.split(".")[0].trim() : rawSub;
   const bySlug = index.get(`${rawDay}__${slug}`);
   if (bySlug && bySlug.length > 0) return bySlug;
 
-  // Jika di index tersimpan FQDN dan item.subDomain adalah slug pendek
+  // 4. Cari partial matching jika di index tersimpan FQDN dan item adalah slug
   for (const [key, rows] of index.entries()) {
-    if (key.startsWith(`${rawDay}__${slug}.`)) {
+    if (key.startsWith(`${rawDay}__${slug}.`) || key.endsWith(`.${slug}`)) {
       return rows;
     }
   }
