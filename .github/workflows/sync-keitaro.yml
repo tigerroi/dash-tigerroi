@@ -1,9 +1,9 @@
 name: TigerROI Sync Keitaro Tracker
 
 on:
-  # Terjadwal setiap 30 menit
+  # Terjadwal setiap 1 jam tepat (00:00, 01:00, 02:00, ..., 23:00)
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "0 * * * *"
   # Pemicu manual dari tab Actions di GitHub
   workflow_dispatch:
     inputs:

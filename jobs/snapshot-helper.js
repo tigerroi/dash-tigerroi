@@ -23,7 +23,8 @@ export function getWibDateTime(date = new Date()) {
   }
 
   const dateStr = `${partMap.year}-${partMap.month}-${partMap.day}`;
-  const timeStr = `${partMap.hour}:${partMap.minute}`;
+  // Standarkan waktu snapshot tepat per jam (:00) dari 00:00 s/d 23:00 agar riwayat rapi jam demi jam
+  const timeStr = `${partMap.hour}:00`;
 
   return { date: dateStr, time: timeStr };
 }

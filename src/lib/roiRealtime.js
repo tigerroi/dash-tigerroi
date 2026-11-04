@@ -148,29 +148,31 @@ export function formatRoiTime(item) {
   const rawTime = firstValue(item?.time);
   const updatedAt = item?.updatedAt || item?.updated_at;
 
-  if (rawTime && rawTime !== "23:59") {
-    return rawTime;
-  }
-
-  if (updatedAt) {
-    try {
-      const date = new Date(updatedAt);
-      if (!Number.isNaN(date.getTime())) {
-        return date
-          .toLocaleTimeString("id-ID", {
+  let timeCandidate = rawTime;
+  if (!timeCandidate || timeCandidate === "23:59") {
+    if (updatedAt) {
+      try {
+        const date = new Date(updatedAt);
+        if (!Number.isNaN(date.getTime())) {
+          const hour = date.toLocaleTimeString("id-ID", {
             timeZone: "Asia/Jakarta",
             hour: "2-digit",
-            minute: "2-digit",
             hour12: false,
-          })
-          .replace(".", ":");
+          });
+          return `${hour.padStart(2, "0")}:00`;
+        }
+      } catch {
+        // Abaikan jika parsing gagal
       }
-    } catch {
-      // Abaikan jika parsing gagal, fallback ke rawTime
     }
   }
 
-  return rawTime || "23:59";
+  if (timeCandidate && /^[0-2]?[0-9]:[0-9]{2}$/.test(timeCandidate)) {
+    const [h] = timeCandidate.split(":");
+    return `${h.padStart(2, "0")}:00`;
+  }
+
+  return timeCandidate || "00:00";
 }
 
 /**

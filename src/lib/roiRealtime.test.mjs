@@ -125,15 +125,15 @@ describe("normalizeRealtimeRoiRow", () => {
     assert.deepEqual(normalizeRealtimeRoiRow({ ...row, date: "2026-08-11" }, 0, index).countries, []);
   });
 
-  test("waktu update sinkronisasi mengambil jam riil dari updatedAt jika time 23:59", () => {
-    // 07:20 UTC = 14:20 WIB
+  test("waktu update sinkronisasi mengambil jam pas dari updatedAt atau time", () => {
+    // 07:20 UTC = 14:20 WIB -> diformat jam pas 14:00
     const syncItem = {
       ...row,
       time: "23:59",
       updatedAt: "2026-10-29T07:20:49.062Z",
     };
-    assert.equal(normalizeRealtimeRoiRow(syncItem, 0).time, "14:20");
-    assert.equal(formatRoiTime({ time: "10:15", updatedAt: "2026-10-29T07:20:49.062Z" }), "10:15");
+    assert.equal(normalizeRealtimeRoiRow(syncItem, 0).time, "14:00");
+    assert.equal(formatRoiTime({ time: "10:15", updatedAt: "2026-10-29T07:20:49.062Z" }), "10:00");
   });
 });
 
