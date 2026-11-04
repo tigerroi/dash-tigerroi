@@ -101,14 +101,50 @@ export function rowsForSubDomains(rows, nameKeys) {
   const keys = nameKeys instanceof Set ? nameKeys : subDomainNameKeys(nameKeys);
   if (keys.size === 0) return [];
 
+  // Kumpulkan daftar FQDN lengkap (ada titik) dan bare slug yang dimiliki oleh user
+  const fqdnKeys = new Set();
+  const bareKeys = new Set();
+  for (const k of keys) {
+    if (k.includes(".")) {
+      fqdnKeys.add(k);
+    } else {
+      bareKeys.add(k);
+    }
+  }
+
   return (Array.isArray(rows) ? rows : []).filter((row) => {
     const sub = row?.subDomain || row?.sub_domain || row?.name;
     const nk = nameKey(sub);
-    if (keys.has(nk)) return true;
-    if (nk && nk.includes(".")) {
-      const slug = nk.split(".")[0].trim().toLowerCase();
-      if (keys.has(slug)) return true;
+    if (!nk) return false;
+
+    // 1. Jika baris membawa FQDN lengkap (misal: 'insurance.uniqueinfo24.com'):
+    if (nk.includes(".")) {
+      // a. Harus cocok persis dengan FQDN yang dimiliki user
+      if (fqdnKeys.has(nk)) return true;
+
+      // b. Jika user TIDAK memiliki FQDN tersebut, tolak jika user memiliki FQDN lain dengan slug yang sama.
+      // Contoh: User memegang 'insurance.tiktokmodapk.net' (domain tiktokmodapk.net),
+      // maka baris 'insurance.uniqueinfo24.com' (domain uniqueinfo24.com milik PIC lain) DITOLAK.
+      const rowSlug = nk.split(".")[0].trim().toLowerCase();
+      for (const ownedFqdn of fqdnKeys) {
+        if (ownedFqdn.split(".")[0].trim().toLowerCase() === rowSlug) {
+          return false;
+        }
+      }
+
+      // c. Jika user memang hanya didaftarkan bare slug tanpa domain sama sekali
+      return bareKeys.has(rowSlug);
     }
+
+    // 2. Jika baris hanya membawa slug pendek tanpa domain (misal baris legacy 'keto' atau 'insurance'):
+    // Cocok jika user memiliki FQDN yang berawalan slug ini, atau user memegang bare slug ini
+    if (keys.has(nk)) return true;
+    for (const ownedFqdn of fqdnKeys) {
+      if (ownedFqdn.split(".")[0].trim().toLowerCase() === nk) {
+        return true;
+      }
+    }
+
     return false;
   });
 }
