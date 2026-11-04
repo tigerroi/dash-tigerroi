@@ -338,7 +338,8 @@ export function subscribeResource(key, callback, onError) {
         table === "view_daily_roi" ||
         table === "daily_roi_reports" ||
         table === "expenses" ||
-        table === "whitelist_topup"
+        table === "whitelist_topup" ||
+        table === "advertiser_spend"
       ) {
         query = query.order("date", { ascending: false }).limit(5000);
       } else if (table === "company_percents" || table === "bonus_percents") {
@@ -420,7 +421,14 @@ export function subscribeResource(key, callback, onError) {
  * Langganan berkala (polling) untuk nilai tunggal / object
  */
 export function subscribeValue(key, callback, onError) {
-  if (key === "weeklyFinancials" || key === "countryRoi" || key === "roiReports") {
+  if (
+    key === "weeklyFinancials" ||
+    key === "countryRoi" ||
+    key === "roiReports" ||
+    key === "roiSnapshots" ||
+    key === "syncRuns" ||
+    key === "advertiserSpend"
+  ) {
     return subscribeResource(key, callback, onError);
   }
 
