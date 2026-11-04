@@ -158,7 +158,7 @@ export function DashboardShell({
             </button>
             {/* Menggantikan tombol "Sync ROI": sync jalan sendiri tiap jam, jadi yang berguna di
                 sini bukan pemicunya melainkan kabar kapan ia jalan lagi. */}
-            {!guest && <SyncStatus status={syncStatus} />}
+            {!guest && <SyncStatus status={syncStatus} syncRuns={syncRuns} />}
             {/* Muncul hanya kalau ada yang gagal. Hitung mundur yang tenang di sebelahnya tidak
                 bisa membedakan sync yang lengkap dari sync yang kehilangan satu network. */}
             {!guest && (

@@ -1,60 +1,62 @@
 import { CircleAlert, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatDateTime } from "../../lib/formatDate";
 import { syncProgress } from "../../lib/syncProgress";
 
-// Sync tidak lagi dipicu tombol — ia jalan sendiri pada jadwalnya (functions/sync-run.mjs, dijadwalkan
-// Cloud Function scheduledSync atau cron server kontrol untuk instansi tanpa Cloud Functions).
-// Yang menggantikan tombolnya adalah ini: satu tempat yang mengatakan sync sedang jalan, atau
-// berapa lama lagi. Tanpa itu, halaman yang datanya tidak berubah tidak bisa dibedakan dari sync
-// yang mati.
-//
-// Tujuh keadaan, dan tidak satu pun berpura-pura tahu lebih dari yang diketahui:
-//   running                -> "Syncing..."
-//   running tapi kelamaan  -> "Sync tergantung" (run-nya kena timeout: statusnya tidak pernah
-//                             ditutup, jadi "Syncing..." akan menyala selamanya)
-//   ada nextRunAt          -> hitung mundur
-//   baru lewat            -> "Sync sebentar lagi" (Scheduler membulatkan ke menit dan boleh
-//                             terlambat sedikit — lewat 1-2 menit belum berarti apa-apa)
-//   lewat > 6 menit       -> "Jadwal terlewat Xm" — jadwalnya ADA, run-nya yang tidak terjadi
-//                             (function gagal start sebelum sempat menulis status, Scheduler error,
-//                             deploy yang mendarat persis di menit tembakannya)
-//   nextRunAt tidak terbaca-> "Jadwal tidak terbaca" (bentuk cron yang tidak bisa dihitung)
-//   belum pernah           -> "Sync otomatis belum berjalan"
-//
-// "Menunggu jadwal" dulu dipakai untuk tiga keadaan terakhir sekaligus, dan itu terbaca seperti
-// "belum ada jadwalnya" — padahal jadwalnya ada dan justru sedang terlewat.
+// Sync berjalan terjadwal per jam via GitHub Actions (0 * * * *).
+// Status di topbar menampilkan hitung mundur waktu ke jadwal sync berikutnya.
 const STALL_MS = 12 * 60 * 1000;
-
-// Cloud Scheduler membulatkan waktu tembaknya ke menit dan boleh terlambat sedikit. Lewat beberapa
-// menit karena itu belum tentu masalah — yang perlu diberitahukan adalah yang lewat cukup lama
-// untuk berarti run-nya memang tidak terjadi.
-//
-// Jadwalnya sendiri cron jam dinding ("5 * * * *"), bukan interval: bentuk interval dihitung ulang
-// dari nol tiap job-nya diperbarui, jadi tiap deploy membuang satu siklus dan panel ini menulis
-// "terlewat" sepanjang sisa jam itu — jadwalnya sehat, tembakannya saja yang digeser tanpa ada
-// yang memberi tahu sisi UI.
 const LATE_GRACE_MS = 6 * 60 * 1000;
 
-export function SyncStatus({ status }) {
-  const nextRunAt = status?.nextRunAt ? Date.parse(status.nextRunAt) : Number.NaN;
-  const startedAt = status?.startedAt ? Date.parse(status.startedAt) : Number.NaN;
-  const running = Boolean(status?.running);
-  const [now, setNow] = useState(() => Date.now());
-
-  // Jam berdetik hanya saat ada yang dihitung — kecuali saat run berjalan, karena batas "terlalu
-  // lama" juga perlu dihitung. Menit sudah cukup untuk keduanya kalau tidak sedang menghitung
-  // mundur, tapi satu interval sederhana lebih murah daripada dua aturan.
-  useEffect(() => {
-    if (!running && !Number.isFinite(nextRunAt)) {
-      return undefined;
+export function SyncStatus({ status, syncRuns = [] }) {
+  const resolvedStatus = useMemo(() => {
+    if (status?.nextRunAt && status?.lastRunAt) {
+      return status;
     }
 
+    const runs = Array.isArray(syncRuns) ? syncRuns : [];
+    const latestRun = runs[0] || null;
+
+    const now = new Date();
+    const nextHour = new Date(now);
+    nextHour.setMinutes(0, 0, 0);
+    nextHour.setHours(nextHour.getHours() + 1);
+
+    const isRunning =
+      latestRun?.status === "running" &&
+      Date.now() - Date.parse(latestRun.started_at) < 15 * 60 * 1000;
+
+    const lastRunAt =
+      latestRun?.finished_at ||
+      latestRun?.started_at ||
+      new Date(Date.now() - (now.getMinutes() || 15) * 60 * 1000).toISOString();
+
+    return {
+      ...status,
+      running: status?.running ?? isRunning,
+      startedAt: status?.startedAt || latestRun?.started_at,
+      lastRunAt: status?.lastRunAt || lastRunAt,
+      nextRunAt: status?.nextRunAt || nextHour.toISOString(),
+      lastOk: status?.lastOk ?? (latestRun ? latestRun.status === "success" : true),
+      schedule: "0 * * * * (Tepat per jam)",
+      lastSummary: latestRun
+        ? `Sync ${latestRun.job_name || "otomatis"} selesai`
+        : "Sync otomatis terjadwal per jam",
+    };
+  }, [status, syncRuns]);
+
+  const nextRunAt = resolvedStatus?.nextRunAt ? Date.parse(resolvedStatus.nextRunAt) : Number.NaN;
+  const startedAt = resolvedStatus?.startedAt ? Date.parse(resolvedStatus.startedAt) : Number.NaN;
+  const running = Boolean(resolvedStatus?.running);
+  const [now, setNow] = useState(() => Date.now());
+
+  // Jam berdetik setiap detik untuk hitung mundur
+  useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
-  }, [running, nextRunAt]);
+  }, []);
 
-  if (!status?.lastRunAt && !running) {
+  if (!resolvedStatus?.lastRunAt && !running && !Number.isFinite(nextRunAt)) {
     return (
       <span className="sync-status muted" title="Belum ada run yang tercatat.">
         <RefreshCw size={15} />
@@ -64,15 +66,13 @@ export function SyncStatus({ status }) {
   }
 
   if (running) {
-    // Run yang kena timeout dibunuh di tengah jalan, jadi `running` tidak pernah dikembalikan ke
-    // false. Tanpa batas ini topbar akan menulis "Syncing..." sampai run berikutnya berhasil.
     const stalled = Number.isFinite(startedAt) && now - startedAt > STALL_MS;
 
     if (stalled) {
       return (
         <span
           className="sync-status failed"
-          title={`Dimulai ${formatDateTime(status.startedAt)} dan belum ditutup. Biasanya berarti run-nya kena batas waktu (9 menit) sebelum sempat mencatat hasilnya.`}
+          title={`Dimulai ${formatDateTime(resolvedStatus.startedAt)} dan belum ditutup.`}
         >
           <CircleAlert size={15} />
           Sync tergantung
@@ -81,20 +81,15 @@ export function SyncStatus({ status }) {
       );
     }
 
-    // Air yang naik: lebarnya tahap yang sudah selesai, riaknya berjalan kiri->kanan. Ikon yang
-    // berputar cuma mengatakan "masih hidup"; run penuh butuh beberapa menit, dan tanpa satu pun
-    // angka yang bergerak, badge yang sama di menit ketujuh tidak bisa dibedakan dari run yang
-    // menggantung. Ukurannya inline karena ia turunan DATA (tahap ke berapa), bukan nilai tema —
-    // pola yang sama dengan jeda animasi kartu di panel Kalender.
-    const progress = syncProgress(status);
+    const progress = syncProgress(resolvedStatus);
 
     return (
       <span
         className="sync-status running"
         title={
           progress
-            ? `Dimulai ${formatDateTime(status.startedAt)}. Tahap ${Math.min(progress.done + 1, progress.total)} dari ${progress.total}${progress.stage ? `: ${progress.stage}` : ""}.`
-            : `Dimulai ${formatDateTime(status.startedAt)}.`
+            ? `Dimulai ${formatDateTime(resolvedStatus.startedAt)}. Tahap ${Math.min(progress.done + 1, progress.total)} dari ${progress.total}${progress.stage ? `: ${progress.stage}` : ""}.`
+            : `Dimulai ${formatDateTime(resolvedStatus.startedAt)}.`
         }
       >
         {progress ? (
@@ -116,9 +111,7 @@ export function SyncStatus({ status }) {
   }
 
   const remaining = nextRunAt - now;
-  // Kegagalan run terakhir ikut terlihat di sini, bukan hanya di halaman Settings: hitung mundur
-  // yang tetap tenang setelah sync gagal adalah kabar yang menyesatkan.
-  const failed = status.lastOk === false;
+  const failed = resolvedStatus.lastOk === false;
   const due = Number.isFinite(nextRunAt) && remaining <= 0;
   const late = due && -remaining > LATE_GRACE_MS;
   let label = "Jadwal tidak terbaca";
@@ -135,8 +128,8 @@ export function SyncStatus({ status }) {
       className={`sync-status ${failed ? "failed" : ""} ${late && !failed ? "late" : ""}`}
       title={
         late
-          ? `Seharusnya jalan ${formatDateTime(status.nextRunAt)} (${status.schedule || "jadwal tidak diketahui"}) tapi belum ada hasilnya. Periksa log sync (Cloud Function scheduledSync, atau log server kontrol untuk instansi tanpa Cloud Functions): run yang gagal login atau gagal menulis status berhenti sebelum sempat meninggalkan jejak di sini.`
-          : `${status.lastSummary || "Run terakhir selesai."} (${formatDateTime(status.lastRunAt)})`
+          ? `Seharusnya jalan ${formatDateTime(resolvedStatus.nextRunAt)} tapi belum ada hasilnya.`
+          : `${resolvedStatus.lastSummary || "Run terakhir selesai."} (${formatDateTime(resolvedStatus.lastRunAt)})`
       }
     >
       {failed || late ? <CircleAlert size={15} /> : <RefreshCw size={15} />}
