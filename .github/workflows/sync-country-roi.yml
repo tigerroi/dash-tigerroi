@@ -15,6 +15,9 @@ on:
         description: "Tanggal akhir (YYYY-MM-DD) - kosongkan untuk otomatis"
         required: false
         default: ""
+  # Pemicu instan via GitHub API Webhook (tanpa antrean cron GitHub)
+  repository_dispatch:
+    types: [hourly-sync]
 
 concurrency:
   group: sync-country-roi

@@ -6,6 +6,9 @@ on:
     - cron: "0 * * * *"
   # Tombol pemicu manual dari tab Actions di GitHub
   workflow_dispatch:
+  # Pemicu instan via GitHub API Webhook (tanpa antrean cron GitHub)
+  repository_dispatch:
+    types: [hourly-sync]
 
 concurrency:
   group: sync-gam

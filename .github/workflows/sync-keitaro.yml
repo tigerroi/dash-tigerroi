@@ -15,6 +15,9 @@ on:
         description: "Tanggal akhir (YYYY-MM-DD) - kosongkan untuk hari berjalan"
         required: false
         default: "2026-10-31"
+  # Pemicu instan via GitHub API Webhook (tanpa antrean cron GitHub)
+  repository_dispatch:
+    types: [hourly-sync]
 
 concurrency:
   group: sync-keitaro
