@@ -331,14 +331,16 @@ export function subscribeResource(key, callback, onError) {
       let query = supabase.from(table).select("*");
       // Urutkan berdasarkan kolom waktu jika ada
       if (table === "roi_snapshots") {
-        query = query.order("date", { ascending: false }).order("time", { ascending: false });
+        query = query.order("date", { ascending: false }).order("time", { ascending: false }).limit(5000);
+      } else if (table === "country_roi") {
+        query = query.order("date", { ascending: false }).limit(10000);
       } else if (
         table === "view_daily_roi" ||
         table === "daily_roi_reports" ||
         table === "expenses" ||
         table === "whitelist_topup"
       ) {
-        query = query.order("date", { ascending: false });
+        query = query.order("date", { ascending: false }).limit(5000);
       } else if (table === "company_percents" || table === "bonus_percents") {
         query = query.order("effective_from", { ascending: false });
       } else if (table === "invalid_traffic") {
