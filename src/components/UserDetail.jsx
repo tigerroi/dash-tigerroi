@@ -98,8 +98,9 @@ export function UserDetail({
       realtimeRoiRows(
         rowsForSubDomains(toArray(store.roiSnapshots), ownedSubDomainKeys),
         masterRoiDaily,
+        store.domains,
       ),
-    [store.roiSnapshots, ownedSubDomainKeys, masterRoiDaily],
+    [store.roiSnapshots, ownedSubDomainKeys, masterRoiDaily, store.domains],
   );
   const filteredMasterRoi = useMemo(
     () => filterByDateWindow(masterRoiRows, masterRoiRange),

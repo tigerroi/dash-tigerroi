@@ -252,4 +252,44 @@ describe("dedupeRoiReports", () => {
     assert.equal(deduped[0].earning, 864_380, "nilai earning mempertahankan nilai tertinggi");
     assert.equal(deduped[0].pic, "Ade Suparman");
   });
+
+  test("realtimeRoiRows otomatis menyaring keluar domain utama (root domain) seperti cmhhealths.com", () => {
+    const rawSnapshots = [
+      // Baris domain utama (root domain) yang tidak memiliki subdomain
+      {
+        id: "2026-11-04T22-00__root1",
+        date: "2026-11-04",
+        time: "22:00",
+        subDomain: "cmhhealths.com",
+        pic: "-",
+        spending: 0,
+        earning: 483,
+      },
+      {
+        id: "2026-11-04T22-00__root2",
+        date: "2026-11-04",
+        time: "22:00",
+        subDomain: "trayedit.com",
+        pic: "-",
+        spending: 0,
+        earning: 100,
+      },
+      // Baris subdomain iklan resmi
+      {
+        id: "2026-11-04T22-00__sub1",
+        date: "2026-11-04",
+        time: "22:00",
+        subDomain: "insurance.uniqueinfo24.com",
+        pic: "Ade Suparman",
+        spending: 159_604,
+        earning: 864_380,
+      },
+    ];
+
+    const result = realtimeRoiRows(rawSnapshots, []);
+    // Baris cmhhealths.com dan trayedit.com harus disaring keluar!
+    assert.equal(result.length, 1);
+    assert.equal(result[0].subDomain, "insurance.uniqueinfo24.com");
+    assert.equal(result[0].pic, "Ade Suparman");
+  });
 });

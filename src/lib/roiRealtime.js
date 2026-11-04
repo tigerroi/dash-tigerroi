@@ -4,7 +4,7 @@ import { countriesOf } from "./countryBreakdown.js";
 import { firstValue } from "./firstValue.js";
 import { toAmount } from "./toAmount.js";
 import { toCampaignList } from "./toCampaignList.js";
-import { canonicalSubDomain } from "./userSubDomains.js";
+import { canonicalSubDomain, isRootDomain } from "./userSubDomains.js";
 
 // Baris tabel ROI per sync: "Laporan ROI Realtime" di Overview, dan "Report Master Realtime ROI"
 // di /users/{uid} (yang sama, disaring ke subdomain yang dipegang user itu — lihat
@@ -268,11 +268,21 @@ export function dedupeSnapshots(snapshots) {
  * Urut terbaru dulu, karena tabelnya dibaca sebagai catatan berjalan: yang dicari orang saat
  * membukanya adalah sync barusan, bukan sync pertama tiga hari lalu.
  */
-export function realtimeRoiRows(snapshots, dailyRows) {
+export function realtimeRoiRows(snapshots, dailyRows, domainsList = []) {
   const dedupedSnaps = dedupeSnapshots(snapshots);
   const daily = (Array.isArray(dailyRows) ? dailyRows : []).map(normalizeRowSubDomain);
   const covered = new Set(dedupedSnaps.map(dayScopeOf));
-  const rows = [...dedupedSnaps, ...daily.filter((row) => !covered.has(dayScopeOf(row)))];
+  const rawRows = [...dedupedSnaps, ...daily.filter((row) => !covered.has(dayScopeOf(row)))];
+
+  // Saring keluar domain utama (root domain) agar tidak masuk ke Laporan ROI
+  const rows = rawRows.filter((row) => {
+    const rawSub = cellText(row?.subDomain || row?.subdomain || row?.sub_domain || row?.site_code);
+    const sub = canonicalSubDomain(rawSub) || rawSub;
+    if (isRootDomain(sub, domainsList)) {
+      return false;
+    }
+    return true;
+  });
 
   return rows.sort((a, b) => stampOf(b).localeCompare(stampOf(a)));
 }

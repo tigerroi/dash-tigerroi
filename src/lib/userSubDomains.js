@@ -170,6 +170,46 @@ export const OFFICIAL_SUBDOMAINS_MAP = {
   styling: "styling.trayedit.com",
 };
 
+/** Daftar domain utama (root domain) - BUKAN subdomain iklan */
+export const OFFICIAL_ROOT_DOMAINS = new Set([
+  "tiktokmodapk.net",
+  "tacobellmenuu.us",
+  "ihopmenuwithprices.us",
+  "cmhhealths.com",
+  "uniqueinfo24.com",
+  "trayedit.com",
+]);
+
+/**
+ * Memeriksa apakah suatu domain adalah domain utama (root domain).
+ * Domain utama tidak memiliki iklan/PIC di TigerROI dan tidak boleh masuk ke Laporan ROI.
+ */
+export function isRootDomain(domainOrSub, domainsList = []) {
+  if (!domainOrSub) return false;
+  const clean = String(domainOrSub).trim().toLowerCase().replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
+  if (!clean || clean === "unmapped" || clean === "tanpa subdomain") return false;
+
+  // 1. Cek terhadap daftar root domain resmi
+  if (OFFICIAL_ROOT_DOMAINS.has(clean)) return true;
+
+  // 2. Cek terhadap daftar domain dari database
+  if (Array.isArray(domainsList)) {
+    for (const d of domainsList) {
+      const dName = String(d?.name || d?.domain || "").trim().toLowerCase().replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
+      if (dName && dName === clean) return true;
+    }
+  }
+
+  // 3. Domain utama hanya memiliki 1 titik (misal cmhhealths.com),
+  // sedangkan subdomain iklan memiliki minimal 2 titik (misal insurance.uniqueinfo24.com)
+  const parts = clean.split(".").filter(Boolean);
+  if (parts.length === 2) {
+    return true;
+  }
+
+  return false;
+}
+
 /**
  * Menormalkan nama subdomain ke nama lengkap (FQDN) resmi.
  * Jika menerima slug pendek (misal 'cabinets'), mengembalikan 'cabinets.trayedit.com'.

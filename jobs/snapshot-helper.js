@@ -77,8 +77,25 @@ export async function recordRoiSnapshot(supabase, targetDate) {
     }
   }
 
-  // 3. Susun data snapshot baru
-  const snapshotRows = currentRows.map((row) => {
+  const ROOT_DOMAINS = new Set([
+    "tiktokmodapk.net",
+    "tacobellmenuu.us",
+    "ihopmenuwithprices.us",
+    "cmhhealths.com",
+    "uniqueinfo24.com",
+    "trayedit.com",
+  ]);
+
+  // 3. Susun data snapshot baru (Hanya untuk subdomain iklan, abaikan domain utama)
+  const validRows = currentRows.filter((row) => {
+    const sub = String(row.sub_domain || row.subdomain || "").trim().toLowerCase();
+    if (!sub || ROOT_DOMAINS.has(sub)) return false;
+    const parts = sub.split(".").filter(Boolean);
+    if (parts.length <= 2) return false; // Domain utama tanpa subdomain
+    return true;
+  });
+
+  const snapshotRows = validRows.map((row) => {
     const sub = row.sub_domain || row.subdomain || "";
     const site = row.site_code || "";
     const safeTimeKey = currentTimeWib.replace(":", "-");
