@@ -265,4 +265,19 @@ describe("access", () => {
 
     assert.equal(accessDeniedReason("activityLogs"), "Halaman ini hanya untuk superadmin.");
   });
+
+  test("role overview hanya membuka dashboard, namun dapat membaca data ringkasan Overview (termasuk domains dan subDomains)", () => {
+    assert.equal(canOpenPage("overview", "dashboard"), true);
+    assert.equal(canOpenPage("overview", "domains"), false);
+    assert.equal(canOpenPage("overview", "users"), false);
+    assert.equal(canOpenPage("overview", "expenses"), false);
+
+    assert.equal(canReadResource("overview", "dashboard"), true);
+    assert.equal(canReadResource("overview", "domains"), true);
+    assert.equal(canReadResource("overview", "subDomains"), true);
+    assert.equal(canReadResource("overview", "dashboardStats"), true);
+    assert.equal(canReadResource("overview", "roiReports"), true);
+    assert.equal(canReadResource("overview", "roiSnapshots"), true);
+    assert.equal(canReadResource("overview", "expenses"), false);
+  });
 });

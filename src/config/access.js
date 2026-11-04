@@ -312,6 +312,8 @@ export function canReadResource(role, key) {
       "syncStatus",
       "adAccounts",
       "users",
+      "domains",
+      "subDomains",
     ].includes(key);
   }
 
