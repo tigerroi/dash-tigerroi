@@ -1,7 +1,8 @@
-import { earningSources, withAdTax } from "./adTax.js";
+import { earningSources, roiPercent, withAdTax } from "./adTax.js";
 import { cellText } from "./cellText.js";
 import { countriesOf } from "./countryBreakdown.js";
 import { firstValue } from "./firstValue.js";
+import { toAmount } from "./toAmount.js";
 import { toCampaignList } from "./toCampaignList.js";
 import { canonicalSubDomain } from "./userSubDomains.js";
 
@@ -256,6 +257,43 @@ export function normalizeRealtimeRoiRow(item, rate, countryBreakdown) {
     computedCpr = Math.round((metaSpending / metaClicks) * 100) / 100;
   }
 
+  let gamAds = sources.gam;
+  let adsenseAds = sources.adsense;
+
+  if (gamAds === "" && adsenseAds === "") {
+    const src = String(item.source || "").toLowerCase();
+    if (src === "adsense") {
+      adsenseAds = money.earningKnown ? money.earning : "";
+      gamAds = money.earningKnown ? 0 : "";
+    } else if (money.earningKnown && money.earning !== "") {
+      gamAds = money.earning;
+      adsenseAds = 0;
+    }
+  } else if (gamAds === "" && adsenseAds !== "" && money.earningKnown) {
+    gamAds = Math.max(0, toAmount(money.earning) - toAmount(adsenseAds));
+  } else if (adsenseAds === "" && gamAds !== "" && money.earningKnown) {
+    adsenseAds = Math.max(0, toAmount(money.earning) - toAmount(gamAds));
+  }
+
+  const effectiveGam = gamAds !== "" ? toAmount(gamAds) : 0;
+  const effectiveAdsense = adsenseAds !== "" ? toAmount(adsenseAds) : 0;
+  const totalEarning =
+    gamAds !== "" || adsenseAds !== ""
+      ? effectiveGam + effectiveAdsense
+      : (money.earningKnown ? money.earning : "");
+
+  const hasEarning = money.earningKnown || gamAds !== "" || adsenseAds !== "";
+
+  const profit =
+    money.spendingKnown && hasEarning
+      ? Math.round((toAmount(totalEarning) - money.totalSpending) * 100) / 100
+      : money.profit;
+
+  const roi =
+    money.spendingKnown && hasEarning
+      ? roiPercent(toAmount(totalEarning), money.totalSpending)
+      : money.roi;
+
   return {
     ...item,
     time: formatRoiTime(item),
@@ -268,16 +306,15 @@ export function normalizeRealtimeRoiRow(item, rate, countryBreakdown) {
     // yang kosong: "belum terpetakan" dan "gagal diambil" menuntut tindakan yang berbeda.
     spendingKnown: money.spendingKnown,
     metaMissing: item.metaMissing,
-    profit: money.profit,
-    roi: money.roi,
+    profit,
+    roi,
     flukSpend: firstValue(item.flukSpend, item.fluctuationSpend, item.spendFluctuation),
-    gamRevenue: money.earning,
-    earningKnown: money.earningKnown,
-    // GAM = permintaan Ad Manager sendiri (Ad Exchange + direct-sold Ad Server); AdSense =
-    // AdSense-in-GAM. Keduanya dijumlahkan persis menjadi kolom Total di sebelahnya, jadi tidak
-    // ada uang yang jatuh di antara dua kolom.
-    gamAds: sources.gam,
-    adsenseAds: sources.adsense,
+    gamRevenue: totalEarning,
+    earningKnown: hasEarning,
+    // GAM = pendapatan dari Ad Manager (AdX + Ad Server); AdSense = pendapatan dari AdSense.
+    // Keduanya dijumlahkan menjadi kolom Total di sebelahnya.
+    gamAds,
+    adsenseAds,
     // Mata uang asli network + kurs, supaya kolom earning menampilkan USD (patokan advertiser di
     // GAM) dengan IDR hasil konversi saat di-hover.
     currency: item.currency,

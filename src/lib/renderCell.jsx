@@ -384,10 +384,12 @@ function formatCurrencyNative(value, currency) {
 }
 
 function MoneyValue({ value, forceNegative = false }) {
-  const text = String(value || "-").trim();
-  const numeric = parseRupiah(text);
+  if (value === null || value === undefined || value === "") {
+    return <span className="muted-cell">-</span>;
+  }
+  const numeric = typeof value === "number" ? value : parseRupiah(String(value));
   const tone =
-    forceNegative || numeric < 0 || text.startsWith("-") ? "money-negative" : "money-positive";
+    forceNegative || numeric < 0 || String(value).startsWith("-") ? "money-negative" : "money-positive";
 
   return <span className={tone}>{formatRupiahValue(value)}</span>;
 }

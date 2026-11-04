@@ -182,24 +182,54 @@ export function Overview({ store, navigate, tab, role, viewer }) {
 
     const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
 
+    // 1. Pengeluaran Hari Ini diambil langsung dari campaign advertiser
     const spendTodayByPic = new Map();
-    for (const snap of roiSnapshots) {
+
+    // A. Dari campaigns milik masing-masing user (Profil User -> Riwayat Spend Campaign)
+    for (const u of users) {
+      const canonical = canonicalAdvertiserInfo(u.name || u.email, users);
+      if (!canonical) continue;
+
+      let userCampSpend = 0;
+      const campaigns = Array.isArray(u.campaigns) ? u.campaigns : [];
+      for (const c of campaigns) {
+        const val = Number(c.spend ?? c.spendToday ?? 0);
+        if (val > 0) userCampSpend += val;
+      }
+      if (userCampSpend > 0) {
+        spendTodayByPic.set(canonical.key, userCampSpend);
+      }
+    }
+
+    // B. Tambahkan / sinkronkan dengan baris roiReports hari ini jika ada
+    const roiTodayByPic = new Map();
+    for (const rep of roiReports || []) {
+      if (rep?.date === today) {
+        const canonical = canonicalAdvertiserInfo(rep?.pic, users);
+        if (canonical) {
+          const current = roiTodayByPic.get(canonical.key) || 0;
+          const val = Number(rep.spending || rep.metaSpend || rep.spend || 0);
+          roiTodayByPic.set(canonical.key, current + val);
+        }
+      }
+    }
+    for (const [key, val] of roiTodayByPic.entries()) {
+      const current = spendTodayByPic.get(key) || 0;
+      if (val > current) {
+        spendTodayByPic.set(key, val);
+      }
+    }
+
+    // C. Sinkronkan dengan snapshot ROI hari ini jika ada
+    for (const snap of roiSnapshots || []) {
       if (!snap?.date || snap?.date === today) {
         const canonical = canonicalAdvertiserInfo(snap?.pic, users);
         if (canonical) {
           const current = spendTodayByPic.get(canonical.key) || 0;
           const val = Number(snap.spending || snap.metaSpend || snap.totalSpending || 0);
-          if (val > current) spendTodayByPic.set(canonical.key, val);
-        }
-      }
-    }
-    for (const rep of roiReports) {
-      if (rep?.date === today) {
-        const canonical = canonicalAdvertiserInfo(rep?.pic, users);
-        if (canonical) {
-          const current = spendTodayByPic.get(canonical.key) || 0;
-          const val = Number(rep.spending || rep.metaSpend || rep.totalSpending || 0);
-          spendTodayByPic.set(canonical.key, current + val);
+          if (val > current && val < 50000000) {
+            spendTodayByPic.set(canonical.key, val);
+          }
         }
       }
     }
@@ -231,7 +261,8 @@ export function Overview({ store, navigate, tab, role, viewer }) {
         const prevBal = balanceByPic.get(canonical.key) || 0;
         balanceByPic.set(canonical.key, prevBal + accountSisaSaldo);
 
-        if (Number(acc.spendToday || 0) > 0) {
+        // Hanya gunakan spendToday akun jika akun tersebut privat per user, BUKAN akun bersama armada
+        if (!isAllUsers && Number(acc.spendToday || 0) > 0) {
           const prevSpend = spendTodayByPic.get(canonical.key) || 0;
           spendTodayByPic.set(canonical.key, Math.max(prevSpend, Number(acc.spendToday || 0)));
         }
@@ -1099,10 +1130,6 @@ function founderColumns(totals) {
     moneyColumn("totalSpending", "Total Spending + Tax (ST)", "spending", {
       total: totals.totalSpending,
     }),
-    moneyColumn("balance", "Sisa Saldo (SS)", "nominal", {
-      hint: "Sisa batas pengeluaran Meta hari ini",
-      total: totals.balance,
-    }),
     moneyColumn("earning", "Total Earning (ER)", "earning", { total: totals.earning }),
     moneyColumn("profitAdvertiser", "Profit Advertiser", "profit", {
       hint: "ER − ST",
@@ -1115,10 +1142,6 @@ function founderColumns(totals) {
     roiColumn("roiAdvertiser", "ROI Overall Advertiser", {
       hint: "(ER − ST) ÷ ST × 100%",
       total: totals.roiAdvertiser,
-    }),
-    roiColumn("roiFounder", "ROI Overall Founder", {
-      hint: "(ER − TU) ÷ TU × 100%",
-      total: totals.roiFounder,
     }),
   ];
 }

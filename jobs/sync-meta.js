@@ -222,9 +222,15 @@ export async function runSyncMeta() {
         console.log(`    Ditemukan ${insights.length} baris insights campaign.`);
 
         let accountSpendToday = 0;
+        const campaignSpendTodayMap = new Map();
         for (const ins of insights) {
           if (ins.date === dateToday) {
-            accountSpendToday += Number(ins.spend || 0);
+            const sp = Number(ins.spend || 0);
+            accountSpendToday += sp;
+            const cId = String(ins.campaignId || "");
+            if (cId) {
+              campaignSpendTodayMap.set(cId, (campaignSpendTodayMap.get(cId) || 0) + sp);
+            }
           }
         }
 
@@ -404,8 +410,12 @@ export async function runSyncMeta() {
             const picName = matchedSub?.pic || null;
             const subName = matchedSub?.name || (siteCode !== "unmapped" ? siteCode : "");
 
+            const campSpendToday = campaignSpendTodayMap.get(String(c.campaignId || "")) || 0;
+
             const enriched = {
               ...c,
+              spend: campSpendToday,
+              spendToday: campSpendToday,
               account: account.name || "Meta Ads",
               subDomain: subName || "unmapped",
               campaignCode: firstToken,

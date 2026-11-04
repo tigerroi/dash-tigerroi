@@ -161,15 +161,28 @@ export function formatAdTaxPercent(rate) {
 }
 
 // Rincian sumber earning satu baris: GAM = permintaan Ad Manager sendiri (Ad Exchange + direct-sold
-// Ad Server), AdSense = AdSense-in-GAM ("Adsense Display"). Keduanya dijumlahkan persis menjadi
-// kolom Earning di sebelahnya, jadi tidak ada uang yang jatuh di antara dua kolom.
+// Ad Server), AdSense = AdSense-in-GAM ("Adsense Display" / AdSense API). Keduanya dijumlahkan persis menjadi
+// kolom Total Earning di sebelahnya, jadi tidak ada uang yang jatuh di antara dua kolom.
 //
 // Satu tempat untuk kedua tabel yang memecahnya — ROI di Overview dan "Report Master Realtime ROI"
-// di /users/{uid}. Dua rumus berarti satu tabel diam-diam berhenti menghitung salah satu sumber.
+// di /users/{uid}.
 export function earningSources(row) {
+  const explicitGam = sumRevenue(
+    row?.gamAds,
+    row?.adxRevenue,
+    row?.adServerRevenue,
+    row?.metadata?.adx_revenue,
+    row?.metadata?.ad_server_revenue,
+  );
+  const explicitAdsense = sumRevenue(
+    row?.adsenseAds,
+    row?.adsenseRevenue,
+    row?.metadata?.adsense_revenue,
+  );
+
   return {
-    gam: sumRevenue(row?.adxRevenue, row?.adServerRevenue),
-    adsense: sumRevenue(row?.adsenseRevenue),
+    gam: explicitGam,
+    adsense: explicitAdsense,
   };
 }
 
