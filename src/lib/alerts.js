@@ -50,6 +50,20 @@ export function lowBalanceAdvertisers(rows, settings) {
   const parsed = raw === "" || raw === null || raw === undefined ? Number.NaN : Number(raw);
   const threshold = Number.isFinite(parsed) ? Math.max(0, parsed) : DEFAULT_ALERTS.balanceThreshold;
   return (rows || [])
-    .filter((row) => typeof row?.balance === "number" && row.balance <= threshold)
+    .filter((row) => {
+      if (typeof row?.balance !== "number" || row.balance > threshold) return false;
+      const picLower = String(row?.pic || "").toLowerCase();
+      // Jangan peringatkan saldo menipis untuk non-advertiser (Emran, superadmin, admin)
+      if (
+        picLower.includes("emran") ||
+        picLower.includes("emraan") ||
+        picLower.includes("masdef") ||
+        picLower.includes("admin") ||
+        picLower.includes("superadmin")
+      ) {
+        return false;
+      }
+      return true;
+    })
     .sort((a, b) => a.balance - b.balance);
 }

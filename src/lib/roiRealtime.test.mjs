@@ -3,6 +3,7 @@ import { describe, test } from "node:test";
 import { buildCountryBreakdown } from "./countryBreakdown.js";
 import {
   dedupeRoiReports,
+  dedupeSnapshots,
   earningSourceLabel,
   formatRoiTime,
   normalizeRealtimeRoiRow,
@@ -210,5 +211,45 @@ describe("dedupeRoiReports", () => {
     const oct01 = result.find((r) => r.date === "2026-10-01");
     assert.ok(oct01, "baris tanggal yang belum ada rincian tetap tersimpan");
     assert.equal(oct01.earning, 1_000_000);
+  });
+
+  test("dedupeSnapshots menyatukan baris snapshot kembar di jam yang sama dan membuang baris kosong Rp 0", () => {
+    const rawSnapshots = [
+      // 2 baris kosong Rp 0 pada 22:00
+      {
+        id: "2026-11-04T22-00__sub1__1",
+        date: "2026-11-04",
+        time: "22:00",
+        subDomain: "insurance.uniqueinfo24.com",
+        pic: "Ade Suparman",
+        spending: 0,
+        earning: 0,
+      },
+      {
+        id: "2026-11-04T22-00__sub1__2",
+        date: "2026-11-04",
+        time: "22:00",
+        subDomain: "insurance.uniqueinfo24.com",
+        pic: "Ade Suparman",
+        spending: 0,
+        earning: 0,
+      },
+      // 1 baris bernilai valid pada 22:00
+      {
+        id: "2026-11-04T22-00__sub1__3",
+        date: "2026-11-04",
+        time: "22:00",
+        subDomain: "insurance.uniqueinfo24.com",
+        pic: "Ade Suparman",
+        spending: 159_604,
+        earning: 864_380,
+      },
+    ];
+
+    const deduped = dedupeSnapshots(rawSnapshots);
+    assert.equal(deduped.length, 1, "hanya ada tepat 1 baris snapshot untuk 22:00");
+    assert.equal(deduped[0].spending, 159_604, "nilai spending mempertahankan nilai tertinggi");
+    assert.equal(deduped[0].earning, 864_380, "nilai earning mempertahankan nilai tertinggi");
+    assert.equal(deduped[0].pic, "Ade Suparman");
   });
 });

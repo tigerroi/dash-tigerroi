@@ -89,59 +89,29 @@ export function Overview({ store, navigate, tab, role, viewer }) {
   const roiReports = store.roiReports || [];
   const roiSnapshots = store.roiSnapshots || [];
 
-  const wlAccounts = useMemo(() => {
-    const list = (store.adAccounts || [])
-      .filter((acc) => !acc.syncDisabled)
-      .map((acc) => {
-        const cap = Number(acc.spendCap ?? acc.spend_cap ?? 0);
-        const spent = Number(acc.amountSpent ?? acc.amount_spent ?? 0);
-        const balance =
-          cap > 0
-            ? Math.max(0, Math.round((cap - spent) * 100) / 100)
-            : Number(acc.balance || 0);
-        const spendToday = Number(acc.spendToday ?? acc.spend_today ?? 0);
-        return {
-          id: acc.id || acc.accountId || acc.name,
-          name: acc.name || acc.accountName || "BD R 16",
-          balance,
-          spendToday,
-        };
-      });
-
-    if (list.length === 0) {
-      return [
-        {
-          id: "bd-r-16",
-          name: "BD R 16",
-          balance: 8778619,
-          spendToday: 1221211,
-        },
-      ];
-    }
-    return list;
-  }, [store.adAccounts]);
-
-  // Helper kanonisasi nama advertiser (Ade Suparman = Man, Zulfan = Sul, Superadmin bukan PIC)
+  // Helper kanonisasi nama advertiser (Ade Suparman = Man, Zulfan = Sul, Superadmin & Overview bukan PIC)
   function canonicalAdvertiserInfo(rawName, userList = []) {
     if (!rawName) return null;
     const lower = String(rawName).trim().toLowerCase();
 
-    // 1. Mas Def adalah Superadmin, BUKAN advertiser / PIC
+    // 1. Mas Def adalah Superadmin, Emran adalah Overview, BUKAN advertiser / PIC
     if (
       lower.includes("superadmin") ||
       lower.includes("mas def") ||
       lower.includes("masdef") ||
       lower.includes("defri") ||
-      lower === "admin"
+      lower === "admin" ||
+      lower.includes("emran") ||
+      lower.includes("emraan")
     ) {
       return null;
     }
 
-    // 2. Ade Suparman dan man adalah orang yang sama
-    if (lower === "man" || lower.includes("ade suparman") || lower.includes("suparman")) {
+    // 2. Ade Suparman, man, dan ade adalah orang yang sama
+    if (lower === "man" || lower === "ade" || lower.includes("ade suparman") || lower.includes("suparman")) {
       const match = userList.find(
         (u) =>
-          (u.name && (u.name.toLowerCase().includes("ade suparman") || u.name.toLowerCase() === "man")) ||
+          (u.name && (u.name.toLowerCase().includes("ade suparman") || u.name.toLowerCase() === "man" || u.name.toLowerCase() === "ade")) ||
           (u.email && u.email.toLowerCase().includes("man@"))
       );
       return {
@@ -194,8 +164,18 @@ export function Overview({ store, navigate, tab, role, viewer }) {
     }
 
     const match = userList.find((u) => u.name && u.name.toLowerCase() === lower);
-    if (match && (match.role || "").includes("superadmin")) {
-      return null;
+    if (match) {
+      const role = String(match.role || "").toLowerCase();
+      // Role non-advertiser (superadmin, admin, overview, guest, keuangan) bukan PIC
+      if (
+        role.includes("superadmin") ||
+        role.includes("admin") ||
+        role === "overview" ||
+        role === "guest" ||
+        role === "keuangan"
+      ) {
+        return null;
+      }
     }
 
     return {
@@ -204,6 +184,45 @@ export function Overview({ store, navigate, tab, role, viewer }) {
       userId: match?.id || match?.uid || null,
     };
   }
+
+  const wlAccounts = useMemo(() => {
+    const users = Array.isArray(store.users) ? store.users : [];
+    const list = (store.adAccounts || [])
+      .filter((acc) => {
+        if (acc.syncDisabled) return false;
+        // Akun Whitelist (WL) adalah akun agensi / whitelist armada, BUKAN nama PIC perorangan
+        const canonicalPic = canonicalAdvertiserInfo(acc.name, users);
+        if (canonicalPic) return false;
+        return true;
+      })
+      .map((acc) => {
+        const cap = Number(acc.spendCap ?? acc.spend_cap ?? 0);
+        const spent = Number(acc.amountSpent ?? acc.amount_spent ?? 0);
+        const balance =
+          cap > 0
+            ? Math.max(0, Math.round((cap - spent) * 100) / 100)
+            : Number(acc.balance || 0);
+        const spendToday = Number(acc.spendToday ?? acc.spend_today ?? 0);
+        return {
+          id: acc.id || acc.accountId || acc.name,
+          name: acc.name || acc.accountName || "BD R 16",
+          balance,
+          spendToday,
+        };
+      });
+
+    if (list.length === 0) {
+      return [
+        {
+          id: "bd-r-16",
+          name: "BD R 16",
+          balance: 8778619,
+          spendToday: 1221211,
+        },
+      ];
+    }
+    return list;
+  }, [store.adAccounts, store.users]);
 
   const advertiserSpend = useMemo(() => {
     if (Array.isArray(store.advertiserSpend) && store.advertiserSpend.length > 0) {
@@ -253,17 +272,36 @@ export function Overview({ store, navigate, tab, role, viewer }) {
       }
     }
 
-    // C. Sinkronkan dengan snapshot ROI hari ini jika ada
+    // C. Sinkronkan dengan snapshot ROI hari ini (ambil snapshot jam terakhir per subdomain, lalu jumlahkan per PIC)
+    const latestSubSnap = new Map();
     for (const snap of roiSnapshots || []) {
       if (!snap?.date || snap?.date === today) {
-        const canonical = canonicalAdvertiserInfo(snap?.pic, users);
-        if (canonical) {
-          const current = spendTodayByPic.get(canonical.key) || 0;
-          const val = Number(snap.spending || snap.metaSpend || snap.totalSpending || 0);
-          if (val > current && val < 50000000) {
-            spendTodayByPic.set(canonical.key, val);
-          }
+        const rawSub = snap?.sub_domain || snap?.subdomain || snap?.site_code;
+        const sub = (rawSub || "").toLowerCase().trim();
+        if (!sub) continue;
+        const time = String(snap?.time || "00:00");
+        const existing = latestSubSnap.get(sub);
+        if (!existing || time >= existing.time) {
+          latestSubSnap.set(sub, { ...snap, time });
         }
+      }
+    }
+
+    const snapSpendByPic = new Map();
+    for (const snap of latestSubSnap.values()) {
+      const canonical = canonicalAdvertiserInfo(snap.pic, users);
+      if (canonical) {
+        const current = snapSpendByPic.get(canonical.key) || 0;
+        const val = Number(snap.spending || snap.metaSpend || snap.totalSpending || 0);
+        if (val > 0) {
+          snapSpendByPic.set(canonical.key, current + val);
+        }
+      }
+    }
+    for (const [key, val] of snapSpendByPic.entries()) {
+      const current = spendTodayByPic.get(key) || 0;
+      if (val > current) {
+        spendTodayByPic.set(key, val);
       }
     }
 
@@ -293,12 +331,8 @@ export function Overview({ store, navigate, tab, role, viewer }) {
 
         const prevBal = balanceByPic.get(canonical.key) || 0;
         balanceByPic.set(canonical.key, prevBal + accountSisaSaldo);
-
-        // Hanya gunakan spendToday akun jika akun tersebut privat per user, BUKAN akun bersama armada
-        if (!isAllUsers && Number(acc.spendToday || 0) > 0) {
-          const prevSpend = spendTodayByPic.get(canonical.key) || 0;
-          spendTodayByPic.set(canonical.key, Math.max(prevSpend, Number(acc.spendToday || 0)));
-        }
+        // Catatan: Pengeluaran hari ini akun whitelist bersama (BD R 16) TIDAK disalin ke masing-masing PIC.
+        // Pengeluaran PIC murni berasal dari belanja campaign/subdomain miliknya sendiri di atas.
       }
     }
 
@@ -327,7 +361,12 @@ export function Overview({ store, navigate, tab, role, viewer }) {
     }
 
     const result = [];
+    const seenNames = new Set();
     for (const [key, info] of picSet.entries()) {
+      const normName = info.name.toLowerCase().trim();
+      if (seenNames.has(normName)) continue;
+      seenNames.add(normName);
+
       const balance = balanceByPic.get(key) || 0;
       const spendToday = spendTodayByPic.get(key) || 0;
 

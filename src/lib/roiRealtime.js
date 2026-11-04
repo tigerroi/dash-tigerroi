@@ -176,6 +176,89 @@ export function formatRoiTime(item) {
 }
 
 /**
+ * Deduplikasi snapshot per tanggal, jam, dan subdomain resmi.
+ * Mencegah data ganda jika terdapat eksekusi sinkronisasi berulang pada jam yang sama,
+ * atau baris kosong (Rp 0) yang tercatat bersamaan dengan baris data penuh.
+ */
+export function dedupeSnapshots(snapshots) {
+  if (!Array.isArray(snapshots) || snapshots.length === 0) return [];
+
+  const byKey = new Map();
+  for (const rawRow of snapshots) {
+    if (!rawRow) continue;
+    const row = normalizeRowSubDomain(rawRow);
+    const date = String(row.date || "").slice(0, 10);
+    if (!date) continue;
+
+    const time = formatRoiTime(row);
+    const sub = canonicalSubOf(row) || "unmapped";
+    const key = `${date}__${time}__${sub}`;
+
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, { ...row, time, subDomain: sub });
+      continue;
+    }
+
+    // Gabungkan: pertahankan metrik yang valid dan bernilai tertinggi (bukan Rp 0)
+    const spending = Math.max(
+      Number(existing.spending ?? existing.totalSpending ?? existing.metaSpend ?? 0),
+      Number(row.spending ?? row.totalSpending ?? row.metaSpend ?? 0),
+    );
+    const earning = Math.max(
+      Number(existing.earning ?? existing.gamRevenue ?? existing.revenue ?? 0),
+      Number(row.earning ?? row.gamRevenue ?? row.revenue ?? 0),
+    );
+    const impressions = Math.max(
+      Number(existing.impressions || 0),
+      Number(row.impressions || 0),
+    );
+    const clicks = Math.max(
+      Number(existing.clicks || 0),
+      Number(row.clicks || 0),
+    );
+    const pic = String(row.pic || "").trim() && row.pic !== "-" ? row.pic : existing.pic;
+    const campaign =
+      String(row.campaign || "").trim() && !row.campaign.startsWith("unmapped")
+        ? row.campaign
+        : existing.campaign;
+    const flukSpend =
+      Number(row.flukSpend ?? row.fluk_spend ?? 0) ||
+      Number(existing.flukSpend ?? existing.fluk_spend ?? 0);
+    const flukEarn =
+      Number(row.flukEarn ?? row.fluk_earn ?? 0) ||
+      Number(existing.flukEarn ?? existing.fluk_earn ?? 0);
+    const flukRoi =
+      Number(row.flukRoi ?? row.fluk_roi ?? 0) ||
+      Number(existing.flukRoi ?? existing.fluk_roi ?? 0);
+
+    byKey.set(key, {
+      ...existing,
+      ...row,
+      time,
+      subDomain: sub,
+      pic,
+      campaign,
+      spending,
+      metaSpend: spending,
+      totalSpending: spending,
+      earning,
+      gamRevenue: earning,
+      impressions,
+      clicks,
+      flukSpend,
+      fluk_spend: flukSpend,
+      flukEarn,
+      fluk_earn: flukEarn,
+      flukRoi,
+      fluk_roi: flukRoi,
+    });
+  }
+
+  return [...byKey.values()];
+}
+
+/**
  * Snapshot per sync, ditambah baris harian untuk hari-hari yang tidak punya snapshot.
  *
  * Baris harian hari yang SAMA dengan snapshot dibuang, bukan ditampilkan berdampingan: keduanya
@@ -186,10 +269,10 @@ export function formatRoiTime(item) {
  * membukanya adalah sync barusan, bukan sync pertama tiga hari lalu.
  */
 export function realtimeRoiRows(snapshots, dailyRows) {
-  const snaps = (Array.isArray(snapshots) ? snapshots : []).map(normalizeRowSubDomain);
+  const dedupedSnaps = dedupeSnapshots(snapshots);
   const daily = (Array.isArray(dailyRows) ? dailyRows : []).map(normalizeRowSubDomain);
-  const covered = new Set(snaps.map(dayScopeOf));
-  const rows = [...snaps, ...daily.filter((row) => !covered.has(dayScopeOf(row)))];
+  const covered = new Set(dedupedSnaps.map(dayScopeOf));
+  const rows = [...dedupedSnaps, ...daily.filter((row) => !covered.has(dayScopeOf(row)))];
 
   return rows.sort((a, b) => stampOf(b).localeCompare(stampOf(a)));
 }
