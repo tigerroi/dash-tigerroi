@@ -420,7 +420,7 @@ export function subscribeResource(key, callback, onError) {
  * Langganan berkala (polling) untuk nilai tunggal / object
  */
 export function subscribeValue(key, callback, onError) {
-  if (key === "weeklyFinancials") {
+  if (key === "weeklyFinancials" || key === "countryRoi" || key === "roiReports") {
     return subscribeResource(key, callback, onError);
   }
 

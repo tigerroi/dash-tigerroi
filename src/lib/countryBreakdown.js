@@ -119,17 +119,17 @@ export function buildCountryBreakdownFromRows(countryRoiRows, rate, roiReports =
     const spending = Number(item.spend ?? item.spending ?? 0);
     const adTax = spending * (rate || 0.05);
     const totalSpending = spending + adTax;
-    let earning = Number(item.earning || 0);
-    // Normalisasi guardrail jika data lama di Supabase terkalikan ganda kurs USD 18.155,28
-    if (earning > 10000000 && (impressions === null || impressions < 10000)) {
-      earning = Math.round((earning / 18155.28) * 100) / 100;
-    }
     const clicks =
       item.clicks !== null && item.clicks !== undefined ? Number(item.clicks) : null;
     const impressions =
       item.impressions !== null && item.impressions !== undefined
         ? Number(item.impressions)
         : null;
+    let earning = Number(item.earning || 0);
+    // Normalisasi guardrail jika data lama di Supabase terkalikan ganda kurs USD 18.155,28
+    if (earning > 10000000 && (impressions === null || impressions < 10000)) {
+      earning = Math.round((earning / 18155.28) * 100) / 100;
+    }
 
     const dStr = String(item.date || "").slice(0, 10);
     const rawSub = String(subDomain || "").trim().toLowerCase();
