@@ -238,14 +238,43 @@ export async function runSyncGam() {
     console.log(`Mengautentikasi Service Account: ${creds.clientEmail}...`);
     const accessToken = await getGoogleServiceAccountToken(creds);
 
-    // 4. Ambil daftar sites dan subdomains untuk pencocokan unit iklan & URL
-    const [{ data: sitesList }, { data: subdomainsList }] = await Promise.all([
+    // 4. Ambil daftar sites, subdomains, dan gam_accounts untuk sinkronisasi
+    const [{ data: sitesList }, { data: subdomainsList }, { data: gamAccountsList }] = await Promise.all([
       supabase.from("sites").select("site_code, is_active").eq("is_active", true),
       supabase.from("subdomains").select("name, site_code, parent_domain"),
+      supabase.from("gam_accounts").select("name, network_code, status"),
     ]);
 
     const sites = sitesList || [];
     const subdomains = subdomainsList || [];
+
+    // Bangun daftar Network GAM dinamis dari database Supabase (tabel gam_accounts), fallback ke GAM_NETWORKS
+    const activeNetworks = [];
+    const seenCodes = new Set();
+
+    if (gamAccountsList && gamAccountsList.length > 0) {
+      for (const acc of gamAccountsList) {
+        if (!acc.network_code) continue;
+        const code = String(acc.network_code).trim();
+        const status = String(acc.status || "").toLowerCase();
+        if (status === "inactive" || status === "nonaktif" || status === "banned") continue;
+        seenCodes.add(code);
+        const preset = GAM_NETWORKS.find((n) => n.networkCode === code);
+        activeNetworks.push({
+          domain: acc.name || preset?.domain || "unknown",
+          networkCode: code,
+          defaultSiteCode: preset?.defaultSiteCode || acc.name || "unmapped",
+        });
+      }
+    }
+
+    // Pastikan fallback GAM_NETWORKS tetap masuk jika belum tercatat di database
+    for (const net of GAM_NETWORKS) {
+      if (!seenCodes.has(net.networkCode)) {
+        activeNetworks.push(net);
+        seenCodes.add(net.networkCode);
+      }
+    }
 
     const daysBack = Number(process.env.DAYS_BACK || 30);
     const dateToday = getJakartaDate(0);
@@ -261,8 +290,8 @@ export async function runSyncGam() {
     const dailyMap = new Map(); // key `${date}__${site_code}` -> aggregated data
     const allHourlyGamRows = []; // Menyimpan data historis per jam dari GAM (Opsi 2)
 
-    // 5. Loop ke 4 Network GAM
-    for (const net of GAM_NETWORKS) {
+    // 5. Loop ke seluruh Network GAM aktif
+    for (const net of activeNetworks) {
       console.log(
         `\n--> Menarik Pendapatan GAM untuk ${net.domain} (Network: ${net.networkCode})...`,
       );
@@ -470,7 +499,7 @@ export async function runSyncGam() {
 
     // 7. Catat status akhir ke sync_runs
     const finishedAt = new Date().toISOString();
-    const isSuccess = errors.length < GAM_NETWORKS.length;
+    const isSuccess = errors.length < activeNetworks.length;
     const status = isSuccess ? "success" : "failed";
 
     if (runId) {
@@ -482,7 +511,7 @@ export async function runSyncGam() {
           rows_synced: totalSyncedRows,
           error_message: errors.length ? errors.join("; ") : null,
           details: {
-            networks_processed: GAM_NETWORKS.length,
+            networks_processed: activeNetworks.length,
             errors_count: errors.length,
           },
         })

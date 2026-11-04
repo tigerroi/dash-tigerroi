@@ -111,9 +111,50 @@ export function toSnakeCasePayload(payload) {
 }
 
 /**
+ * Normalisasi payload Akun GAM (gam_accounts) agar kompatibel dengan PostgreSQL
+ */
+export function formatGamAccountPayload(values = {}) {
+  const payload = toSnakeCasePayload(values);
+  delete payload.id;
+  delete payload.created_at;
+
+  // Hapus field frontend yang bukan kolom fisik tabel gam_accounts
+  delete payload.google_credential;
+  delete payload.status_auto;
+  delete payload.status_detail;
+
+  if (payload.network_code !== undefined && payload.network_code !== null) {
+    payload.network_code = String(payload.network_code).trim();
+  }
+
+  // Kolom numerik Postgres tidak boleh menerima string kosong ""
+  const parseNum = (val) => {
+    if (val === "" || val === null || val === undefined) return 0;
+    const num = Number(val);
+    return isNaN(num) ? 0 : num;
+  };
+
+  payload.saldo_adsense = parseNum(payload.saldo_adsense);
+  payload.saldo_ad_exchange = parseNum(payload.saldo_ad_exchange);
+  payload.saldo = parseNum(payload.saldo);
+
+  // Ubah string kosong menjadi null agar rapi di database
+  for (const [k, v] of Object.entries(payload)) {
+    if (v === "" && k !== "name" && k !== "network_code" && k !== "status") {
+      payload[k] = null;
+    }
+  }
+
+  return payload;
+}
+
+/**
  * Menyiapkan payload agar cocok dengan skema tabel PostgreSQL Supabase
  */
 function prepareResourcePayload(key, values) {
+  if (key === "gamAccounts") {
+    return formatGamAccountPayload(values);
+  }
   if (key === "adAccounts") {
     return formatAdAccountPayload(values);
   }
