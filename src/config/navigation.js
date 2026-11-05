@@ -57,6 +57,7 @@ export const navItems = [
   // di alamat ikut kembali bersama tombol Back.
   { path: "/dashboard", label: "Overview", key: "dashboard", group: "Ringkasan", tab: "Ringkasan" },
   { path: "/dashboard/grafik", label: "Grafik", key: "dashboard", parent: "/dashboard" },
+  { path: "/dashboard/negara", label: "Negara", key: "dashboard", parent: "/dashboard" },
   { path: "/dashboard/roi", label: "Laporan ROI", key: "dashboard", parent: "/dashboard" },
   // Kalender berdiri PALING KANAN, sesudah tiga tab yang sudah jadi kebiasaan orang: ia menjawab
   // pertanyaan yang datang belakangan ("hari itu kenapa"), bukan yang dibuka tiap pagi.

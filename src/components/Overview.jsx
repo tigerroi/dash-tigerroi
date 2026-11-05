@@ -43,6 +43,7 @@ import { OwnerFilterFields } from "./ui/OwnerFilterFields";
 import { PageHeader } from "./ui/PageHeader";
 import { RealtimeRoiTable } from "./ui/RealtimeRoiTable";
 import { CalendarDayPanel, ReportCalendar } from "./ui/ReportCalendar";
+import { CountryLeaderboard } from "./CountryLeaderboard";
 import { RoiCurveChart } from "./ui/RoiCurveChart";
 import {
   SubDomainRoiCurveChart,
@@ -1072,6 +1073,13 @@ export function Overview({ store, navigate, tab, role, viewer }) {
             )}
           </section>
         </>
+      )}
+
+      {activeTab === "negara" && (
+        <CountryLeaderboard
+          countryRoi={store.countryRoi || []}
+          adTaxRate={adTaxRate}
+        />
       )}
 
       {activeTab === "kalender" && (

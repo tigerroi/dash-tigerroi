@@ -40,6 +40,7 @@ const DASHBOARD_TABS = {
   "/": "ringkasan",
   "/dashboard": "ringkasan",
   "/dashboard/grafik": "grafik",
+  "/dashboard/negara": "negara",
   "/dashboard/roi": "roi",
   "/dashboard/kalender": "kalender",
   "/dashboard/terjadwal": "terjadwal",

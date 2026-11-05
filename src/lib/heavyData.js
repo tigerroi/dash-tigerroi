@@ -47,6 +47,6 @@ export function needsRoiSnapshots(route) {
  */
 export function needsUserReports(route) {
   if (!route) return false;
-  if (route.kind === "dashboard") return route.tab === "roi";
+  if (route.kind === "dashboard") return route.tab === "roi" || route.tab === "negara";
   return route.kind === "detail" && route.key === "users";
 }
