@@ -331,7 +331,38 @@ export function useFirebaseStore(navigate, resources, user, enabled = true, rout
       await updateResource(key, id, key === "users" ? profile : values, actor);
       // Changing the Role dropdown has to reach /roles or it changes nothing that matters.
       if (key === "users") {
-        const uid = (store.users || []).find((entry) => entry.id === id)?.uid || id;
+        const existingUser = (store.users || []).find((entry) => entry.id === id);
+        const oldName = existingUser?.name;
+        const newName = profile?.name;
+        const uid = existingUser?.uid || id;
+
+        // Jika nama user berubah, lakukan cascade update ke subdomains dan ad_accounts
+        if (oldName && newName && oldName.trim() !== newName.trim()) {
+          const trimmedOld = oldName.trim();
+          const trimmedNew = newName.trim();
+          try {
+            await supabase
+              .from("subdomains")
+              .update({ pic: trimmedNew })
+              .eq("pic", trimmedOld);
+
+            const adAccounts = store.adAccounts || [];
+            for (const acc of adAccounts) {
+              const currentOwner = String(acc.userOwner || acc.user_owner || "");
+              if (currentOwner.includes(trimmedOld)) {
+                const regex = new RegExp(`\\b${trimmedOld}\\b`, "g");
+                const updatedOwner = currentOwner.replace(regex, trimmedNew);
+                await supabase
+                  .from("ad_accounts")
+                  .update({ user_owner: updatedOwner })
+                  .eq("id", acc.id);
+              }
+            }
+          } catch (cascadeErr) {
+            console.warn("Gagal cascade update subdomain/ad_accounts:", cascadeErr?.message);
+          }
+        }
+
         if (password && String(password).trim().length >= 6) {
           try {
             const { error: rpcErr } = await supabase.rpc("admin_set_user_password", {
