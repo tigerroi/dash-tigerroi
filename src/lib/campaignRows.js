@@ -29,7 +29,18 @@ export function normalizeCampaignRows(items) {
     // diturunkan dari laporan ROI, yang tidak punya sisi Meta) datang tanpa ini, dan tombolnya
     // mati dengan alasannya alih-alih menembakkan perintah yang pasti gagal.
     campaignId: String(item.campaignId || ""),
-    status: item.status || "",
+    status: (function () {
+      if (item.status === "Terjadwal") return "Terjadwal";
+      if (item.configuredStatus === "ACTIVE" || item.status === "Aktif") {
+        if (item.startTime) {
+          const startMs = Date.parse(item.startTime);
+          if (Number.isFinite(startMs) && startMs > Date.now()) {
+            return "Terjadwal";
+          }
+        }
+      }
+      return item.status || "";
+    })(),
     // Posisi saklar apa adanya dari Meta (`status`). Label di kolom Status diturunkan dari field
     // yang sama plus `startTime`, tapi diturunkannya di sisi sync — bukan di sini.
     configuredStatus: item.configuredStatus || "",

@@ -212,6 +212,30 @@ export async function fetchCampaignInsights(actId, token, dateRange) {
 /**
  * Mengambil daftar seluruh campaign pada akun iklan Meta untuk armada dashboard.
  */
+function resolveCampaignStatus(c) {
+  const configured = String(c?.status || "").toUpperCase();
+  const effective = String(c?.effective_status || "").toUpperCase();
+
+  if (configured === "ACTIVE") {
+    if (c?.start_time) {
+      const startMs = Date.parse(c.start_time);
+      if (Number.isFinite(startMs) && startMs > Date.now()) {
+        return "Terjadwal";
+      }
+    }
+    if (effective === "SCHEDULED") {
+      return "Terjadwal";
+    }
+    return "Aktif";
+  }
+
+  if (configured === "PAUSED" || effective === "PAUSED" || effective === "CAMPAIGN_PAUSED") {
+    return "Mati";
+  }
+
+  return c?.status || "Tidak aktif";
+}
+
 export async function fetchAccountCampaigns(actId, token) {
   const id = normalizeActId(actId);
   const rows = await graphAll(`${id}/campaigns`, token, {
@@ -222,7 +246,7 @@ export async function fetchAccountCampaigns(actId, token) {
   return rows.map((c) => ({
     campaignId: String(c.id || ""),
     campaign: c.name || "",
-    status: c.status === "ACTIVE" ? "Aktif" : c.status === "PAUSED" ? "Mati" : c.status || "",
+    status: resolveCampaignStatus(c),
     configuredStatus: c.status || "",
     effectiveStatus: c.effective_status || "",
     startTime: c.start_time || "",

@@ -5,7 +5,7 @@ import { syncProgress } from "../../lib/syncProgress";
 
 // Sync berjalan terjadwal per jam via GitHub Actions (0 * * * *).
 // Status di topbar menampilkan hitung mundur waktu ke jadwal sync berikutnya.
-const STALL_MS = 12 * 60 * 1000;
+const STALL_MS = 5 * 60 * 1000;
 const LATE_GRACE_MS = 6 * 60 * 1000;
 
 export function SyncStatus({ status, syncRuns = [] }) {
@@ -29,7 +29,7 @@ export function SyncStatus({ status, syncRuns = [] }) {
     const isRunning =
       latestRun?.status === "running" &&
       Number.isFinite(startedMs) &&
-      Date.now() - startedMs < 15 * 60 * 1000;
+      Date.now() - startedMs < 5 * 60 * 1000;
 
     const lastRunAt =
       latestFinishedAt ||
