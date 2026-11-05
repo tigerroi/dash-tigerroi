@@ -346,6 +346,11 @@ export function useFirebaseStore(navigate, resources, user, enabled = true, rout
               .update({ pic: trimmedNew })
               .eq("pic", trimmedOld);
 
+            await supabase
+              .from("bonus_percents")
+              .update({ user: trimmedNew, user_name: trimmedNew })
+              .or(`user.eq.${trimmedOld},user_name.eq.${trimmedOld}`);
+
             const adAccounts = store.adAccounts || [];
             for (const acc of adAccounts) {
               const currentOwner = String(acc.userOwner || acc.user_owner || "");

@@ -9,6 +9,12 @@ UPDATE subdomains SET pic = 'Sullivan' WHERE pic = 'Zulfan';
 UPDATE subdomains SET pic = 'New York City' WHERE pic = 'Nurjaman';
 UPDATE subdomains SET pic = 'Crissthoper' WHERE pic = 'Cris';
 
+UPDATE bonus_percents SET user_name = 'Austin', "user" = 'Austin' WHERE user_name = 'Ade Suparman' OR "user" = 'Ade Suparman';
+UPDATE bonus_percents SET user_name = 'Moskov', "user" = 'Moskov' WHERE user_name = 'Mulyana' OR "user" = 'Mulyana';
+UPDATE bonus_percents SET user_name = 'Sullivan', "user" = 'Sullivan' WHERE user_name = 'Zulfan' OR "user" = 'Zulfan';
+UPDATE bonus_percents SET user_name = 'New York City', "user" = 'New York City' WHERE user_name = 'Nurjaman' OR "user" = 'Nurjaman';
+UPDATE bonus_percents SET user_name = 'Crissthoper', "user" = 'Crissthoper' WHERE user_name = 'Cris' OR "user" = 'Cris';
+
 UPDATE ad_accounts 
 SET user_owner = REPLACE(
   REPLACE(
@@ -35,6 +41,11 @@ BEGIN
     SET pic = NEW.name
     WHERE pic = OLD.name;
 
+    -- Update nama di tabel bonus_percents
+    UPDATE bonus_percents
+    SET user_name = NEW.name, "user" = NEW.name
+    WHERE user_name = OLD.name OR "user" = OLD.name;
+
     -- Update nama di ad_accounts.user_owner
     UPDATE ad_accounts
     SET user_owner = REPLACE(user_owner, OLD.name, NEW.name)
@@ -50,3 +61,4 @@ CREATE TRIGGER tr_profile_name_change
 AFTER UPDATE OF name ON profiles
 FOR EACH ROW
 EXECUTE FUNCTION handle_profile_name_change();
+
