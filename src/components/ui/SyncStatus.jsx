@@ -22,20 +22,27 @@ export function SyncStatus({ status, syncRuns = [] }) {
     nextHour.setMinutes(0, 0, 0);
     nextHour.setHours(nextHour.getHours() + 1);
 
+    const latestStartedAt = latestRun?.startedAt || latestRun?.started_at;
+    const latestFinishedAt = latestRun?.finishedAt || latestRun?.finished_at;
+    const startedMs = latestStartedAt ? Date.parse(latestStartedAt) : Number.NaN;
+
     const isRunning =
       latestRun?.status === "running" &&
-      Date.now() - Date.parse(latestRun.started_at) < 15 * 60 * 1000;
+      Number.isFinite(startedMs) &&
+      Date.now() - startedMs < 15 * 60 * 1000;
 
     const lastRunAt =
-      latestRun?.finished_at ||
-      latestRun?.started_at ||
+      latestFinishedAt ||
+      latestStartedAt ||
       new Date(Date.now() - (now.getMinutes() || 15) * 60 * 1000).toISOString();
 
     // Kumpulkan status run terbaru untuk setiap job (sync-meta, sync-gam, sync-country-roi, sync-keitaro)
+    // Catatan: Kunci di frontend bisa camelCase (jobName) atau snake_case (job_name) dari database
     const latestByJob = new Map();
     for (const r of runs) {
-      if (r?.job_name && !latestByJob.has(r.job_name)) {
-        latestByJob.set(r.job_name, r);
+      const job = r?.jobName || r?.job_name;
+      if (job && !latestByJob.has(job)) {
+        latestByJob.set(job, r);
       }
     }
 
@@ -49,20 +56,28 @@ export function SyncStatus({ status, syncRuns = [] }) {
       const hasCoreSuccess = coreRuns.some((r) => r.status === "success");
       const hasAllCoreFailed = coreRuns.every((r) => r.status === "failed");
       isLastOk = hasCoreSuccess || !hasAllCoreFailed;
-    } else if (latestRun) {
-      isLastOk = latestRun.status === "success";
+    } else {
+      // Ambil run terakhir yang sudah selesai (bukan status running)
+      const finishedRun = runs.find((r) => r.status === "success" || r.status === "failed");
+      if (finishedRun) {
+        isLastOk = finishedRun.status === "success";
+      } else if (latestRun) {
+        isLastOk = latestRun.status !== "failed";
+      }
     }
+
+    const jobDisplayName = latestRun?.jobName || latestRun?.job_name || "otomatis";
 
     return {
       ...status,
       running: status?.running ?? isRunning,
-      startedAt: status?.startedAt || latestRun?.started_at,
+      startedAt: status?.startedAt || latestStartedAt,
       lastRunAt: status?.lastRunAt || lastRunAt,
       nextRunAt: status?.nextRunAt || nextHour.toISOString(),
       lastOk: status?.lastOk ?? isLastOk,
       schedule: "0 * * * * (Tepat per jam)",
       lastSummary: latestRun
-        ? `Sync ${latestRun.job_name || "otomatis"} selesai`
+        ? `Sync ${jobDisplayName} selesai`
         : "Sync otomatis terjadwal per jam",
     };
   }, [status, syncRuns]);
