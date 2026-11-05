@@ -18,6 +18,7 @@ import {
 import { useChartPalette } from "../hooks/useChartPalette";
 import { formatRoiPercent } from "../lib/adTax";
 import { seriesColor } from "../lib/chartTheme";
+import { flagUrl } from "../lib/countries";
 import {
   buildBudgetCutPriorities,
   buildCountryDailyHeatmap,
@@ -39,6 +40,43 @@ function default14DaysRange() {
     from: start.toISOString().slice(0, 10),
     to: end.toISOString().slice(0, 10),
   };
+}
+
+/**
+ * Komponen Bendera Negara menggunakan gambar flagcdn.com.
+ * Mengatasi masalah keterbatasan sistem Windows di mana font Segoe UI Emoji
+ * tidak merender bendera negara dan hanya menampilkan dua huruf penanda wilayah.
+ */
+export function CountryFlag({ code, size = "sm" }) {
+  const clean = String(code || "").trim().toUpperCase();
+  const src = flagUrl(clean, 20);
+  const src2x = flagUrl(clean, 40);
+
+  if (!src) return <span style={{ fontSize: size === "lg" ? "1.2rem" : "1rem" }}>🌐</span>;
+
+  const width = size === "lg" ? 22 : 18;
+  const height = size === "lg" ? 15 : 12;
+
+  return (
+    <img
+      alt={clean}
+      src={src}
+      srcSet={`${src} 1x, ${src2x} 2x`}
+      width={width}
+      height={height}
+      loading="lazy"
+      style={{
+        display: "inline-block",
+        verticalAlign: "middle",
+        borderRadius: "2px",
+        objectFit: "cover",
+        boxShadow: "0 0 1px rgba(0, 0, 0, 0.4)",
+      }}
+      onError={(event) => {
+        event.currentTarget.style.display = "none";
+      }}
+    />
+  );
 }
 
 export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains = [], users = [] }) {
@@ -120,7 +158,7 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
         header: "Negara",
         cell: ({ row }) => (
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span style={{ fontSize: "1.2rem" }}>{row.original.flag}</span>
+            <CountryFlag code={row.original.countryCode} />
             <span style={{ fontWeight: 600 }}>{row.original.country}</span>
           </div>
         ),
@@ -248,7 +286,7 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
         header: "Negara",
         cell: ({ row }) => (
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span style={{ fontSize: "1.1rem" }}>{row.original.flag}</span>
+            <CountryFlag code={row.original.countryCode} />
             <span>{row.original.country}</span>
           </div>
         ),
@@ -412,8 +450,8 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
           </div>
           {best ? (
             <>
-              <div style={{ fontSize: "0.95rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                <span>{best.flag}</span>
+              <div style={{ fontSize: "0.95rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                <CountryFlag code={best.countryCode} size="lg" />
                 <span>{best.country}</span>
               </div>
               <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#10b981", margin: "0.25rem 0" }}>
@@ -436,8 +474,8 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
           </div>
           {lowest ? (
             <>
-              <div style={{ fontSize: "0.95rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                <span>{lowest.flag}</span>
+              <div style={{ fontSize: "0.95rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                <CountryFlag code={lowest.countryCode} size="lg" />
                 <span>{lowest.country}</span>
               </div>
               <div style={{ fontSize: "1.4rem", fontWeight: 700, color: lowest.roi >= 0 ? "#10b981" : "#ef4444", margin: "0.25rem 0" }}>
@@ -464,8 +502,8 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
           </div>
           {fastestRising ? (
             <>
-              <div style={{ fontSize: "0.95rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                <span>{fastestRising.flag}</span>
+              <div style={{ fontSize: "0.95rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                <CountryFlag code={fastestRising.countryCode} size="lg" />
                 <span>{fastestRising.country}</span>
               </div>
               <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#10b981", margin: "0.25rem 0" }}>
@@ -488,8 +526,8 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
           </div>
           {steepestFalling ? (
             <>
-              <div style={{ fontSize: "0.95rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                <span>{steepestFalling.flag}</span>
+              <div style={{ fontSize: "0.95rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                <CountryFlag code={steepestFalling.countryCode} size="lg" />
                 <span>{steepestFalling.country}</span>
               </div>
               <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#ef4444", margin: "0.25rem 0" }}>
@@ -672,7 +710,9 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
                       whiteSpace: "nowrap",
                     }}
                   >
-                    <span style={{ marginRight: "0.4rem" }}>{c.flag}</span>
+                    <span style={{ marginRight: "0.45rem", display: "inline-flex", verticalAlign: "middle" }}>
+                      <CountryFlag code={c.countryCode} />
+                    </span>
                     <span>{c.countryName}</span>
                   </div>
                   {heatmapData.dates.map((d) => {
@@ -688,7 +728,8 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
                           setHoveredCell({
                             x: rect.left,
                             y: rect.bottom + 4,
-                            title: `${c.flag} ${c.countryName} · ${formatIndonesianDayDate(d)}`,
+                            countryCode: c.countryCode,
+                            title: `${c.countryName} · ${formatIndonesianDayDate(d)}`,
                             spend: day?.spend || 0,
                             earning: day?.earning || 0,
                             profit: day?.profit || 0,
@@ -734,8 +775,9 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
               pointerEvents: "none",
             }}
           >
-            <div style={{ fontWeight: 700, borderBottom: "1px solid #27272a", paddingBottom: "0.35rem", marginBottom: "0.45rem" }}>
-              {hoveredCell.title}
+            <div style={{ fontWeight: 700, borderBottom: "1px solid #27272a", paddingBottom: "0.35rem", marginBottom: "0.45rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              {hoveredCell.countryCode && <CountryFlag code={hoveredCell.countryCode} />}
+              <span>{hoveredCell.title}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.2rem" }}>
               <span style={{ color: "#a1a1aa" }}>Spend:</span>
