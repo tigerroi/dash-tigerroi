@@ -553,7 +553,7 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
             </p>
           )}
         </div>
-        <DataTable columns={leaderboardColumns} data={items} />
+        <DataTable columns={leaderboardColumns} items={items} />
       </div>
 
       {/* ═══ 4. HEATMAP ROI HARIAN ═══ */}
@@ -1039,7 +1039,7 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
           </p>
         </div>
         {budgetCutPriorities.length > 0 ? (
-          <DataTable columns={budgetCutColumns} data={budgetCutPriorities} />
+          <DataTable columns={budgetCutColumns} items={budgetCutPriorities} />
         ) : (
           <div
             style={{

@@ -95,7 +95,7 @@ export function Overview({ store, navigate, tab, role, viewer }) {
   const roiReports = store.roiReports || [];
   const roiSnapshots = store.roiSnapshots || [];
 
-  // Helper kanonisasi nama advertiser (Ade Suparman = Man, Zulfan = Sul, Superadmin & Overview bukan PIC)
+  // Helper kanonisasi nama advertiser (Ade Suparman / Austin, Zulfan / Sullivan, Mulyana / Moskov, Nurjaman / NYC, Cris / Crissthoper)
   function canonicalAdvertiserInfo(rawName, userList = []) {
     if (!rawName) return null;
     const lower = String(rawName).trim().toLowerCase();
@@ -113,58 +113,104 @@ export function Overview({ store, navigate, tab, role, viewer }) {
       return null;
     }
 
-    // 2. Ade Suparman, man, dan ade adalah orang yang sama
-    if (lower === "man" || lower === "ade" || lower.includes("ade suparman") || lower.includes("suparman")) {
+    // 2. Ade Suparman / Austin / man / ade adalah orang yang sama
+    if (
+      lower === "man" ||
+      lower === "ade" ||
+      lower.includes("ade suparman") ||
+      lower.includes("suparman") ||
+      lower.includes("austin")
+    ) {
       const match = userList.find(
         (u) =>
-          (u.name && (u.name.toLowerCase().includes("ade suparman") || u.name.toLowerCase() === "man" || u.name.toLowerCase() === "ade")) ||
-          (u.email && u.email.toLowerCase().includes("man@"))
+          (u.name &&
+            (u.name.toLowerCase().includes("austin") ||
+              u.name.toLowerCase().includes("ade suparman") ||
+              u.name.toLowerCase() === "man" ||
+              u.name.toLowerCase() === "ade")) ||
+          (u.email && (u.email.toLowerCase().includes("austin") || u.email.toLowerCase().includes("man@")))
       );
+      const displayName = match?.name || "Austin";
       return {
-        key: "ade suparman",
-        name: "Ade Suparman",
+        key: "austin",
+        name: displayName,
         userId: match?.id || match?.uid || null,
       };
     }
 
-    // 3. Sul dan Zulfan adalah orang yang sama
-    if (lower === "sul" || lower.includes("zulfan")) {
+    // 3. Sul / Zulfan / Sullivan adalah orang yang sama
+    if (lower === "sul" || lower.includes("zulfan") || lower.includes("sullivan")) {
       const match = userList.find(
         (u) =>
-          (u.name && (u.name.toLowerCase().includes("zulfan") || u.name.toLowerCase() === "sul")) ||
-          (u.email && (u.email.toLowerCase().includes("zulfan") || u.email.toLowerCase().includes("sul")))
+          (u.name &&
+            (u.name.toLowerCase().includes("sullivan") ||
+              u.name.toLowerCase().includes("zulfan") ||
+              u.name.toLowerCase() === "sul")) ||
+          (u.email &&
+            (u.email.toLowerCase().includes("sullivan") ||
+              u.email.toLowerCase().includes("zulfan") ||
+              u.email.toLowerCase().includes("sul")))
       );
+      const displayName = match?.name || "Sullivan";
       return {
-        key: "zulfan",
-        name: "Zulfan",
+        key: "sullivan",
+        name: displayName,
         userId: match?.id || match?.uid || null,
       };
     }
 
-    // 4. Mulyana dan Mul adalah orang yang sama
-    if (lower === "mul" || lower === "amul" || lower.includes("mulyana")) {
+    // 4. Mulyana / Mul / Moskov adalah orang yang sama
+    if (lower === "mul" || lower === "amul" || lower.includes("mulyana") || lower.includes("moskov")) {
       const match = userList.find(
         (u) =>
-          (u.name && (u.name.toLowerCase().includes("mulyana") || u.name.toLowerCase() === "mul")) ||
-          (u.email && u.email.toLowerCase().includes("amul"))
+          (u.name &&
+            (u.name.toLowerCase().includes("moskov") ||
+              u.name.toLowerCase().includes("mulyana") ||
+              u.name.toLowerCase() === "mul")) ||
+          (u.email && (u.email.toLowerCase().includes("moskov") || u.email.toLowerCase().includes("amul")))
       );
+      const displayName = match?.name || "Moskov";
       return {
-        key: "mulyana",
-        name: "Mulyana",
+        key: "moskov",
+        name: displayName,
         userId: match?.id || match?.uid || null,
       };
     }
 
-    // 5. Nurjaman dan Nur adalah orang yang sama
-    if (lower === "nur" || lower.includes("nurjaman")) {
+    // 5. Nurjaman / Nur / New York City adalah orang yang sama
+    if (
+      lower === "nur" ||
+      lower.includes("nurjaman") ||
+      lower.includes("new york") ||
+      lower.includes("new york city")
+    ) {
       const match = userList.find(
         (u) =>
-          (u.name && u.name.toLowerCase().includes("nurjaman")) ||
-          (u.email && u.email.toLowerCase().includes("nurjaman"))
+          (u.name &&
+            (u.name.toLowerCase().includes("new york") ||
+              u.name.toLowerCase().includes("nurjaman") ||
+              u.name.toLowerCase() === "nur")) ||
+          (u.email && (u.email.toLowerCase().includes("newyork") || u.email.toLowerCase().includes("nurjaman")))
       );
+      const displayName = match?.name || "New York City";
       return {
-        key: "nurjaman",
-        name: "Nurjaman",
+        key: "new york city",
+        name: displayName,
+        userId: match?.id || match?.uid || null,
+      };
+    }
+
+    // 6. Cris / Crissthoper adalah orang yang sama
+    if (lower.includes("cris") || lower.includes("crissthoper")) {
+      const match = userList.find(
+        (u) =>
+          (u.name && (u.name.toLowerCase().includes("crissthoper") || u.name.toLowerCase().includes("cris"))) ||
+          (u.email && (u.email.toLowerCase().includes("crissthoper") || u.email.toLowerCase().includes("cris")))
+      );
+      const displayName = match?.name || "Crissthoper";
+      return {
+        key: "crissthoper",
+        name: displayName,
         userId: match?.id || match?.uid || null,
       };
     }
@@ -360,6 +406,9 @@ export function Overview({ store, navigate, tab, role, viewer }) {
       }
     }
 
+    const primaryWlAccount = wlAccounts.find((a) => (a.name || "").includes("BD R 16")) || wlAccounts[0];
+    const primaryWlBalance = primaryWlAccount ? Number(primaryWlAccount.balance || 0) : 0;
+
     const result = [];
     const seenNames = new Set();
     for (const [key, info] of picSet.entries()) {
@@ -367,7 +416,12 @@ export function Overview({ store, navigate, tab, role, viewer }) {
       if (seenNames.has(normName)) continue;
       seenNames.add(normName);
 
-      const balance = balanceByPic.get(key) || 0;
+      const rawBalance = balanceByPic.get(key);
+      // Selaraskan sisa saldo PIC dengan sisa saldo akun Whitelist bersama (BD R 16)
+      const balance =
+        rawBalance !== undefined && rawBalance > 0
+          ? (primaryWlBalance > 0 ? primaryWlBalance : rawBalance)
+          : primaryWlBalance;
       const spendToday = spendTodayByPic.get(key) || 0;
 
       result.push({
@@ -380,14 +434,17 @@ export function Overview({ store, navigate, tab, role, viewer }) {
     }
 
     return result.sort((a, b) => b.spendToday - a.spendToday || a.pic.localeCompare(b.pic));
-  }, [store.advertiserSpend, store.users, store.adAccounts, store.roiReports, store.roiSnapshots]);
+  }, [store.advertiserSpend, store.users, store.adAccounts, store.roiReports, store.roiSnapshots, wlAccounts]);
 
   const dashboardStats = useMemo(() => {
     const raw = store.dashboardStats || {};
-    const totalSpend =
-      raw.totalSpend !== undefined && raw.totalSpend !== null
-        ? raw.totalSpend
-        : advertiserSpend.reduce((sum, item) => sum + (Number(item.spendToday) || 0), 0);
+    const wlTotalSpend = wlAccounts.reduce((sum, item) => sum + (Number(item.spendToday) || 0), 0);
+    const picTotalSpend = advertiserSpend.reduce((sum, item) => sum + (Number(item.spendToday) || 0), 0);
+    const totalSpend = Math.max(
+      Number(raw.totalSpend || 0),
+      spendViewMode === "wl" ? wlTotalSpend : picTotalSpend,
+      wlTotalSpend
+    );
 
     const managedCampaigns =
       raw.managedCampaigns ||
@@ -400,7 +457,7 @@ export function Overview({ store, navigate, tab, role, viewer }) {
       totalSpend,
       managedCampaigns: managedCampaigns || "-",
     };
-  }, [store.dashboardStats, advertiserSpend, store.subDomains]);
+  }, [store.dashboardStats, advertiserSpend, wlAccounts, spendViewMode, store.subDomains]);
 
   const lowBalance = lowBalanceAdvertisers(advertiserSpend, store.alertSettings);
   // Tarif ad tax dari halaman Settings. Dipakai hanya untuk baris yang belum membawa pajaknya
