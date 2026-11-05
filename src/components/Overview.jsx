@@ -1079,6 +1079,8 @@ export function Overview({ store, navigate, tab, role, viewer }) {
         <CountryLeaderboard
           countryRoi={store.countryRoi || []}
           adTaxRate={adTaxRate}
+          subDomains={store.subDomains || []}
+          users={store.users || []}
         />
       )}
 
