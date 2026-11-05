@@ -1,6 +1,6 @@
 import { Activity, BadgeDollarSign, FileUp, Globe2, TriangleAlert, Users } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { canReadResource } from "../config/access";
+import { canReadResource, isOverviewOnly } from "../config/access";
 import { useFillViewport } from "../hooks/useFillViewport";
 import { useUrlRange, useUrlState } from "../hooks/useUrlState";
 import { adTaxRateOf, withAdTax } from "../lib/adTax";
@@ -60,6 +60,11 @@ function LinkButton({ to, navigate, children, className = "" }) {
 }
 
 export function Overview({ store, navigate, tab, role, viewer }) {
+  const hideDetails =
+    isOverviewOnly(role) ||
+    String(viewer?.email || "").toLowerCase() === "emraankhattak@tigerroi.com" ||
+    String(viewer?.username || "").toLowerCase() === "emran";
+
   // Bulan berjalan, dihitung saat komponen dipasang — bukan konstanta modul. Tab yang dibiarkan
   // terbuka melewati pergantian bulan tidak boleh membuka bulan kemarin sambil menamainya
   // "Bulan Ini".
@@ -874,15 +879,19 @@ export function Overview({ store, navigate, tab, role, viewer }) {
               }
               items={spendViewMode === "wl" ? wlAccounts : advertiserSpend}
               paginate
-              extraAction={(item) => (
-                <LinkButton
-                  className="ghost-button"
-                  to={spendViewMode === "wl" ? "/ad-accounts" : `/users/${item.userId || item.id}`}
-                  navigate={navigate}
-                >
-                  Detail
-                </LinkButton>
-              )}
+              extraAction={
+                hideDetails
+                  ? null
+                  : (item) => (
+                      <LinkButton
+                        className="ghost-button"
+                        to={spendViewMode === "wl" ? "/ad-accounts" : `/users/${item.userId || item.id}`}
+                        navigate={navigate}
+                      >
+                        Detail
+                      </LinkButton>
+                    )
+              }
             />
           </section>
 
