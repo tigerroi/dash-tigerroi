@@ -138,12 +138,14 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
   };
 }
 
-// 4 Network GAM bawaan
+// Daftar Network GAM resmi armada TigerROI
 const GAM_NETWORKS = [
   { domain: "trayedit.com", networkCode: "23344333667", defaultSiteCode: "tray-decor" },
   { domain: "tiktokmodapk.net", networkCode: "23367555867", defaultSiteCode: "tiktok-mod" },
   { domain: "tacobellmenuu.us", networkCode: "23380486168", defaultSiteCode: "taco-fries" },
   { domain: "ihopmenuwithprices.us", networkCode: "23340206616", defaultSiteCode: "ihop-menu" },
+  { domain: "cmhhealths.com", networkCode: "23350466753", defaultSiteCode: "cmhhealths" },
+  { domain: "uniqueinfo24.com", networkCode: "23342288590", defaultSiteCode: "uniqueinfo24" },
 ];
 
 function matchSubDomain(campaignName, subdomains, defaultSubDomain = "") {
@@ -380,7 +382,23 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
     if (clientEmail && privateKey) {
       try {
         const gamToken = await getGoogleServiceAccountToken({ clientEmail, privateKey });
-        for (const net of GAM_NETWORKS) {
+        // Gabungkan seluruh network GAM dari database gam_accounts jika ada
+        const { data: dbGamAccounts } = await supabase.from("gam_accounts").select("name, network_code");
+        const networksToSync = [...GAM_NETWORKS];
+        if (Array.isArray(dbGamAccounts)) {
+          for (const dga of dbGamAccounts) {
+            const netCode = String(dga.network_code || "").trim();
+            if (netCode && !networksToSync.some((n) => n.networkCode === netCode)) {
+              networksToSync.push({
+                domain: dga.name,
+                networkCode: netCode,
+                defaultSiteCode: (dga.name || "").split(".")[0],
+              });
+            }
+          }
+        }
+
+        for (const net of networksToSync) {
           try {
             console.log(`Menarik breakdown negara GAM [${start} s/d ${end}] untuk network ${net.domain}...`);
             const gamRows = await fetchGamCountryRevenue(net.networkCode, gamToken, {

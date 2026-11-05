@@ -875,6 +875,35 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
           <h3 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0 }}>Kurva ROI harian per negara</h3>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.65rem" }}>
             <span style={{ fontSize: "0.8rem", color: "#a1a1aa" }}>Pilih negara:</span>
+            {(() => {
+              const allCodes = curveData.series.map((s) => s.code);
+              const isAllSelected = allCodes.length > 0 && allCodes.every((c) => activeCurveCountries.includes(c));
+              return (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isAllSelected) {
+                      setSelectedCurveCountries(allCodes.slice(0, 5));
+                    } else {
+                      setSelectedCurveCountries(allCodes);
+                    }
+                  }}
+                  style={{
+                    padding: "0.25rem 0.75rem",
+                    borderRadius: "16px",
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    border: isAllSelected ? "1.5px solid #10b981" : "1px solid #3f3f46",
+                    background: isAllSelected ? "rgba(16, 185, 129, 0.2)" : "transparent",
+                    color: isAllSelected ? "#10b981" : "#e4e4e7",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  Semua
+                </button>
+              );
+            })()}
             {curveData.series.map((item, index) => {
               const active = activeCurveCountries.includes(item.code);
               const color = seriesColor(chart, index);

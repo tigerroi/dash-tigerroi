@@ -123,10 +123,25 @@ export function RealtimeRoiTable({
   const earningSource = useMemo(() => earningSourceLabel(rows), [rows]);
   const columns = useMemo(() => realtimeRoiColumns(earningSource), [earningSource]);
 
+  const emptyMessage = useMemo(() => {
+    const nowWib = new Date();
+    const jakartaHours = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Jakarta",
+      hour: "numeric",
+      hour12: false,
+    }).format(nowWib);
+    const hour = parseInt(jakartaHours, 10);
+    if (hour >= 0 && hour < 2) {
+      return "Belum ada data sync untuk hari ini karena hari baru berganti (jadwal sync berikutnya pukul 01:00 WIB). Silakan gunakan filter 'Kemarin' untuk melihat laporan lengkap tadi malam.";
+    }
+    return "Tidak ada data pada periode ini.";
+  }, []);
+
   return (
     <DataTable
       baseClassName="master-roi-table"
       columns={columns}
+      emptyText={emptyMessage}
       getRowId={(item, index) =>
         String(item.id || `${item.campaign}-${item.subDomain}-${item.time}-${index}`)
       }

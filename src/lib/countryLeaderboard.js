@@ -331,8 +331,18 @@ export function buildCountryDailyHeatmap(rows = [], { adTaxRate = 0, dateWindow 
     });
   }
 
-  // Cari semua tanggal unik dan urutkan menaik
-  const dates = [...new Set(filtered.map((r) => String(r.date || "").slice(0, 10)).filter(Boolean))].sort();
+  // Cari semua tanggal: buat rentang tanggal kontinu jika dateWindow diberikan
+  let dates = [];
+  if (dateWindow?.from && dateWindow?.to) {
+    const cur = new Date(dateWindow.from + "T00:00:00Z");
+    const end = new Date(dateWindow.to + "T00:00:00Z");
+    while (cur <= end) {
+      dates.push(cur.toISOString().slice(0, 10));
+      cur.setUTCDate(cur.getUTCDate() + 1);
+    }
+  } else {
+    dates = [...new Set(filtered.map((r) => String(r.date || "").slice(0, 10)).filter(Boolean))].sort();
+  }
   const lastDate = dates[dates.length - 1] || "";
 
   // Agregasi Total per tanggal
@@ -489,7 +499,17 @@ export function buildCountryRoiCurves(rows = [], { adTaxRate = 0, dateWindow = n
     });
   }
 
-  const dates = [...new Set(filtered.map((r) => String(r.date || "").slice(0, 10)).filter(Boolean))].sort();
+  let dates = [];
+  if (dateWindow?.from && dateWindow?.to) {
+    const cur = new Date(dateWindow.from + "T00:00:00Z");
+    const end = new Date(dateWindow.to + "T00:00:00Z");
+    while (cur <= end) {
+      dates.push(cur.toISOString().slice(0, 10));
+      cur.setUTCDate(cur.getUTCDate() + 1);
+    }
+  } else {
+    dates = [...new Set(filtered.map((r) => String(r.date || "").slice(0, 10)).filter(Boolean))].sort();
+  }
 
   // Akumulasi negara
   const countryTotals = new Map();

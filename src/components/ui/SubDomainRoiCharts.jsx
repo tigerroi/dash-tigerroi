@@ -52,12 +52,40 @@ function stampLabel(point) {
 }
 
 /** Chip pemilih subdomain, dipakai kedua grafik. */
-function SubDomainChips({ series, selected, onToggle, chipLabel = "Pilih subdomain:" }) {
+function SubDomainChips({ series, selected, onToggle, onToggleAll, chipLabel = "Pilih subdomain:" }) {
   const chart = useChartPalette();
+  const allNames = series.map((item) => item.name);
+  const isAllSelected = allNames.length > 0 && allNames.every((name) => selected.includes(name));
+
+  const handleToggleAll = () => {
+    if (typeof onToggleAll === "function") {
+      onToggleAll(!isAllSelected);
+    } else {
+      if (isAllSelected) {
+        if (allNames[0]) onToggle(allNames[0]);
+      } else {
+        allNames.forEach((n) => {
+          if (!selected.includes(n)) onToggle(n);
+        });
+      }
+    }
+  };
 
   return (
     <div className="subdomain-chips">
       <span className="subdomain-chips-label">{chipLabel}</span>
+      {series.length > 1 && (
+        <button
+          aria-pressed={isAllSelected}
+          className={isAllSelected ? "subdomain-chip active" : "subdomain-chip"}
+          onClick={handleToggleAll}
+          style={isAllSelected ? { borderColor: "#10b981", color: "#10b981", fontWeight: 700 } : { fontWeight: 600 }}
+          title="Pilih atau batalkan semua sekaligus"
+          type="button"
+        >
+          Semua
+        </button>
+      )}
       {series.map((item, index) => {
         const active = selected.includes(item.name);
         const color = seriesColor(chart, index);
@@ -88,6 +116,7 @@ export function SubDomainRoiCurveChart({
   points,
   selected,
   onToggle,
+  onToggleAll,
   chipLabel,
   emptyMessage = "Belum ada subdomain yang dipilih — nyalakan chip di atas, atau pilih satu advertiser di filter grafik untuk menggambar seluruh subdomain miliknya.",
 }) {
@@ -100,6 +129,7 @@ export function SubDomainRoiCurveChart({
       <SubDomainChips
         chipLabel={chipLabel}
         onToggle={onToggle}
+        onToggleAll={onToggleAll}
         selected={selected}
         series={series}
       />

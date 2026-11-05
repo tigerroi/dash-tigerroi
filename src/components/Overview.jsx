@@ -182,23 +182,27 @@ export function Overview({ store, navigate, tab, role, viewer }) {
       ) {
         return null;
       }
+      return {
+        key: lower,
+        name: match?.name || rawName.trim(),
+        userId: match?.id || match?.uid || null,
+      };
     }
 
-    return {
-      key: lower,
-      name: match?.name || rawName.trim(),
-      userId: match?.id || match?.uid || null,
-    };
+    // Jika tidak cocok dengan user mana pun, bukan PIC perorangan
+    return null;
   }
 
   const wlAccounts = useMemo(() => {
     const users = Array.isArray(store.users) ? store.users : [];
     const list = (store.adAccounts || [])
       .filter((acc) => {
-        if (acc.syncDisabled) return false;
+        if (acc.syncDisabled || acc.sync_disabled) return false;
         // Akun Whitelist (WL) adalah akun agensi / whitelist armada, BUKAN nama PIC perorangan
+        const rawOwner = String(acc.userOwner || acc.user_owner || "").trim();
+        const isMultipleOwners = rawOwner.includes(",") || rawOwner.toLowerCase() === "semua user";
         const canonicalPic = canonicalAdvertiserInfo(acc.name, users);
-        if (canonicalPic) return false;
+        if (canonicalPic && !isMultipleOwners) return false;
         return true;
       })
       .map((acc) => {
@@ -217,16 +221,6 @@ export function Overview({ store, navigate, tab, role, viewer }) {
         };
       });
 
-    if (list.length === 0) {
-      return [
-        {
-          id: "bd-r-16",
-          name: "BD R 16",
-          balance: 8778619,
-          spendToday: 1221211,
-        },
-      ];
-    }
     return list;
   }, [store.adAccounts, store.users]);
 
@@ -603,6 +597,16 @@ export function Overview({ store, navigate, tab, role, viewer }) {
     },
     [selectedAdvertisers, setAdvertiserParam],
   );
+  const toggleAllAdvertisers = useCallback(
+    (selectAll) => {
+      if (selectAll) {
+        setAdvertiserParam(advertiserSeries.series.map((item) => item.name).join(","));
+      } else {
+        setAdvertiserParam("none");
+      }
+    },
+    [advertiserSeries.series, setAdvertiserParam],
+  );
   // "Hari Ini" dipilih → dua grafik teratas (Pendapatan/Pengeluaran/Profit dan Kurva ROI) beralih
   // dari satu titik harian ke titik PER SYNC, sama granularitasnya dengan dua grafik per subdomain
   // di bawahnya. Sumbernya baris per sync yang sama (`subChartRows`), bukan `weeklyFinancials` yang
@@ -654,6 +658,16 @@ export function Overview({ store, navigate, tab, role, viewer }) {
       setSubDomainParam(next.length ? next.join(",") : "none");
     },
     [selectedSubDomains, setSubDomainParam],
+  );
+  const toggleAllSubDomains = useCallback(
+    (selectAll) => {
+      if (selectAll) {
+        setSubDomainParam(subDomainSeries.series.map((item) => item.name).join(","));
+      } else {
+        setSubDomainParam("none");
+      }
+    },
+    [subDomainSeries.series, setSubDomainParam],
   );
   // Rincian negara per baris ROI. Tinggalnya di userReports/{id}.countryRoi — kepemilikannya lewat
   // PIC subdomain, itu juga yang dibaca panel "ROI per Negara" di Profile User — jadi di sini
@@ -1003,6 +1017,7 @@ export function Overview({ store, navigate, tab, role, viewer }) {
                 chipLabel="Pilih advertiser:"
                 emptyMessage="Belum ada advertiser yang dipilih — nyalakan chip di atas."
                 onToggle={toggleAdvertiserSeries}
+                onToggleAll={toggleAllAdvertisers}
                 points={advertiserSeries.points}
                 selected={selectedAdvertisers}
                 series={advertiserSeries.series}
@@ -1025,6 +1040,7 @@ export function Overview({ store, navigate, tab, role, viewer }) {
             {subDomainSeries.series.length > 0 ? (
               <SubDomainRoiCurveChart
                 onToggle={toggleSubDomainSeries}
+                onToggleAll={toggleAllSubDomains}
                 points={subDomainSeries.points}
                 selected={selectedSubDomains}
                 series={subDomainSeries.series}
