@@ -1137,26 +1137,118 @@ function buildProfileFromStore(user, store) {
     if (allUserCamps.length > 0) userCampaigns = allUserCamps;
   }
 
+  // Akun Whitelist Meta utama (BD R 16)
+  const primaryWlAccountName =
+    (store.adAccounts || []).find((a) => (a.name || "").includes("BD R 16"))?.name ||
+    (store.adAccounts || [])[0]?.name ||
+    "BD R 16";
+
+  const subDomainList = Array.isArray(store.subDomains) ? store.subDomains : [];
+  const subDomainLookup = new Map();
+  for (const sub of subDomainList) {
+    if (sub.name) subDomainLookup.set(sub.name.toLowerCase().trim(), sub);
+    if (sub.siteCode || sub.site_code) {
+      subDomainLookup.set(String(sub.siteCode || sub.site_code).toLowerCase().trim(), sub);
+    }
+  }
+
+  const allCampaignsList = [
+    ...toArray(user.campaigns),
+    ...(store.users || []).flatMap((u) => toArray(u.campaigns)),
+  ];
+
+  function extractKeitaroCode(rawCodes, fallback = "-") {
+    if (!rawCodes) return fallback;
+    const tokens = String(rawCodes)
+      .split(/[^A-Za-z0-9]+/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+    const fourLetter = tokens.find((t) => t.length === 4);
+    return fourLetter || tokens[0] || fallback;
+  }
+
+  function findMatchedCampaign(rawCampaign, rawSubDomain) {
+    const cleanCamp = String(rawCampaign || "").toLowerCase().trim();
+    const cleanSub = String(rawSubDomain || "").toLowerCase().trim();
+
+    for (const c of allCampaignsList) {
+      const cName = String(c.campaign || "").toLowerCase();
+      const cSub = String(c.subDomain || "").toLowerCase();
+      if (cleanSub && cSub && (cSub === cleanSub || cSub.startsWith(cleanSub) || cleanSub.startsWith(cSub))) {
+        return c;
+      }
+      if (cleanCamp && cName && (cName === cleanCamp || cName.includes(cleanCamp) || cleanCamp.includes(cName))) {
+        return c;
+      }
+    }
+    return null;
+  }
+
   // Riwayat Spend Campaign
   const rawCampaignHistory = toArray(history("campaignHistory"));
   const derivedCampaignHistory =
     rawCampaignHistory.length > 0
-      ? rawCampaignHistory
+      ? rawCampaignHistory.map((item) => {
+          const subInfo = subDomainLookup.get(String(item.subDomain || item.campaign || "").toLowerCase().trim());
+          const matchedCamp = findMatchedCampaign(item.campaign, item.subDomain || subInfo?.name);
+          const account = item.account || matchedCamp?.account || primaryWlAccountName;
+          const campaign = (matchedCamp?.campaign && matchedCamp.campaign.length > String(item.campaign || "").length)
+            ? matchedCamp.campaign
+            : (item.campaign || matchedCamp?.campaign || "-");
+          const campaignCode =
+            item.campaignCode ||
+            matchedCamp?.campaignCode ||
+            extractKeitaroCode(subInfo?.campaignCodes || subInfo?.campaign_codes);
+          const spend = Number(item.spend || item.spending || 0);
+          const resultsCount = Number(item.results ?? item.resultCount ?? item.clicks ?? 0);
+          const costPerResult =
+            Number(item.costPerResult ?? item.cpr ?? 0) > 0
+              ? Number(item.costPerResult ?? item.cpr)
+              : (resultsCount > 0 ? Math.round(spend / resultsCount) : 0);
+
+          return {
+            ...item,
+            account,
+            campaign,
+            campaignCode,
+            results: resultsCount > 0 ? resultsCount : "-",
+            costPerResult,
+          };
+        })
       : toArray(profileReports)
           .filter((r) => r.campaign && (r.spending || r.spend || r.date))
-          .map((r) => ({
-            id: r.id || `${r.date}__${r.campaign}`,
-            date: r.date,
-            campaign: r.campaign,
-            subDomain: r.subDomain || "",
-            spend: Number(r.spending || r.spend || 0),
-            impressions: Number(r.impressions || 0),
-            clicks: Number(r.clicks || 0),
-            cpc: Number(r.cpc || 0),
-            cpr: Number(r.cpr || 0),
-            result: Number(r.earning || r.revenue || 0),
-            status: r.status || "Active",
-          }));
+          .map((r) => {
+            const subInfo = subDomainLookup.get(String(r.subDomain || r.campaign || "").toLowerCase().trim());
+            const matchedCamp = findMatchedCampaign(r.campaign, r.subDomain || subInfo?.name);
+            const account = primaryWlAccountName; // "BD R 16"
+            const campaign = matchedCamp?.campaign || r.campaignName || r.campaign;
+            const campaignCode =
+              r.campaignCode ||
+              matchedCamp?.campaignCode ||
+              extractKeitaroCode(subInfo?.campaignCodes || subInfo?.campaign_codes);
+            const spend = Number(r.spending || r.spend || 0);
+            const resultsCount = Number(r.results ?? r.resultCount ?? r.clicks ?? 0);
+            const costPerResult =
+              Number(r.costPerResult ?? r.cpr ?? 0) > 0
+                ? Number(r.costPerResult ?? r.cpr)
+                : (resultsCount > 0 ? Math.round(spend / resultsCount) : 0);
+
+            return {
+              id: r.id || `${r.date}__${campaign}`,
+              date: r.date,
+              campaign,
+              account, // "BD R 16"
+              campaignCode, // Kode Keitaro 4 Biji
+              subDomain: r.subDomain || subInfo?.name || "",
+              spend,
+              impressions: Number(r.impressions || 0),
+              clicks: Number(r.clicks || 0),
+              cpc: Number(r.cpc || 0),
+              results: resultsCount > 0 ? resultsCount : "-", // Hasil (Result dari Meta Ads)
+              costPerResult, // Biaya/hasil (CPR pada Meta Ads)
+              status: r.status || "Active",
+            };
+          });
 
   // Rekap Riwayat Saldo Berkurang (Daily Spend)
   const rawDailySpend = toArray(history("dailySpend"));
@@ -1167,14 +1259,17 @@ function buildProfileFromStore(user, store) {
       const d = r.date;
       const spend = Number(r.spending || r.spend || 0);
       if (d && spend > 0) {
-        const acc = r.account || r.adAccount || "Meta Ads";
-        const key = `${d}__${acc}`;
+        const subInfo = subDomainLookup.get(String(r.subDomain || r.campaign || "").toLowerCase().trim());
+        const matchedCamp = findMatchedCampaign(r.campaign, r.subDomain || subInfo?.name);
+        const acc = primaryWlAccountName; // Selalu gunakan akun Whitelist nyata "BD R 16"
+        const campName = matchedCamp?.campaign || r.campaignName || r.campaign || "-";
+        const key = `${d}__${campName}__${acc}`;
         if (!spendMap.has(key)) {
           spendMap.set(key, {
             id: key,
             date: d,
-            account: acc,
-            campaign: r.campaign || "-",
+            account: acc, // "BD R 16"
+            campaign: campName, // Nama campaign yang sesuai
             amount: 0,
             note: "Sinkronisasi otomatis Meta",
           });

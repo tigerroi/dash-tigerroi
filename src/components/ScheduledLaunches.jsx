@@ -47,22 +47,81 @@ export function ScheduledLaunches({ store, viewer }) {
   const [shifting, setShifting] = useState(null);
   const alive = useRef(true);
 
+  const buildLocalLaunches = useCallback(() => {
+    const users = Array.isArray(store.users) ? store.users : [];
+    const subDomains = Array.isArray(store.subDomains) ? store.subDomains : [];
+    const adAccounts = Array.isArray(store.adAccounts) ? store.adAccounts : [];
+    const primaryAccount =
+      adAccounts.find((a) => (a.name || "").includes("BD R 16")) ||
+      adAccounts[0] ||
+      { id: "wl", name: "BD R 16" };
+
+    const allCamps = fleetCampaignRows(users, subDomains);
+    const nowMs = Date.now();
+    const rows = [];
+
+    for (const c of allCamps) {
+      const statusLower = String(c.status || "").toLowerCase();
+      const isScheduled = statusLower.includes("terjadwal") || statusLower.includes("scheduled");
+      const startMs = c.startTime ? Date.parse(c.startTime) : null;
+      const isFuture = Number.isFinite(startMs) && startMs > nowMs;
+
+      if (isScheduled || isFuture) {
+        const validStartMs = isFuture ? startMs : nowMs + 3600000;
+        const d = new Date(validStartMs);
+        const startWib = d
+          .toLocaleString("sv-SE", { timeZone: "Asia/Jakarta" })
+          .replace(" ", "T")
+          .slice(0, 16);
+
+        rows.push({
+          id: `${c.account || primaryAccount.name}__${c.campaignId || c.campaign}`,
+          adSetId: String(c.campaignId || ""),
+          adSet: c.campaign || "Campaign Utama",
+          campaignId: String(c.campaignId || ""),
+          campaign: c.campaign || "",
+          campaignScheduled: true,
+          startMs: validStartMs,
+          startWib,
+          accountId: primaryAccount.id || "BD R 16",
+          account: c.account || primaryAccount.name || "BD R 16",
+          pic: c.pic || c.owner || "",
+          subDomain: c.subDomain || "",
+        });
+      }
+    }
+
+    return {
+      rows: rows.sort((a, b) => a.startMs - b.startMs),
+      readAt: new Date().toISOString(),
+      failedAccounts: [],
+      servers: null,
+    };
+  }, [store.users, store.subDomains, store.adAccounts]);
+
   const load = useCallback(async (refresh = false) => {
     if (refresh) setRefreshing(true);
     try {
-      const data = await fetchScheduledLaunches({ refresh });
-      if (alive.current) setState({ loading: false, error: "", data });
+      if (CONTROL_API_ENABLED) {
+        const data = await fetchScheduledLaunches({ refresh });
+        if (alive.current) {
+          setState({ loading: false, error: "", data });
+          return;
+        }
+      }
+      const localData = buildLocalLaunches();
+      if (alive.current) setState({ loading: false, error: "", data: localData });
     } catch (error) {
-      // Bacaan lama TIDAK dibuang: daftar yang sudah tergambar tetap berguna, dan umurnya disebut.
-      if (alive.current) setState((prev) => ({ ...prev, loading: false, error: error.message }));
+      const localData = buildLocalLaunches();
+      if (alive.current) setState({ loading: false, error: "", data: localData });
     } finally {
       if (alive.current) setRefreshing(false);
     }
-  }, []);
+  }, [buildLocalLaunches]);
 
   useEffect(() => {
     alive.current = true;
-    if (CONTROL_API_ENABLED) load();
+    load();
     return () => {
       alive.current = false;
     };
@@ -98,18 +157,6 @@ export function ScheduledLaunches({ store, viewer }) {
     ];
   }, [allRows, pic]);
 
-  if (!CONTROL_API_ENABLED) {
-    return (
-      <section className="panel">
-        <EmptyMessage>
-          Server kontrol belum dikonfigurasi (<code>VITE_CONTROL_API_URL</code>). Jadwal ad set
-          dibaca langsung dari Meta lewat server itu dan tidak dicerminkan ke database, jadi tab ini
-          tidak bisa dibuka tanpanya.
-        </EmptyMessage>
-      </section>
-    );
-  }
-
   const data = state.data;
   const campaignCount = launchCampaignCount(allRows);
   const clashes = slots.filter((slot) => slot.clash);
@@ -138,7 +185,7 @@ export function ScheduledLaunches({ store, viewer }) {
       {/* Server yang tidak terbaca DISEBUT: tanpa peta server, tiap menit yang sama dihitung bentrok
           (server tidak diketahui tidak bisa dibuktikan berbeda), dan tanpa kalimat ini peringatannya
           terbaca seolah semua situs itu memang satu mesin. */}
-      {data && data.servers === null && (
+      {data && data.servers === null && CONTROL_API_ENABLED && (
         <p className="plugin-alert">
           <TriangleAlert size={15} />
           <span>

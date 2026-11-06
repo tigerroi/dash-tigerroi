@@ -185,7 +185,7 @@ export async function fetchCampaignInsights(actId, token, dateRange) {
   const id = normalizeActId(actId);
   const params = {
     level: "campaign",
-    fields: "campaign_id,campaign_name,spend,impressions,clicks,cpc",
+    fields: "campaign_id,campaign_name,spend,impressions,clicks,cpc,actions,cost_per_action_type",
     limit: "500",
   };
 
@@ -206,6 +206,8 @@ export async function fetchCampaignInsights(actId, token, dateRange) {
     impressions: Number(r.impressions || 0),
     clicks: Number(r.clicks || 0),
     cpc: Number(r.cpc || 0),
+    results: Number(r.clicks || 0),
+    cpr: Number(r.clicks || 0) > 0 ? Math.round((Number(r.spend || 0) / Number(r.clicks || 0)) * 100) / 100 : 0,
   }));
 }
 
