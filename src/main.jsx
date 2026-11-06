@@ -44,6 +44,7 @@ import { CONTROL_API_ENABLED, startGoogleAuth } from "./lib/controlApi";
 import { googleAuthReturn } from "./lib/googleAuthReturn";
 import { notifyError, notifySuccess, notifyWarning } from "./lib/notify";
 import { pendingChats } from "./lib/telegramInbox";
+import { LanguageProvider } from "./context/LanguageContext";
 import { initTheme } from "./lib/theme";
 import { resolveRoute } from "./routes/resolveRoute";
 import "./styles.css";
@@ -690,6 +691,8 @@ initTheme();
 
 createRoot(document.getElementById("root")).render(
   <ErrorBoundary fullScreen>
-    <App />
+    <LanguageProvider>
+      <App />
+    </LanguageProvider>
   </ErrorBoundary>,
 );

@@ -30,6 +30,8 @@ import { ReminderAlert } from "../ui/ReminderAlert";
 import { SyncIssuesAlert } from "../ui/SyncIssuesAlert";
 import { SyncStatus } from "../ui/SyncStatus";
 import { ThemeToggle } from "../ui/ThemeToggle";
+import { LanguageToggle } from "../ui/LanguageToggle";
+import { useLanguage } from "../../context/LanguageContext";
 
 // Satu ikon per baris sidebar, dan tidak boleh ada yang kembar. Saat rail menyempit ke 48px,
 // label disembunyikan dan ikon inilah SATU-SATUNYA yang membedakan satu halaman dari halaman lain
@@ -74,6 +76,7 @@ export function DashboardShell({
   tabBadges,
   user,
 }) {
+  const { t } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expanded, setExpanded] = useState(true);
   // Baris sidebar yang menyala — induknya kalau yang terbuka salah satu tab, supaya "Domains"
@@ -108,21 +111,24 @@ export function DashboardShell({
             // Header grup hanya di item pertama grupnya, jadi grup yang seluruh isinya
             // ter-filter oleh akses tidak meninggalkan header yatim.
             const showGroup = index === 0 || visible[index - 1].group !== item.group;
+            const groupKey = item.group ? `nav.group.${item.group.toLowerCase()}` : "";
+            const groupLabel = t(groupKey, item.group);
+            const navLabel = t(`nav.${item.key}`, item.label);
 
             return (
               <Fragment key={item.path}>
-                {showGroup && <div className="nav-group">{item.group}</div>}
+                {showGroup && <div className="nav-group">{groupLabel}</div>}
                 <button
                   className={activeRoot === item.path ? "nav-item active" : "nav-item"}
                   onClick={() => {
                     navigate(item.path);
                     setMobileOpen(false);
                   }}
-                  title={item.label}
+                  title={navLabel}
                   type="button"
                 >
                   <Icon size={18} />
-                  <span>{item.label}</span>
+                  <span>{navLabel}</span>
                 </button>
               </Fragment>
             );
@@ -136,11 +142,11 @@ export function DashboardShell({
             type="button"
           >
             {expanded ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
-            <span>Collapse</span>
+            <span>{t("nav.collapse", "Collapse")}</span>
           </button>
           <button className="logout-button" onClick={onLogout} type="button">
             <LogOut size={16} />
-            <span>Logout</span>
+            <span>{t("nav.logout", "Logout")}</span>
           </button>
         </div>
       </aside>
@@ -195,7 +201,8 @@ export function DashboardShell({
               di layar sempit: nama akun di situ cuma keterangan (yang butuh menggantinya pergi ke
               sidebar), sementara ini kontrol — dan layar sempit adalah tempat orang paling sering
               berpindah antara siang dan malam. */}
-          <div className="topbar-right">
+          <div className="topbar-right" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <LanguageToggle />
             <ThemeToggle />
             <div className="user-pill">
               {user.name} / {user.role}

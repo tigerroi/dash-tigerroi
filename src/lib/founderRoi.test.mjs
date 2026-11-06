@@ -90,4 +90,24 @@ test("mode default menggabungkan metrik ke akun whitelist BD R 16 tanpa PIC", ()
   assert.equal(wl.earning, 9900000); // 3000000 + 6000000 + 900000
   assert.equal(wl.profitAdvertiser, 6500000);
   assert.equal(wl.profitFounder, 9898000);
+  assert.equal(wl.roiFounder, 494900); // ((9900000 - 2000) / 2000) * 100
+});
+
+test("mode default menghitung persentase roiFounder dengan angka riil topup dan earning", () => {
+  const report = buildFounderRoi({
+    roiReports: [
+      { date: "2026-11-02", pic: "Godek", earning: 30148405, spending: 5967258, totalSpending: 5967258 },
+    ],
+    adAccounts: [{ name: "BD R 16", balance: 8778619 }],
+    range: { from: "2026-11-01", to: "2026-11-06" },
+    whitelistTopup: [
+      { date: "2026-11-01", nominal: 10000000 },
+    ],
+  });
+
+  const [wl] = report.rows;
+  assert.equal(wl.topup, 10000000);
+  assert.equal(wl.earning, 30148405);
+  assert.equal(wl.profitFounder, 20148405);
+  assert.equal(wl.roiFounder, 201.48); // +201.48%
 });

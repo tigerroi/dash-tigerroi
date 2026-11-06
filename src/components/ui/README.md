@@ -59,6 +59,7 @@ dibutuhkan persis ini.
 | `SyncLogPanel` | Log run sync (Settings) |
 | `ReminderAlert` | Ikon + dialog pengingat jatuh tempo di topbar |
 | `ThemeToggle` | Tombol tema terang/gelap di topbar |
+| `LanguageToggle` | Tombol ganti bahasa (ID / EN) di topbar |
 
 Di luar `ui/`, yang sering dicari: `campaigns/CountryPicker` (pemilih negara iklan),
 `campaigns/CampaignStatusCell` (sel status campaign).

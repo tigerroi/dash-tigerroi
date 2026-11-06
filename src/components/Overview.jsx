@@ -1,5 +1,6 @@
 import { Activity, BadgeDollarSign, FileUp, Globe2, TriangleAlert, Users } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { useLanguage } from "../context/LanguageContext";
 import { canReadResource, isOverviewOnly } from "../config/access";
 import { useFillViewport } from "../hooks/useFillViewport";
 import { useUrlRange, useUrlState } from "../hooks/useUrlState";
@@ -61,6 +62,7 @@ function LinkButton({ to, navigate, children, className = "" }) {
 }
 
 export function Overview({ store, navigate, tab, role, viewer }) {
+  const { t } = useLanguage();
   const hideDetails =
     isOverviewOnly(role) ||
     String(viewer?.email || "").toLowerCase() === "emraankhattak@tigerroi.com" ||
@@ -861,8 +863,8 @@ export function Overview({ store, navigate, tab, role, viewer }) {
   return (
     <div className="page-stack">
       <PageHeader
-        title="Overview"
-        description="Ringkasan performa monitoring ROI, diperbarui tiap sync."
+        title={t("overview.title", "Overview")}
+        description={t("overview.subtitle", "Ringkasan performa monitoring ROI, diperbarui tiap sync.")}
       />
 
       {/* Tab-nya route sungguhan (lihat config/navigation.js): yang berganti di sini cuma bagian
@@ -888,9 +890,9 @@ export function Overview({ store, navigate, tab, role, viewer }) {
           <section className="panel">
             <div className="panel-header">
               <div>
-                <h2>Saldo & Pengeluaran Akun Whitelist</h2>
+                <h2>{t("overview.balance_spend_title", "Saldo & Pengeluaran Akun Whitelist")}</h2>
                 <p>
-                  <BadgeDollarSign size={14} /> Total Keseluruhan Spend:{" "}
+                  <BadgeDollarSign size={14} /> {t("overview.total_spend", "Total Keseluruhan Spend")}:{" "}
                   <strong className="danger">
                     {renderCell(dashboardStats.totalSpend, "spending")}
                   </strong>
@@ -915,9 +917,9 @@ export function Overview({ store, navigate, tab, role, viewer }) {
             )}
             <DataTable
               columns={[
-                ["name", "Nama Akun (Whitelist)"],
-                ["balance", "Sisa Saldo"],
-                ["spendToday", "Pengeluaran Hari Ini"],
+                ["name", t("col.account_name", "Nama Akun (Whitelist)")],
+                ["balance", t("col.remaining_balance", "Sisa Saldo")],
+                ["spendToday", t("col.today_spend", "Pengeluaran Hari Ini")],
               ]}
               items={wlAccounts}
               paginate
@@ -930,7 +932,7 @@ export function Overview({ store, navigate, tab, role, viewer }) {
                         to="/ad-accounts"
                         navigate={navigate}
                       >
-                        Detail
+                        {t("col.detail", "Detail")}
                       </LinkButton>
                     )
               }
@@ -1269,12 +1271,12 @@ export function Overview({ store, navigate, tab, role, viewer }) {
   );
 }
 
-function founderColumns(totals) {
+function founderColumns(totals, t = (k, f) => f) {
   return [
     {
       accessorKey: "name",
-      header: "Nama Akun (Whitelist)",
-      footer: "Total",
+      header: t("col.account_name", "Nama Akun (Whitelist)"),
+      footer: t("col.total", "Total"),
       cell: ({ getValue }) => {
         const val = String(getValue() || "");
         const isCombined =
@@ -1285,24 +1287,24 @@ function founderColumns(totals) {
         return <strong>{isCombined ? "BD R 16" : val}</strong>;
       },
     },
-    moneyColumn("topup", "Total TopUp (TU)", "nominal", { total: totals.topup }),
-    moneyColumn("totalSpending", "Total Spending + Tax (ST)", "spending", {
+    moneyColumn("topup", t("col.total_topup", "Total TopUp (TU)"), "nominal", { total: totals.topup }),
+    moneyColumn("totalSpending", t("col.total_spending_tax", "Total Spending + Tax (ST)"), "spending", {
       total: totals.totalSpending,
     }),
-    moneyColumn("earning", "Total Earning (ER)", "earning", { total: totals.earning }),
-    moneyColumn("profitAdvertiser", "Profit Advertiser", "profit", {
+    moneyColumn("earning", t("col.total_earning", "Total Earning (ER)"), "earning", { total: totals.earning }),
+    moneyColumn("profitAdvertiser", t("col.profit_advertiser", "Profit Advertiser"), "profit", {
       hint: "ER − ST",
       total: totals.profitAdvertiser,
     }),
-    moneyColumn("profitFounder", "Profit Founder", "profit", {
+    moneyColumn("profitFounder", t("col.profit_founder", "Profit Founder"), "profit", {
       hint: "ER − TU",
       total: totals.profitFounder,
     }),
-    roiColumn("roiAdvertiser", "ROI Overall Advertiser", {
+    roiColumn("roiAdvertiser", t("col.roi_overall_advertiser", "ROI Overall Advertiser"), {
       hint: "(ER − ST) ÷ ST × 100%",
       total: totals.roiAdvertiser,
     }),
-    roiColumn("roiFounder", "ROI Overall Founder", {
+    roiColumn("roiFounder", t("col.roi_overall_founder", "ROI Overall Founder"), {
       hint: "(ER − TU) ÷ TU × 100%",
       total: totals.roiFounder,
     }),
@@ -1318,6 +1320,7 @@ function founderColumns(totals) {
  * tab berarti memilih bulan di sini ikut menggeser grafik saat orang berpindah tab lewat tautan.
  */
 function FounderRoiPanel({ store }) {
+  const { t } = useLanguage();
   const [range, setRange] = useUrlRange("founder", currentMonthRange);
   const roiReports = store.roiReports;
   const whitelistTopup = store.whitelistTopup;
@@ -1339,17 +1342,17 @@ function FounderRoiPanel({ store }) {
   const { totals } = report;
   // Urutan bawaan adalah Profit Founder tertinggi (dari buildFounderRoi); klik kolom mengurutkan
   // lewat DataTable, dan baris Total tidak ikut.
-  const columns = useMemo(() => founderColumns(totals), [totals]);
+  const columns = useMemo(() => founderColumns(totals, t), [totals, t]);
 
   return (
     <section className="panel">
       <div className="panel-header">
         <div>
-          <h2>ROI Founder (BD R 16)</h2>
+          <h2>{t("overview.founder_roi_title", "ROI Founder (BD R 16)")}</h2>
           <p>
             {report.firstDay
               ? `${formatDate(report.firstDay)} – ${formatDate(report.lastDay)}`
-              : "Belum ada hari yang selesai di rentang ini"}
+              : t("empty.no_days_completed", "Belum ada hari yang selesai di rentang ini")}
           </p>
         </div>
         <div className="header-actions">

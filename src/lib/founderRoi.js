@@ -85,19 +85,32 @@ export function buildFounderRoi({
     const totalSpending = plan.totals.totalSpending;
     const topup = totalTopup;
 
+    const earnVal = toAmount(earning);
+    const spendVal = toAmount(totalSpending);
+    const topupVal = toAmount(topup);
+
+    let roiFounder = "";
+    if (earning !== "" && earning !== null && earning !== undefined) {
+      if (topupVal >= 1000) {
+        roiFounder = round(((earnVal - topupVal) / topupVal) * 100);
+      } else if (spendVal >= 1000) {
+        roiFounder = round(((earnVal - spendVal) / spendVal) * 100);
+      }
+    }
+
     const accountRow = {
       key: "bd_r_16",
       name: accountName,
-      topup,
-      totalSpending,
+      topup: topupVal,
+      totalSpending: spendVal,
       balance: totalBalance,
-      earning,
+      earning: earnVal,
       profitAdvertiser:
-        earning === "" || totalSpending === "" ? "" : round(earning - totalSpending),
-      profitFounder: earning === "" ? "" : round(earning - toAmount(topup)),
+        earning === "" || totalSpending === "" ? "" : round(earnVal - spendVal),
+      profitFounder: earning === "" ? "" : round(earnVal - topupVal),
       roiAdvertiser:
         earning === "" || totalSpending === "" ? "" : roiPercent(earning, totalSpending),
-      roiFounder: earning === "" ? "" : roiPercent(earning, topup),
+      roiFounder,
     };
 
     return {

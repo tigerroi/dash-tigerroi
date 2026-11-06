@@ -1,3 +1,4 @@
+import { useLanguage } from "../../context/LanguageContext";
 import { matchNavItem, navTabLabel, pageTabs } from "../../config/navigation";
 
 /**
@@ -25,6 +26,7 @@ import { matchNavItem, navTabLabel, pageTabs } from "../../config/navigation";
  * satu benda di layar yang harus dibaca dulu sebelum diabaikan.
  */
 export function PageTabs({ badges, canRead, navigate, path }) {
+  const { t } = useLanguage();
   const tabs = pageTabs(path, canRead);
   if (tabs.length === 0) {
     return null;
@@ -40,18 +42,25 @@ export function PageTabs({ badges, canRead, navigate, path }) {
 
   return (
     <nav aria-label="Bagian halaman" className="page-tabs">
-      {tabs.map((tab) => (
-        <button
-          aria-current={tab === active ? "page" : undefined}
-          className={tab === active ? "page-tab active" : "page-tab"}
-          key={tab.path}
-          onClick={() => navigate(tab.path)}
-          type="button"
-        >
-          {navTabLabel(tab)}
-          {badges?.[tab.path] > 0 && <span className="page-tab-badge">{badges[tab.path]}</span>}
-        </button>
-      ))}
+      {tabs.map((tab) => {
+        const rawLabel = navTabLabel(tab);
+        // Konversi label seperti "Ringkasan" -> "tab.ringkasan"
+        const cleanKey = `tab.${String(rawLabel).toLowerCase().replace(/\s+/g, "_")}`;
+        const translatedLabel = t(cleanKey, rawLabel);
+
+        return (
+          <button
+            aria-current={tab === active ? "page" : undefined}
+            className={tab === active ? "page-tab active" : "page-tab"}
+            key={tab.path}
+            onClick={() => navigate(tab.path)}
+            type="button"
+          >
+            {translatedLabel}
+            {badges?.[tab.path] > 0 && <span className="page-tab-badge">{badges[tab.path]}</span>}
+          </button>
+        );
+      })}
     </nav>
   );
 }
