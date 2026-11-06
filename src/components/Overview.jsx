@@ -940,7 +940,7 @@ export function Overview({ store, navigate, tab, role, viewer }) {
           </section>
 
           {/* Top-up whitelist ditampilkan untuk admin, keuangan, dan overview (Emran). */}
-          {(canReadResource(role, "whitelistTopup") || isOverviewOnly(role) || hideDetails) && (
+          {(canReadResource(role, "whitelistTopup", viewer) || isOverviewOnly(role, viewer) || hideDetails) && (
             <FounderRoiPanel store={store} />
           )}
         </>

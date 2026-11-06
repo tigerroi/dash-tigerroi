@@ -122,17 +122,24 @@ export function isGuestOnly(role) {
 }
 
 // Role "overview": hanya boleh membuka halaman Overview (/dashboard) saja. Menu lainnya diatur oleh superadmin.
-export function isOverviewOnly(role) {
+export function isOverviewOnly(role, user) {
+  if (user) {
+    const email = String(user.email || "").toLowerCase();
+    const username = String(user.username || "").toLowerCase();
+    if (email === "emraankhattak@tigerroi.com" || username === "emran") {
+      return true;
+    }
+  }
   const roles = parseRoles(role);
-  return roles.length > 0 && roles.every((r) => r === "overview");
+  return roles.length > 0 && (roles.every((r) => r === "overview") || roles.includes("overview"));
 }
 
 // Halaman yang boleh dibuka. Untuk semua role selain tamu murni ini persis `canReadResource`.
-export function canOpenPage(role, key) {
-  if (isOverviewOnly(role)) return key === "dashboard";
+export function canOpenPage(role, key, user) {
+  if (isOverviewOnly(role, user)) return key === "dashboard";
   if (isGuestOnly(role)) return GUEST_PAGES.includes(key);
 
-  return canReadResource(role, key);
+  return canReadResource(role, key, user);
 }
 
 // Halaman pertama sesudah login, tujuan "/" dan tombol kembali di halaman kosong. Untuk tamu
@@ -296,10 +303,15 @@ export function isAdmin(role) {
   return ADMIN_ROLES.some((admin) => hasRole(role, admin));
 }
 
-export function canReadResource(role, key) {
+export function canReadResource(role, key, user) {
   if (isSuperAdmin(role)) return true;
 
-  if (isOverviewOnly(role)) {
+  const isEmran =
+    user &&
+    (String(user.email || "").toLowerCase() === "emraankhattak@tigerroi.com" ||
+      String(user.username || "").toLowerCase() === "emran");
+
+  if (isOverviewOnly(role, user) || isEmran) {
     return [
       "dashboard",
       "dashboardStats",

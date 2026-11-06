@@ -189,7 +189,7 @@ export function useFirebaseStore(navigate, resources, user, enabled = true, rout
 
     // Subscribing to an admin-only collection as a non-admin would only produce a
     // permission-denied toast on every login, so don't ask for it at all.
-    const readableKeys = Object.keys(resources).filter((key) => canReadResource(role, key));
+    const readableKeys = Object.keys(resources).filter((key) => canReadResource(role, key, user));
 
     const resourceUnsubscribers = readableKeys.map((key) => {
       setLoadingMap((current) => ({ ...current, [key]: true }));
