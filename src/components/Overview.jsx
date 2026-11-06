@@ -90,7 +90,6 @@ export function Overview({ store, navigate, tab, role, viewer }) {
   // untuk angka final.
   // Default "Hari Ini" ({from,to} sehari), lewat DateRangePicker yang sama dengan seluruh dashboard.
   const [roiRange, setRoiRange] = useUrlRange("roi", todayRange);
-  const [spendViewMode, setSpendViewMode] = useState("wl"); // "wl" (default Akun WL BD R 16) | "pic"
   const weeklyFinancials = store.weeklyFinancials || [];
   const roiReports = store.roiReports || [];
   const roiSnapshots = store.roiSnapshots || [];
@@ -439,12 +438,7 @@ export function Overview({ store, navigate, tab, role, viewer }) {
   const dashboardStats = useMemo(() => {
     const raw = store.dashboardStats || {};
     const wlTotalSpend = wlAccounts.reduce((sum, item) => sum + (Number(item.spendToday) || 0), 0);
-    const picTotalSpend = advertiserSpend.reduce((sum, item) => sum + (Number(item.spendToday) || 0), 0);
-    const totalSpend = Math.max(
-      Number(raw.totalSpend || 0),
-      spendViewMode === "wl" ? wlTotalSpend : picTotalSpend,
-      wlTotalSpend
-    );
+    const totalSpend = Math.max(Number(raw.totalSpend || 0), wlTotalSpend);
 
     const managedCampaigns =
       raw.managedCampaigns ||
@@ -457,7 +451,7 @@ export function Overview({ store, navigate, tab, role, viewer }) {
       totalSpend,
       managedCampaigns: managedCampaigns || "-",
     };
-  }, [store.dashboardStats, advertiserSpend, wlAccounts, spendViewMode, store.subDomains]);
+  }, [store.dashboardStats, wlAccounts, store.subDomains]);
 
   const lowBalance = lowBalanceAdvertisers(advertiserSpend, store.alertSettings);
   // Tarif ad tax dari halaman Settings. Dipakai hanya untuk baris yang belum membawa pajaknya
@@ -894,29 +888,13 @@ export function Overview({ store, navigate, tab, role, viewer }) {
           <section className="panel">
             <div className="panel-header">
               <div>
-                <h2>Saldo & Pengeluaran Advertiser</h2>
+                <h2>Saldo & Pengeluaran Akun Whitelist</h2>
                 <p>
                   <BadgeDollarSign size={14} /> Total Keseluruhan Spend:{" "}
                   <strong className="danger">
                     {renderCell(dashboardStats.totalSpend, "spending")}
                   </strong>
                 </p>
-              </div>
-              <div className="header-actions" style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                <button
-                  type="button"
-                  className={spendViewMode === "wl" ? "primary-button" : "ghost-button"}
-                  onClick={() => setSpendViewMode("wl")}
-                >
-                  Akun WL
-                </button>
-                <button
-                  type="button"
-                  className={spendViewMode === "pic" ? "primary-button" : "ghost-button"}
-                  onClick={() => setSpendViewMode("pic")}
-                >
-                  PIC / User
-                </button>
               </div>
             </div>
             {/* Ambang yang sama dengan peringatan Telegram (tab Peringatan ROI di /notifications). */}
@@ -936,28 +914,20 @@ export function Overview({ store, navigate, tab, role, viewer }) {
               </p>
             )}
             <DataTable
-              columns={
-                spendViewMode === "wl"
-                  ? [
-                      ["name", "Nama Akun (Whitelist)"],
-                      ["balance", "Sisa Saldo"],
-                      ["spendToday", "Pengeluaran Hari Ini"],
-                    ]
-                  : [
-                      ["pic", "PIC / User"],
-                      ["balance", "Sisa Saldo"],
-                      ["spendToday", "Pengeluaran Hari Ini"],
-                    ]
-              }
-              items={spendViewMode === "wl" ? wlAccounts : advertiserSpend}
+              columns={[
+                ["name", "Nama Akun (Whitelist)"],
+                ["balance", "Sisa Saldo"],
+                ["spendToday", "Pengeluaran Hari Ini"],
+              ]}
+              items={wlAccounts}
               paginate
               extraAction={
                 hideDetails
                   ? null
-                  : (item) => (
+                  : () => (
                       <LinkButton
                         className="ghost-button"
-                        to={spendViewMode === "wl" ? "/ad-accounts" : `/users/${item.userId || item.id}`}
+                        to="/ad-accounts"
                         navigate={navigate}
                       >
                         Detail
@@ -967,9 +937,10 @@ export function Overview({ store, navigate, tab, role, viewer }) {
             />
           </section>
 
-          {/* Top-up whitelist hanya dilanggan admin + Keuangan. Digambar untuk role lain, kolom TU
-              berbunyi Rp 0 di tiap baris dan ROI Founder kosong — nol yang lahir dari izin baca. */}
-          {canReadResource(role, "whitelistTopup") && <FounderRoiPanel store={store} />}
+          {/* Top-up whitelist ditampilkan untuk admin, keuangan, dan overview (Emran). */}
+          {(canReadResource(role, "whitelistTopup") || isOverviewOnly(role) || hideDetails) && (
+            <FounderRoiPanel store={store} />
+          )}
         </>
       )}
 

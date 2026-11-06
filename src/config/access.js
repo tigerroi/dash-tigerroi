@@ -314,6 +314,7 @@ export function canReadResource(role, key) {
       "users",
       "domains",
       "subDomains",
+      "whitelistTopup",
     ].includes(key);
   }
 
