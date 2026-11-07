@@ -1205,7 +1205,7 @@ export function Overview({ store, navigate, tab, role, viewer }) {
                 belum selesai", rumus ad tax — berganti bunyi tiap kali filternya diganti, dan
                 keadaan yang disebutnya sudah terbaca dari layar: kolom Date dan Time tiap baris,
                 dan pilihan periode di sebelah kanan. */}
-              <h2>Laporan ROI Realtime</h2>
+              <h2>{t("laporan roi realtime", "Laporan ROI Realtime")}</h2>
             </div>
             <div className="header-actions">
               <button
@@ -1214,7 +1214,7 @@ export function Overview({ store, navigate, tab, role, viewer }) {
                 title="Unggah berkas CSV laporan tracker Keitaro"
                 type="button"
               >
-                <FileUp size={15} /> Import CSV Keitaro
+                <FileUp size={15} /> {t("import csv keitaro", "Import CSV Keitaro")}
               </button>
               <DateRangePicker
                 align="right"

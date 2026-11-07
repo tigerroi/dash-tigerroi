@@ -1,5 +1,6 @@
 import { ArrowLeft, Mail, MessageSquare, UserRound } from "lucide-react";
 import { useMemo } from "react";
+import { useLanguage } from "../context/LanguageContext";
 import { canToggleCampaign, isSuperAdmin } from "../config/access";
 import { useUrlRange, useUrlState } from "../hooks/useUrlState";
 import { normalizeActId } from "../lib/adAccountAdapter";
@@ -46,6 +47,7 @@ export function UserDetail({
   onSetCampaignStatus,
   viewer,
 }) {
+  const { t } = useLanguage();
   const firebaseUser = store.users.find((item) => item.id === userId);
   const profile = firebaseUser ? buildProfileFromStore(firebaseUser, store) : {};
   const subDomainOwners = useMemo(
@@ -205,7 +207,7 @@ export function UserDetail({
           <div className="header-actions">
             <button className="ghost-button" onClick={() => navigate("/users")} type="button">
               <ArrowLeft size={16} />
-              Kembali
+              {t("kembali", "Kembali")}
             </button>
           </div>
         }
@@ -220,13 +222,13 @@ export function UserDetail({
           </div>
 
           <div className="profile-title">
-            <h2>{profile.name || "User tidak ditemukan"}</h2>
+            <h2>{profile.name || t("user tidak ditemukan", "User tidak ditemukan")}</h2>
             <p>@ {profile.username || "-"}</p>
           </div>
 
           <div className="profile-metrics">
             <ProfileMetric
-              label="Total Saldo (Semua Act)"
+              label={t("total saldo (semua act)", "Total Saldo (Semua Act)")}
               value={profile.totalBalance}
               tone="success"
             />
@@ -238,7 +240,7 @@ export function UserDetail({
             />
             <ProfileMetric
               icon={UserRound}
-              label="Bergabung Pada"
+              label={t("bergabung pada", "Bergabung Pada")}
               value={profile.joinedAt || "-"}
             />
           </div>
@@ -248,12 +250,12 @@ export function UserDetail({
       <section className="panel">
         <div className="panel-header">
           <div>
-            <h2>Sub Domain Assigned</h2>
+            <h2>{t("sub domain assigned", "Sub Domain Assigned")}</h2>
             {/* Kolom Revenue/CPC/eCPM = hari berjalan (real-time), diisi dari baris ROI hari ini —
                 advertiser berpatokan pada GAM yang juga menampilkannya real-time. Angkanya setengah
                 hari dan naik tiap sync. Subdomain yang belum punya baris hari ini menampilkan angka
                 sync terakhirnya. */}
-            <p>Daftar sub domain beserta performa Google Ad Manager hari ini (real-time).</p>
+            <p>{t("daftar sub domain beserta performa google ad manager hari ini (real-time).", "Daftar sub domain beserta performa Google Ad Manager hari ini (real-time).")}</p>
           </div>
         </div>
         <SubDomainAssignedTable
@@ -268,8 +270,8 @@ export function UserDetail({
       <section className="panel">
         <div className="panel-header">
           <div>
-            <h2>Daftar Ad Account (Act) & Saldo</h2>
-            <p>Saldo dan spend terbaru untuk akun iklan milik user ini.</p>
+            <h2>{t("daftar ad account (act) & saldo", "Daftar Ad Account (Act) & Saldo")}</h2>
+            <p>{t("saldo dan spend terbaru untuk akun iklan milik user ini.", "Saldo dan spend terbaru untuk akun iklan milik user ini.")}</p>
           </div>
         </div>
         <DataTable
@@ -293,7 +295,7 @@ export function UserDetail({
       <section className="panel">
         <div className="panel-header">
           <div>
-            <h2>Manajemen Kampanye (Campaign)</h2>
+            <h2>{t("manajemen kampanye (campaign)", "Manajemen Kampanye (Campaign)")}</h2>
             <p>
               Daftar campaign aktif untuk akun iklan milik {profile.name || "user"}.
               {canToggle
@@ -321,12 +323,12 @@ export function UserDetail({
       <section className="panel">
         <div className="panel-header">
           <div>
-            <h2>Riwayat Spend Campaign</h2>
+            <h2>{t("riwayat spend campaign", "Riwayat Spend Campaign")}</h2>
             {/* Beda dari Manajemen Kampanye di atas yang menampilkan keadaan sekarang, ini riwayat
                 per-hari (masa simpan 90 hari) — di sinilah filter rentang tanggal & Kode Keitaro
                 punya banyak hari untuk dikerjakan. */}
             <p>
-              Spend & hasil tiap campaign per hari. Diisi Sync Meta; masa simpan 90 hari terakhir.
+              {t("spend & hasil tiap campaign per hari. diisi sync meta; masa simpan 90 hari terakhir.", "Spend & hasil tiap campaign per hari. Diisi Sync Meta; masa simpan 90 hari terakhir.")}
             </p>
           </div>
         </div>
@@ -336,8 +338,8 @@ export function UserDetail({
       <section className="panel">
         <div className="panel-header">
           <div>
-            <h2>Rekap Riwayat Saldo Berkurang (Daily Spend)</h2>
-            <p>Catatan pengurangan saldo harian dari akun iklan user.</p>
+            <h2>{t("rekap riwayat saldo berkurang (daily spend)", "Rekap Riwayat Saldo Berkurang (Daily Spend)")}</h2>
+            <p>{t("catatan pengurangan saldo harian dari akun iklan user.", "Catatan pengurangan saldo harian dari akun iklan user.")}</p>
           </div>
         </div>
         <DataTable

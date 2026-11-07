@@ -16,6 +16,7 @@ import {
   YAxis,
 } from "recharts";
 import { useChartPalette } from "../hooks/useChartPalette";
+import { useLanguage } from "../context/LanguageContext";
 import { formatRoiPercent } from "../lib/adTax";
 import { seriesColor } from "../lib/chartTheme";
 import { flagUrl } from "../lib/countries";
@@ -80,6 +81,7 @@ export function CountryFlag({ code, size = "sm" }) {
 }
 
 export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains = [], users = [] }) {
+  const { lang, t } = useLanguage();
   const [dateRange, setDateRange] = useState(default14DaysRange);
   const [minSpendThreshold, setMinSpendThreshold] = useState(100000);
   const [filterThresholdActive, setFilterThresholdActive] = useState(true);
@@ -269,13 +271,13 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
                 color,
               }}
             >
-              {rec}
+              {t(rec, rec)}
             </span>
           );
         },
       },
     ],
-    []
+    [t]
   );
 
   // Kolom DataTable Prioritas Penurunan Anggaran
@@ -408,9 +410,9 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
       {/* ═══ 1. HEADER ═══ */}
       <div className="panel-header" style={{ marginBottom: "-0.5rem" }}>
         <div>
-          <h2 style={{ fontSize: "1.35rem", fontWeight: 700, margin: 0 }}>ROI per Negara</h2>
+          <h2 style={{ fontSize: "1.35rem", fontWeight: 700, margin: 0 }}>{t("roi per negara", "ROI per Negara")}</h2>
           <p className="muted-line" style={{ marginTop: "0.25rem", fontSize: "0.85rem", color: "#a1a1aa" }}>
-            Hari selesai {dateRange.from} – {dateRange.to} · {heatmapData.lastDate} berjalan, hanya di heatmap & kurva
+            {t("hari selesai", "Hari selesai")} {dateRange.from} – {dateRange.to} · {heatmapData.lastDate} {t("berjalan, hanya di heatmap & kurva", "berjalan, hanya di heatmap & kurva")}
           </p>
         </div>
         <div className="header-actions" style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -428,7 +430,7 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
             style={{ display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.45rem 0.75rem" }}
           >
             <Filter size={14} />
-            <span>{filterThresholdActive ? "Filter: >= Rp 100k" : "Semua Negara"}</span>
+            <span>{filterThresholdActive ? "Filter: >= Rp 100k" : t("semua negara", "Semua Negara")}</span>
           </button>
         </div>
       </div>
@@ -445,7 +447,7 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
         {/* Kartu 1: Paling Unggul */}
         <div className="stat-card" style={{ padding: "1.1rem", borderRadius: "8px", border: "1px solid var(--border-color, #27272a)", background: "var(--card-bg, #121215)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "#a1a1aa", fontSize: "0.8rem", marginBottom: "0.5rem" }}>
-            <span>Paling unggul</span>
+            <span>{t("paling unggul", "Paling unggul")}</span>
             <Award size={16} color="#10b981" />
           </div>
           {best ? (
@@ -458,18 +460,18 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
                 +{best.roi.toFixed(2)}%
               </div>
               <div style={{ fontSize: "0.8rem", color: "#a1a1aa" }}>
-                Profit <strong style={{ color: "#10b981" }}>{renderCell(best.profit, "earning")}</strong> · untung {best.daysRatio} hari
+                Profit <strong style={{ color: "#10b981" }}>{renderCell(best.profit, "earning")}</strong> · {t("untung", "untung")} {best.daysRatio} {t("hari", "hari")}
               </div>
             </>
           ) : (
-            <div style={{ color: "#71717a", fontSize: "0.85rem" }}>Belum ada data</div>
+            <div style={{ color: "#71717a", fontSize: "0.85rem" }}>{t("belum ada data", "Belum ada data")}</div>
           )}
         </div>
 
         {/* Kartu 2: ROI Terendah */}
         <div className="stat-card" style={{ padding: "1.1rem", borderRadius: "8px", border: "1px solid var(--border-color, #27272a)", background: "var(--card-bg, #121215)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "#a1a1aa", fontSize: "0.8rem", marginBottom: "0.5rem" }}>
-            <span>ROI terendah</span>
+            <span>{t("roi terendah", "ROI terendah")}</span>
             <TrendingDown size={16} color="#ef4444" />
           </div>
           {lowest ? (
@@ -483,21 +485,21 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
               </div>
               <div style={{ fontSize: "0.8rem", color: "#a1a1aa" }}>
                 {lowest.profit >= 0 ? (
-                  <>Tidak ada yang rugi · profit <strong style={{ color: "#10b981" }}>{renderCell(lowest.profit, "earning")}</strong></>
+                  <>{t("tidak ada yang rugi", "Tidak ada yang rugi")} · profit <strong style={{ color: "#10b981" }}>{renderCell(lowest.profit, "earning")}</strong></>
                 ) : (
-                  <>Rugi <strong style={{ color: "#ef4444" }}>{renderCell(lowest.profit, "earning")}</strong> · untung {lowest.daysRatio} hari</>
+                  <>{t("rugi", "Rugi")} <strong style={{ color: "#ef4444" }}>{renderCell(lowest.profit, "earning")}</strong> · {t("untung", "untung")} {lowest.daysRatio} {t("hari", "hari")}</>
                 )}
               </div>
             </>
           ) : (
-            <div style={{ color: "#71717a", fontSize: "0.85rem" }}>Belum ada data</div>
+            <div style={{ color: "#71717a", fontSize: "0.85rem" }}>{t("belum ada data", "Belum ada data")}</div>
           )}
         </div>
 
         {/* Kartu 3: Sedang Naik 3 Hari Terakhir */}
         <div className="stat-card" style={{ padding: "1.1rem", borderRadius: "8px", border: "1px solid var(--border-color, #27272a)", background: "var(--card-bg, #121215)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "#a1a1aa", fontSize: "0.8rem", marginBottom: "0.5rem" }}>
-            <span>Sedang naik · 3 hari terakhir</span>
+            <span>{t("sedang naik · 3 hari terakhir", "Sedang naik · 3 hari terakhir")}</span>
             <TrendingUp size={16} color="#10b981" />
           </div>
           {fastestRising ? (
@@ -507,21 +509,21 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
                 <span>{fastestRising.country}</span>
               </div>
               <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#10b981", margin: "0.25rem 0" }}>
-                +{fastestRising.delta.toFixed(1)} poin
+                +{fastestRising.delta.toFixed(1)} {t("poin", "poin")}
               </div>
               <div style={{ fontSize: "0.8rem", color: "#a1a1aa" }}>
-                ROI +{fastestRising.roi3Hari.toFixed(2)}% (periode +{fastestRising.roi.toFixed(2)}%)
+                ROI +{fastestRising.roi3Hari.toFixed(2)}% ({t("periode", "periode")} +{fastestRising.roi.toFixed(2)}%)
               </div>
             </>
           ) : (
-            <div style={{ color: "#71717a", fontSize: "0.85rem" }}>Belum ada data</div>
+            <div style={{ color: "#71717a", fontSize: "0.85rem" }}>{t("belum ada data", "Belum ada data")}</div>
           )}
         </div>
 
         {/* Kartu 4: Sedang Turun 3 Hari Terakhir */}
         <div className="stat-card" style={{ padding: "1.1rem", borderRadius: "8px", border: "1px solid var(--border-color, #27272a)", background: "var(--card-bg, #121215)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "#a1a1aa", fontSize: "0.8rem", marginBottom: "0.5rem" }}>
-            <span>Sedang turun · 3 hari terakhir</span>
+            <span>{t("sedang turun · 3 hari terakhir", "Sedang turun · 3 hari terakhir")}</span>
             <TrendingDown size={16} color="#ef4444" />
           </div>
           {steepestFalling ? (
@@ -531,14 +533,14 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
                 <span>{steepestFalling.country}</span>
               </div>
               <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#ef4444", margin: "0.25rem 0" }}>
-                {steepestFalling.delta.toFixed(1)} poin
+                {steepestFalling.delta.toFixed(1)} {t("poin", "poin")}
               </div>
               <div style={{ fontSize: "0.8rem", color: "#a1a1aa" }}>
-                ROI +{steepestFalling.roi3Hari.toFixed(2)}% (periode +{steepestFalling.roi.toFixed(2)}%)
+                ROI +{steepestFalling.roi3Hari.toFixed(2)}% ({t("periode", "periode")} +{steepestFalling.roi.toFixed(2)}%)
               </div>
             </>
           ) : (
-            <div style={{ color: "#71717a", fontSize: "0.85rem" }}>Belum ada data</div>
+            <div style={{ color: "#71717a", fontSize: "0.85rem" }}>{t("belum ada data", "Belum ada data")}</div>
           )}
         </div>
       </div>
@@ -546,10 +548,10 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
       {/* ═══ 3. TABEL KLASEMEN NEGARA ═══ */}
       <div className="country-leaderboard-section">
         <div style={{ marginBottom: "0.75rem" }}>
-          <h3 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0 }}>Klasemen negara</h3>
+          <h3 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0 }}>{t("klasemen negara", "Klasemen negara")}</h3>
           {filterThresholdActive && hiddenCount > 0 && (
             <p className="muted-line" style={{ marginTop: "0.2rem", fontSize: "0.8rem", color: "#71717a" }}>
-              {hiddenCount} negara dengan Total Spend di bawah Rp 100.000 disembunyikan.
+              {hiddenCount} {t("negara dengan Total Spend di bawah Rp 100.000 disembunyikan.", "negara dengan Total Spend di bawah Rp 100.000 disembunyikan.")}
             </p>
           )}
         </div>
@@ -568,9 +570,9 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
           <div>
-            <h3 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0 }}>Heatmap ROI harian</h3>
+            <h3 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0 }}>{t("heatmap roi harian", "Heatmap ROI harian")}</h3>
             <p style={{ marginTop: "0.25rem", fontSize: "0.85rem", color: "#a1a1aa" }}>
-              Warna = ROI hari itu; sentuh sel untuk rincian subdomain.
+              {t("warna = roi hari itu; sentuh sel untuk rincian subdomain.", "Warna = ROI hari itu; sentuh sel untuk rincian subdomain.")}
             </p>
           </div>
           {heatmapData.countryRows.length > 15 && (
@@ -580,7 +582,7 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
               onClick={() => setShowAllHeatmap((prev) => !prev)}
               style={{ fontSize: "0.8rem", padding: "0.35rem 0.65rem" }}
             >
-              {showAllHeatmap ? "Tampilkan ringkas" : `Tampilkan semua (${heatmapData.countryRows.length})`}
+              {showAllHeatmap ? t("tampilkan ringkas", "Tampilkan ringkas") : `${t("tampilkan semua", "Tampilkan semua")} (${heatmapData.countryRows.length})`}
             </button>
           )}
         </div>
@@ -872,9 +874,9 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
         }}
       >
         <div style={{ marginBottom: "1rem" }}>
-          <h3 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0 }}>Kurva ROI harian per negara</h3>
+          <h3 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0 }}>{t("kurva roi harian", "Kurva ROI harian")}</h3>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.65rem" }}>
-            <span style={{ fontSize: "0.8rem", color: "#a1a1aa" }}>Pilih negara:</span>
+            <span style={{ fontSize: "0.8rem", color: "#a1a1aa" }}>{t("pilih negara:", "Pilih negara:")}</span>
             {(() => {
               const allCodes = curveData.series.map((s) => s.code);
               const isAllSelected = allCodes.length > 0 && allCodes.every((c) => activeCurveCountries.includes(c));
@@ -900,7 +902,7 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
                     transition: "all 0.15s ease",
                   }}
                 >
-                  Semua
+                  {t("semua", "Semua")}
                 </button>
               );
             })()}
@@ -1032,10 +1034,10 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
       <div className="budget-cut-priorities-section">
         <div style={{ marginBottom: "0.75rem" }}>
           <h3 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0 }}>
-            Prioritas penurunan anggaran - 3 hari terakhir
+            {t("prioritas penurunan anggaran 3 hari terakhir", "Prioritas penurunan anggaran - 3 hari terakhir")}
           </h3>
           <p className="muted-line" style={{ marginTop: "0.2rem", fontSize: "0.8rem", color: "#71717a" }}>
-            Pasangan negara x subdomain yang rugi, rugi terbesar dulu.
+            {t("pasangan negara x subdomain yang rugi, rugi terbesar dulu.", "Pasangan negara x subdomain yang rugi, rugi terbesar dulu.")}
           </p>
         </div>
         {budgetCutPriorities.length > 0 ? (
@@ -1052,7 +1054,7 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
               fontSize: "0.85rem",
             }}
           >
-            🎉 Tidak ada pasangan negara x subdomain yang mengalami kerugian pada 3 hari terakhir!
+            🎉 {t("tidak ada pasangan negara x subdomain yang mengalami kerugian pada 3 hari terakhir!", "Tidak ada pasangan negara x subdomain yang mengalami kerugian pada 3 hari terakhir!")}
           </div>
         )}
       </div>

@@ -1,6 +1,7 @@
 import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { Eye, EyeOff } from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
+import { useLanguage } from "../../context/LanguageContext";
 import { useTablePagination } from "../../hooks/useTablePagination";
 import {
   defaultRowId,
@@ -74,6 +75,7 @@ export function DataTable({
   // Baris tambahan di bawah badan tabel (baris Total), digambar dari `footer` tiap kolom.
   showFooter,
 }) {
+  const { t } = useLanguage();
   const [internalSort, setInternalSort] = useState(defaultSort);
   const [internalExpanded, setInternalExpanded] = useState({});
   const [visibleSecrets, setVisibleSecrets] = useState(() => new Set());
@@ -91,13 +93,13 @@ export function DataTable({
       ...normalized,
       {
         id: "__actions",
-        header: "Actions",
+        header: t("actions", "Actions"),
         enableSorting: false,
         cell: ({ row }) => extraAction(row.original),
         meta: { align: "right", ownCell: true },
       },
     ];
-  }, [columns, extraAction]);
+  }, [columns, extraAction, t]);
 
   // Saat dikendalikan dari luar, barisnya sudah terurut sebelum sampai ke sini.
   const sortedItems = useMemo(
@@ -197,7 +199,7 @@ export function DataTable({
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={leafCount} className="empty">
-                  {emptyText}
+                  {typeof emptyText === "string" ? t(emptyText, emptyText) : emptyText}
                 </td>
               </tr>
             ) : (
@@ -253,7 +255,10 @@ export function DataTable({
                     }
                     key={header.id}
                   >
-                    {renderPart(header.column.columnDef.footer, header.getContext())}
+                    {(() => {
+                      const rawFooter = renderPart(header.column.columnDef.footer, header.getContext());
+                      return typeof rawFooter === "string" ? t(rawFooter, rawFooter) : rawFooter;
+                    })()}
                   </td>
                 ))}
               </tr>
@@ -279,11 +284,13 @@ export function DataTable({
 }
 
 function HeaderCell({ header, rowSpan, sort, onSort }) {
+  const { t } = useLanguage();
   const column = header.column;
   const def = column.columnDef;
   const meta = def.meta || {};
   const isGroup = header.subHeaders?.length > 0 && !header.isPlaceholder;
-  const label = renderPart(def.header, header.getContext());
+  const rawLabel = renderPart(def.header, header.getContext());
+  const label = typeof rawLabel === "string" ? t(rawLabel, rawLabel) : rawLabel;
   const sortable = !isGroup && def.enableSorting !== false && Boolean(def.header);
   const className = [alignClass(def), meta.headerClassName].filter(Boolean).join(" ") || undefined;
 

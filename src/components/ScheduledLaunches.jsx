@@ -1,5 +1,6 @@
 import { TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useLanguage } from "../context/LanguageContext";
 import { canToggleCampaign } from "../config/access";
 import { useUrlState } from "../hooks/useUrlState";
 import { fleetCampaignRows } from "../lib/campaignRows";
@@ -35,6 +36,7 @@ import { SelectField } from "./ui/SelectField";
  * "tidak ada jadwal".
  */
 export function ScheduledLaunches({ store, viewer }) {
+  const { t } = useLanguage();
   const [state, setState] = useState({ loading: true, error: "", data: null });
   const [refreshing, setRefreshing] = useState(false);
   const [pic, setPic] = useUrlState("pic", "");
@@ -220,11 +222,11 @@ export function ScheduledLaunches({ store, viewer }) {
       <section className="panel">
         <div className="panel-header">
           <div>
-            <h2>Jadwal tayang</h2>
+            <h2>{t("jadwal tayang", "Jadwal tayang")}</h2>
             <p>
               {data
-                ? `${campaignCount} campaign terjadwal · ${clashes.length} jam bentrok · dibaca ${formatDateTime(data.readAt)}`
-                : "Membaca jadwal dari Meta..."}
+                ? `${campaignCount} ${t("campaign terjadwal", "campaign terjadwal")} · ${clashes.length} ${t("jam bentrok", "jam bentrok")} · ${t("dibaca", "dibaca")} ${formatDateTime(data.readAt)}`
+                : t("membaca jadwal dari meta...", "Membaca jadwal dari Meta...")}
             </p>
           </div>
           <div className="launch-toolbar">
@@ -234,12 +236,12 @@ export function ScheduledLaunches({ store, viewer }) {
         </div>
 
         {state.loading && !data ? (
-          <EmptyMessage>Membaca jadwal ad set seluruh ad account dari Meta...</EmptyMessage>
+          <EmptyMessage>{t("membaca jadwal ad set seluruh ad account dari meta...", "Membaca jadwal ad set seluruh ad account dari Meta...")}</EmptyMessage>
         ) : data && slots.length === 0 ? (
           <EmptyMessage>
             {pic
-              ? `Tidak ada jadwal milik ${pic}.`
-              : "Tidak ada campaign maupun ad set yang terjadwal — semua yang saklarnya On sudah tayang."}
+              ? `${t("tidak ada jadwal milik", "Tidak ada jadwal milik")} ${pic}.`
+              : t("tidak ada campaign maupun ad set yang terjadwal — semua yang saklarnya on sudah tayang.", "Tidak ada campaign maupun ad set yang terjadwal — semua yang saklarnya On sudah tayang.")}
           </EmptyMessage>
         ) : (
           <div className="launch-slots">

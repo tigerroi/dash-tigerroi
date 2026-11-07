@@ -1,11 +1,14 @@
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useLanguage } from "../../context/LanguageContext";
 import { datePresets, matchDatePreset, parseDateLike, toDateKey } from "../../lib/dateRange";
 import { formatDate } from "../../lib/formatDate";
 
-const WEEKDAYS = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+const WEEKDAYS_ID = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+const WEEKDAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTHS_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+const MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 // Label tombol: nama preset kalau rentangnya persis salah satunya ("Hari Ini", "7 hari terakhir"),
 // kalau tidak tanggalnya sendiri. Tak pernah "undefined–undefined" — kosong berarti "Semua tanggal".
@@ -42,12 +45,16 @@ function shiftMonth(view, delta) {
  * aslinya, supaya menggeser kalender tidak memuat ulang tabel di setiap klik. "Batal" membuang draft.
  */
 export function DateRangePicker({ value, onChange, align = "left", label = "Rentang tanggal" }) {
+  const { lang, t } = useLanguage();
   const from = value?.from || "";
   const to = value?.to || "";
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState({ from, to });
   const now = useMemo(() => new Date(), []);
   const presets = useMemo(() => datePresets(now), [now]);
+
+  const weekdays = lang === "en" ? WEEKDAYS_EN : WEEKDAYS_ID;
+  const months = lang === "en" ? MONTHS_EN : MONTHS_ID;
 
   // Bulan yang tampak di kalender kiri; kanan selalu satu bulan sesudahnya.
   const anchor = parseDateLike(to || from) || now;
@@ -104,17 +111,20 @@ export function DateRangePicker({ value, onChange, align = "left", label = "Rent
     setOpen(false);
   };
 
+  const rawDescription = describeDateRange(from, to, now);
+  const buttonLabel = t(rawDescription, rawDescription);
+
   return (
     <>
       <button
         aria-expanded={open}
-        aria-label={label}
+        aria-label={t(label, label)}
         className="daterange-trigger"
         onClick={() => setOpen((v) => !v)}
         type="button"
       >
         <CalendarDays size={15} />
-        <span>{describeDateRange(from, to, now)}</span>
+        <span>{buttonLabel}</span>
         <ChevronRight className="daterange-trigger-caret" size={14} />
       </button>
 
@@ -124,13 +134,13 @@ export function DateRangePicker({ value, onChange, align = "left", label = "Rent
             {/* Klik di luar menutup — sebagai tombol tersendiri di belakang dialog, bukan onClick di
                 atas <div> backdrop (yang tak bisa dijangkau keyboard). Escape & "Batal" jalur lain. */}
             <button
-              aria-label="Tutup"
+              aria-label={t("tutup", "Tutup")}
               className="daterange-scrim"
               onClick={() => setOpen(false)}
               type="button"
             />
             <div
-              aria-label={label}
+              aria-label={t(label, label)}
               aria-modal="true"
               className={`daterange-pop ${align === "right" ? "align-right" : "align-left"}`}
               role="dialog"
@@ -145,7 +155,7 @@ export function DateRangePicker({ value, onChange, align = "left", label = "Rent
                         type="button"
                       >
                         <span className="daterange-radio" />
-                        {preset.label}
+                        {t(preset.label, preset.label)}
                       </button>
                     </li>
                   ))}
@@ -171,7 +181,7 @@ export function DateRangePicker({ value, onChange, align = "left", label = "Rent
                               <span className="daterange-nav-spacer" />
                             )}
                             <strong>
-                              {MONTHS[m.month]} {m.year}
+                              {months[m.month]} {m.year}
                             </strong>
                             {offset === 1 ? (
                               <button
@@ -187,7 +197,7 @@ export function DateRangePicker({ value, onChange, align = "left", label = "Rent
                             )}
                           </div>
                           <div className="daterange-grid daterange-weekdays">
-                            {WEEKDAYS.map((day) => (
+                            {weekdays.map((day) => (
                               <span className="daterange-weekday" key={day}>
                                 {day}
                               </span>
@@ -234,13 +244,15 @@ export function DateRangePicker({ value, onChange, align = "left", label = "Rent
                   </div>
 
                   <div className="daterange-foot">
-                    <small className="daterange-tz">Tanggal ditampilkan dalam Waktu Jakarta</small>
+                    <small className="daterange-tz">
+                      {lang === "en" ? "Dates shown in Jakarta Time (WIB)" : "Tanggal ditampilkan dalam Waktu Jakarta"}
+                    </small>
                     <div className="daterange-actions">
                       <button className="ghost-button" onClick={() => setOpen(false)} type="button">
-                        Batal
+                        {t("batal", "Batal")}
                       </button>
                       <button className="primary-button" onClick={commit} type="button">
-                        Perbarui
+                        {t("perbarui", "Perbarui")}
                       </button>
                     </div>
                   </div>

@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useLanguage } from "../../context/LanguageContext";
 import { PAGE_SIZE_OPTIONS } from "../../hooks/useTablePagination";
 import { SelectField, toSelectOptions } from "./SelectField";
 
@@ -24,24 +25,30 @@ export function TablePagination({
   showPageSize = true,
   showRange = true,
 }) {
+  const { lang, t } = useLanguage();
+
   if (totalPages <= 1) {
     return null;
   }
+
+  const rowsLabel = lang === "en" ? "rows" : "baris";
+  const ofLabel = lang === "en" ? "of" : "dari";
+  const pageLabel = lang === "en" ? "Page" : "Halaman";
 
   return (
     <div className="pagination">
       {showPageSize && (
         <SelectField
-          ariaLabel="Jumlah baris per halaman"
+          ariaLabel={t("jumlah baris per halaman", "Jumlah baris per halaman")}
           className="page-size-control"
           onChange={(next) => onPageSizeChange(Number(next))}
-          options={toSelectOptions(PAGE_SIZE_OPTIONS, (option) => `${option} baris`)}
+          options={toSelectOptions(PAGE_SIZE_OPTIONS, (option) => `${option} ${rowsLabel}`)}
           value={pageSize}
         />
       )}
       {showRange && (
         <span className="pagination-range">
-          {rangeStart}-{rangeEnd} dari {total} {label}
+          {rangeStart}-{rangeEnd} {ofLabel} {total} {t(label, label)}
         </span>
       )}
       {/* Ikon dan teks berdampingan: di layar sempit teksnya yang disembunyikan, panahnya tetap
@@ -52,22 +59,22 @@ export function TablePagination({
         disabled={page === 1}
         onClick={() => onPageChange(page - 1)}
         type="button"
-        aria-label="Halaman sebelumnya"
+        aria-label={t("sebelumnya", "Halaman sebelumnya")}
       >
         <ChevronLeft size={16} />
-        <span className="pagination-step-label">Sebelumnya</span>
+        <span className="pagination-step-label">{t("sebelumnya", "Sebelumnya")}</span>
       </button>
       <span className="pagination-page">
-        Halaman {page} dari {totalPages}
+        {pageLabel} {page} {ofLabel} {totalPages}
       </span>
       <button
         className="ghost-button pagination-step"
         disabled={page === totalPages}
         onClick={() => onPageChange(page + 1)}
         type="button"
-        aria-label="Halaman berikutnya"
+        aria-label={t("berikutnya", "Halaman berikutnya")}
       >
-        <span className="pagination-step-label">Berikutnya</span>
+        <span className="pagination-step-label">{t("berikutnya", "Berikutnya")}</span>
         <ChevronRight size={16} />
       </button>
     </div>

@@ -1,6 +1,7 @@
 import { CalendarRange, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useLanguage } from "../../context/LanguageContext";
 import { monthKeyOf } from "../../lib/dateRange";
 import { formatMonth } from "../../lib/formatDate";
 import {
@@ -10,7 +11,8 @@ import {
   monthSpanRange,
 } from "../../lib/monthRangeUtil";
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+const MONTHS_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+const MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /**
  * Label tombolnya. Yang dipilih di sini selalu SATU bulan ("Agu 2026"); bentuk "Jun – Agu 2026"
@@ -54,6 +56,8 @@ function describeMonthRange(range) {
  * kalau orangnya menekan Perbarui tanpa mengubah apa pun.
  */
 export function MonthRangePicker({ value, onChange, label = "Periode bulanan" }) {
+  const { lang, t } = useLanguage();
+  const months = lang === "en" ? MONTHS_EN : MONTHS_ID;
   const [open, setOpen] = useState(false);
   const now = useMemo(() => new Date(), []);
   const thisMonth = monthKeyOf(now);
@@ -172,7 +176,7 @@ export function MonthRangePicker({ value, onChange, label = "Periode bulanan" })
                           onClick={() => setDraft(key)}
                           type="button"
                         >
-                          {MONTHS[index]}
+                          {months[index]}
                         </button>
                       );
                     })}
@@ -183,7 +187,7 @@ export function MonthRangePicker({ value, onChange, label = "Periode bulanan" })
               <div className="daterange-foot">
                 <div className="daterange-actions">
                   <button className="ghost-button" onClick={() => setOpen(false)} type="button">
-                    Batal
+                    {t("batal", "Batal")}
                   </button>
                   <button
                     className="primary-button"
@@ -191,7 +195,7 @@ export function MonthRangePicker({ value, onChange, label = "Periode bulanan" })
                     onClick={commit}
                     type="button"
                   >
-                    Perbarui
+                    {t("perbarui", "Perbarui")}
                   </button>
                 </div>
               </div>

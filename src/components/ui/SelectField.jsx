@@ -1,4 +1,6 @@
+import { useMemo } from "react";
 import Select from "react-select";
+import { useLanguage } from "../../context/LanguageContext";
 
 // Di atas dialog (40) dan tooltip kolom (60); nilainya sama dengan `.rs__menu-portal` di styles.css,
 // yang mengurus font-size/weight-nya. Konstanta, jadi tidak dibuat ulang tiap render.
@@ -52,7 +54,17 @@ export function SelectField({
   ariaLabel,
   className = "",
 }) {
-  const list = options || [];
+  const { t } = useLanguage();
+  const rawList = options || [];
+  const list = useMemo(() => {
+    return rawList.map((item) => {
+      if (item && typeof item.label === "string") {
+        return { ...item, label: t(item.label, item.label) };
+      }
+      return item;
+    });
+  }, [rawList, t]);
+
   const keyOf = (item) => (item == null ? "" : String(item));
   const selected = isMulti
     ? list.filter((option) => (value || []).map(keyOf).includes(keyOf(option.value)))
@@ -60,7 +72,7 @@ export function SelectField({
 
   return (
     <Select
-      aria-label={ariaLabel}
+      aria-label={typeof ariaLabel === "string" ? t(ariaLabel, ariaLabel) : ariaLabel}
       className={`rs-container ${className}`.trim()}
       classNamePrefix="rs"
       inputId={inputId || id}
@@ -74,12 +86,12 @@ export function SelectField({
       menuPlacement="auto"
       menuPortalTarget={typeof document === "undefined" ? null : document.body}
       menuPosition="fixed"
-      noOptionsMessage={() => noOptionsMessage}
+      noOptionsMessage={() => (typeof noOptionsMessage === "string" ? t(noOptionsMessage, noOptionsMessage) : noOptionsMessage)}
       onChange={(next) =>
         onChange(isMulti ? (next || []).map((option) => option.value) : next ? next.value : null)
       }
       options={list}
-      placeholder={placeholder}
+      placeholder={typeof placeholder === "string" ? t(placeholder, placeholder) : placeholder}
       required={required}
       styles={MENU_PORTAL_STYLES}
       unstyled

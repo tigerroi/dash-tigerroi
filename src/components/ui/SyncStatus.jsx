@@ -1,5 +1,6 @@
 import { CircleAlert, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useLanguage } from "../../context/LanguageContext";
 import { formatDateTime } from "../../lib/formatDate";
 import { syncProgress } from "../../lib/syncProgress";
 
@@ -9,6 +10,7 @@ const STALL_MS = 5 * 60 * 1000;
 const LATE_GRACE_MS = 6 * 60 * 1000;
 
 export function SyncStatus({ status, syncRuns = [] }) {
+  const { t } = useLanguage();
   const resolvedStatus = useMemo(() => {
     if (status?.nextRunAt && status?.lastRunAt) {
       return status;
@@ -97,7 +99,7 @@ export function SyncStatus({ status, syncRuns = [] }) {
     return (
       <span className="sync-status muted" title="Belum ada run yang tercatat.">
         <RefreshCw size={15} />
-        Sync otomatis belum berjalan
+        {t("sync otomatis belum berjalan", "Sync otomatis belum berjalan")}
       </span>
     );
   }
@@ -112,8 +114,8 @@ export function SyncStatus({ status, syncRuns = [] }) {
           title={`Dimulai ${formatDateTime(resolvedStatus.startedAt)} dan belum ditutup.`}
         >
           <CircleAlert size={15} />
-          Sync tergantung
-          <em>{formatCountdown(now - startedAt)} tanpa kabar</em>
+          {t("sync tergantung", "Sync tergantung")}{" "}
+          <em>{formatCountdown(now - startedAt)} {t("tanpa kabar", "tanpa kabar")}</em>
         </span>
       );
     }
@@ -137,7 +139,7 @@ export function SyncStatus({ status, syncRuns = [] }) {
           />
         ) : null}
         <RefreshCw size={15} className="icon-spin" />
-        <span className="sync-label">Syncing...</span>
+        <span className="sync-label">{t("sedang sync...", "Syncing...")}</span>
         {progress ? (
           <em>
             {progress.done}/{progress.total}
@@ -151,13 +153,13 @@ export function SyncStatus({ status, syncRuns = [] }) {
   const failed = resolvedStatus.lastOk === false;
   const due = Number.isFinite(nextRunAt) && remaining <= 0;
   const late = due && -remaining > LATE_GRACE_MS;
-  let label = "Jadwal tidak terbaca";
+  let label = t("jadwal tidak terbaca", "Jadwal tidak terbaca");
   if (Number.isFinite(nextRunAt) && remaining > 0) {
-    label = `Sync berikutnya dalam ${formatCountdown(remaining)}`;
+    label = `${t("sync berikutnya dalam", "Sync berikutnya dalam")} ${formatCountdown(remaining)}`;
   } else if (late) {
-    label = `Jadwal terlewat ${formatCountdown(-remaining)}`;
+    label = `${t("jadwal terlewat", "Jadwal terlewat")} ${formatCountdown(-remaining)}`;
   } else if (due) {
-    label = "Sync sebentar lagi";
+    label = t("sync sebentar lagi", "Sync sebentar lagi");
   }
 
   return (
@@ -171,7 +173,7 @@ export function SyncStatus({ status, syncRuns = [] }) {
     >
       {failed || late ? <CircleAlert size={15} /> : <RefreshCw size={15} />}
       {label}
-      {failed && <em>run terakhir gagal</em>}
+      {failed && <em>{t("run terakhir gagal", "run terakhir gagal")}</em>}
     </span>
   );
 }
