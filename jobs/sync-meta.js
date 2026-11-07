@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { fetchAccountCampaigns, fetchAccountOverview, fetchCampaignInsights } from "./meta-client.js";
 import { recordRoiSnapshot } from "./snapshot-helper.js";
+import { adjustDateByGamTimezone, getGamTimezoneForSubdomain } from "./timezone-cutoff.js";
 
 /**
  * Job Sinkronisasi Meta Ads ke Supabase TigerROI
@@ -115,16 +116,18 @@ export async function runSyncMeta() {
     if (startError)
       console.warn("Peringatan: Gagal mencatat start ke sync_runs:", startError.message);
 
-    // 3. Ambil daftar pemetaan sites & subdomains (termasuk campaign_codes untuk pencocokan otomatis)
-    const [{ data: sitesList, error: sitesError }, { data: subdomainsList }] = await Promise.all([
+    // 3. Ambil daftar pemetaan sites, subdomains, dan akun GAM (untuk zona waktu per domain)
+    const [{ data: sitesList, error: sitesError }, { data: subdomainsList }, { data: gamAccountsList }] = await Promise.all([
       supabase.from("sites").select("site_code, campaign_pattern, is_active").eq("is_active", true),
-      supabase.from("subdomains").select("id, name, site_code, pic, pic_user_id, campaign_codes"),
+      supabase.from("subdomains").select("id, name, parent_domain, site_code, pic, pic_user_id, campaign_codes"),
+      supabase.from("gam_accounts").select("name, network_code, report_time_zone"),
     ]);
 
     if (sitesError) throw new Error(`Gagal membaca tabel sites: ${sitesError.message}`);
     const sites = sitesList || [];
     const subdomains = subdomainsList || [];
-    console.log(`Memuat ${sites.length} site dan ${subdomains.length} subdomain aktif.`);
+    const gamAccounts = gamAccountsList || [];
+    console.log(`Memuat ${sites.length} site, ${subdomains.length} subdomain, dan ${gamAccounts.length} network GAM.`);
 
     // 4. Ambil daftar akun Meta aktif dari meta_accounts
     const { data: accountsList, error: accountsError } = await supabase
@@ -217,8 +220,9 @@ export async function runSyncMeta() {
           `    Saldo/Limit: ${overview.currency} ${overview.remainingBudget.toLocaleString()} | Spent: ${overview.amountSpent}`,
         );
 
-        // B. Ambil insights campaign (spend harian)
-        const insights = await fetchCampaignInsights(account.account_id, token, dateRange);
+        // B. Ambil insights campaign (spend harian & per jam)
+        // Opsi hourly: true mengaktifkan breakdown per jam agar spend sebelum cut-off GAM masuk ke hari sebelumnya
+        const insights = await fetchCampaignInsights(account.account_id, token, dateRange, { hourly: true });
         console.log(`    Ditemukan ${insights.length} baris insights campaign.`);
 
         let accountSpendToday = 0;
@@ -315,11 +319,29 @@ export async function runSyncMeta() {
             matchedSubName = defaultSub ? defaultSub.name : "";
           }
 
-          const aggKey = `${row.date}__${siteCode}__${matchedSubName}`;
+          // Pastikan domain utama tidak masuk sebagai subdomain
+          const ROOT_DOMAINS = new Set([
+            "tiktokmodapk.net",
+            "tacobellmenuu.us",
+            "ihopmenuwithprices.us",
+            "cmhhealths.com",
+            "uniqueinfo24.com",
+            "trayedit.com",
+          ]);
+          if (matchedSubName && ROOT_DOMAINS.has(matchedSubName.toLowerCase())) {
+            const fallbackSub = subdomains.find((s) => s.site_code === siteCode && !ROOT_DOMAINS.has(s.name.toLowerCase()));
+            matchedSubName = fallbackSub ? fallbackSub.name : "";
+          }
+
+          // Selaraskan tanggal spending Meta dengan zona waktu GAM masing-masing domain
+          const tzGam = getGamTimezoneForSubdomain(matchedSubName, subdomains, gamAccounts);
+          const targetDate = adjustDateByGamTimezone(row.date, row.hour, tzGam);
+
+          const aggKey = `${targetDate}__${siteCode}__${matchedSubName}`;
 
           if (!dailyMap.has(aggKey)) {
             dailyMap.set(aggKey, {
-              date: row.date,
+              date: targetDate,
               site_code: siteCode,
               subdomain: matchedSubName,
               source: "meta",
