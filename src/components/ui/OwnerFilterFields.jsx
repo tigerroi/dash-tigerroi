@@ -1,4 +1,5 @@
 import { SelectField, toSelectOptions } from "./SelectField";
+import { useLanguage } from "../../context/LanguageContext";
 
 /**
  * Tiga penyempit kepemilikan — advertiser, domain, subdomain — untuk dipakai di dalam FilterDialog.
@@ -22,27 +23,34 @@ export function OwnerFilterFields({
   subDomainOptions,
   formatSubDomain,
 }) {
+  const { t } = useLanguage();
+
+  const labelKey = advertiserLabel.toLowerCase();
+  const allAdvertiserLabel = advertiserLabel === "PIC"
+    ? t("semua pic", "Semua PIC")
+    : t(`semua ${labelKey}`, `Semua ${advertiserLabel}`);
+
   return (
     <>
       <div className="filter-dialog-field">
-        <span>{advertiserLabel}</span>
+        <span>{t(advertiserLabel, advertiserLabel)}</span>
         <SelectField
-          ariaLabel={advertiserLabel}
+          ariaLabel={t(advertiserLabel, advertiserLabel)}
           value={advertiser}
           onChange={(next) => {
             onAdvertiser(next);
             onSubDomain("");
           }}
           options={[
-            { value: "", label: `Semua ${advertiserLabel}` },
+            { value: "", label: allAdvertiserLabel },
             ...toSelectOptions(advertiserOptions),
           ]}
         />
       </div>
       <div className="filter-dialog-field">
-        <span>Domain</span>
+        <span>{t("domain", "Domain")}</span>
         <SelectField
-          ariaLabel="Domain"
+          ariaLabel={t("domain", "Domain")}
           value={domain}
           onChange={(next) => {
             onDomain(next);
@@ -50,17 +58,17 @@ export function OwnerFilterFields({
             // meniadakan menghasilkan panel kosong tanpa sebab yang terbaca.
             onSubDomain("");
           }}
-          options={[{ value: "", label: "Semua Domain" }, ...toSelectOptions(domainOptions)]}
+          options={[{ value: "", label: t("semua domain", "Semua Domain") }, ...toSelectOptions(domainOptions)]}
         />
       </div>
       <div className="filter-dialog-field">
-        <span>Subdomain</span>
+        <span>{t("subdomain", "Subdomain")}</span>
         <SelectField
-          ariaLabel="Subdomain"
+          ariaLabel={t("subdomain", "Subdomain")}
           value={subDomain}
           onChange={onSubDomain}
           options={[
-            { value: "", label: "Semua Subdomain" },
+            { value: "", label: t("semua subdomain", "Semua Subdomain") },
             ...toSelectOptions(subDomainOptions, formatSubDomain),
           ]}
         />

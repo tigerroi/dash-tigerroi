@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { useEffect, useId } from "react";
 import { createPortal } from "react-dom";
+import { useLanguage } from "../../context/LanguageContext";
 
 /**
  * Satu-satunya dialog modal di dashboard ini. Isi dialognya milik pemanggil; yang ditulis sekali di
@@ -28,6 +29,7 @@ export function Dialog({
   headClassName = "dialog-head",
   children,
 }) {
+  const { t } = useLanguage();
   const titleId = useId();
 
   useEffect(() => {
@@ -58,7 +60,7 @@ export function Dialog({
             </div>
             {onClose && (
               <button
-                aria-label="Tutup"
+                aria-label={t("tutup", "Tutup")}
                 className="ghost-button icon-button"
                 disabled={busy}
                 onClick={onClose}

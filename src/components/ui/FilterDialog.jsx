@@ -1,6 +1,7 @@
 import { SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
 import { Dialog } from "./Dialog";
+import { useLanguage } from "../../context/LanguageContext";
 
 /**
  * Kontrol filter sebuah panel, dilipat ke dalam dialog di balik satu ikon.
@@ -22,7 +23,12 @@ export function FilterDialog({
   onReset,
   children,
 }) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
+
+  const displayTitle = t(title, title);
+  const displayDescription = description ? t(description, description) : "";
+  const displayLabel = t(label, label);
 
   return (
     <>
@@ -32,13 +38,13 @@ export function FilterDialog({
         onClick={() => setOpen(true)}
         title={
           activeCount > 0
-            ? `${activeCount} filter sedang aktif. Klik untuk mengubahnya.`
-            : "Atur filter panel ini"
+            ? `${activeCount} ${t("filter sedang aktif. klik untuk mengubahnya.", "filter sedang aktif. Klik untuk mengubahnya.")}`
+            : t("atur filter panel ini", "Atur filter panel ini")
         }
         type="button"
       >
         <SlidersHorizontal size={15} />
-        <span>{label}</span>
+        <span>{displayLabel}</span>
         {activeCount > 0 && <span className="filter-trigger-count">{activeCount}</span>}
       </button>
 
@@ -47,8 +53,8 @@ export function FilterDialog({
           className="filter-dialog"
           headClassName="filter-dialog-head"
           onClose={() => setOpen(false)}
-          subtitle={description}
-          title={title}
+          subtitle={displayDescription}
+          title={displayTitle}
         >
           <div className="filter-dialog-body">{children}</div>
 
@@ -57,7 +63,7 @@ export function FilterDialog({
                 sering tidak melakukan apa-apa mengajari orang untuk tidak memercayainya. */}
             {onReset && activeCount > 0 ? (
               <button className="ghost-button" onClick={onReset} type="button">
-                Reset filter
+                {t("reset filter", "Reset filter")}
               </button>
             ) : (
               <span />
@@ -66,7 +72,7 @@ export function FilterDialog({
                 tidak ada apa pun yang menunggu dikonfirmasi. Tombol bernama "Terapkan" akan
                 menjanjikan sesuatu yang sudah terjadi sejak tadi. */}
             <button className="primary-button" onClick={() => setOpen(false)} type="button">
-              Selesai
+              {t("selesai", "Selesai")}
             </button>
           </footer>
         </Dialog>

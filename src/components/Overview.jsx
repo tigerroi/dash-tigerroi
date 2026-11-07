@@ -961,9 +961,9 @@ export function Overview({ store, navigate, tab, role, viewer }) {
               </div>
               <FilterDialog
                 activeCount={chartFilterCount}
-                description="Berlaku untuk SELURUH grafik di tab ini — yang total maupun yang per subdomain."
+                description={t("berlaku untuk seluruh grafik di tab ini — yang total maupun yang per subdomain.", "Berlaku untuk SELURUH grafik di tab ini — yang total maupun yang per subdomain.")}
                 onReset={resetChartFilters}
-                title="Filter grafik"
+                title={t("filter grafik", "Filter grafik")}
               >
                 {/* Paling atas, dan satu-satunya pemilih periode. Pintasan bulan yang dulu berdiri
                 di sini menulis ke kotak yang sama persis — dua kontrol untuk satu keadaan, dan yang
@@ -975,9 +975,9 @@ export function Overview({ store, navigate, tab, role, viewer }) {
                 untuk diasosiasikan. Pemilih yang sama dengan seluruh dashboard, menulis ke
                 {start, end} yang dibaca keempat grafik. */}
                 <div className="filter-dialog-field">
-                  <span>Rentang tanggal</span>
+                  <span>{t("rentang tanggal", "Rentang tanggal")}</span>
                   <DateRangePicker
-                    label="Rentang tanggal grafik"
+                    label={t("rentang tanggal grafik", "Rentang tanggal grafik")}
                     onChange={(range) => setDateRange({ start: range.from, end: range.to })}
                     value={{ from: dateRange.start, to: dateRange.end }}
                   />
@@ -1151,13 +1151,13 @@ export function Overview({ store, navigate, tab, role, viewer }) {
               filter={
                 <FilterDialog
                   activeCount={calendarFilterCount}
-                  description="Menyaring petak kalender DAN panel rincian di bawahnya. Periodenya dipilih lewat panah bulan di sebelah kiri, bukan di sini."
+                  description={t("menyaring petak kalender dan panel rincian di bawahnya. periodenya dipilih lewat panah bulan di sebelah kiri, bukan di sini.", "Menyaring petak kalender DAN panel rincian di bawahnya. Periodenya dipilih lewat panah bulan di sebelah kiri, bukan di sini.")}
                   onReset={() => {
                     setAdvertiser("");
                     setDomain("");
                     setSubDomain("");
                   }}
-                  title="Filter kalender"
+                  title={t("filter kalender", "Filter kalender")}
                 >
                   <OwnerFilterFields
                     advertiser={advertiser}
@@ -1218,19 +1218,19 @@ export function Overview({ store, navigate, tab, role, viewer }) {
               </button>
               <DateRangePicker
                 align="right"
-                label="Filter periode Laporan ROI Realtime"
+                label={t("filter periode laporan roi realtime", "Filter periode Laporan ROI Realtime")}
                 onChange={setRoiRange}
                 value={roiRange}
               />
               <FilterDialog
                 activeCount={(advertiser ? 1 : 0) + (domain ? 1 : 0) + (subDomain ? 1 : 0)}
-                description="Menyaring baris Laporan ROI Realtime. Periodenya dipilih lewat pemilih tanggal di sebelahnya."
+                description={t("menyaring baris laporan roi realtime. periodenya dipilih lewat pemilih tanggal di sebelahnya.", "Menyaring baris Laporan ROI Realtime. Periodenya dipilih lewat pemilih tanggal di sebelahnya.")}
                 onReset={() => {
                   setAdvertiser("");
                   setDomain("");
                   setSubDomain("");
                 }}
-                title="Filter Laporan ROI"
+                title={t("filter laporan roi", "Filter Laporan ROI")}
               >
                 <OwnerFilterFields
                   advertiser={advertiser}
