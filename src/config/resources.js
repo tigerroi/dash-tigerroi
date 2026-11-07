@@ -139,8 +139,8 @@ const GAM_DEFAULT_TIMEZONES = {
   "23342288590": "GMT+6",
 };
 
-export function formatGamTime(tzInput, date = new Date()) {
-  if (!tzInput || tzInput === "-") return "-";
+export function getGamTimeParts(tzInput, date = new Date()) {
+  if (!tzInput || tzInput === "-") return null;
   const str = String(tzInput).trim();
   const gmtMatch = str.match(/^(?:GMT|UTC)?([+-]\d+)(?::(\d+))?$/i);
   if (gmtMatch) {
@@ -153,7 +153,17 @@ export function formatGamTime(tzInput, date = new Date()) {
     const m = String(targetDate.getMinutes()).padStart(2, "0");
     const day = String(targetDate.getDate()).padStart(2, "0");
     const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-    return `${day} ${months[targetDate.getMonth()]}, ${h}:${m}`;
+    const month = months[targetDate.getMonth()];
+    return {
+      hours: h,
+      minutes: m,
+      time: `${h}:${m}`,
+      day,
+      month,
+      fullDate: `${day} ${month}`,
+      fullDateTime: `${day} ${month}, ${h}:${m}`,
+      diffDay: date.getDate() !== targetDate.getDate(),
+    };
   }
   try {
     const timePart = new Intl.DateTimeFormat("id-ID", {
@@ -167,10 +177,36 @@ export function formatGamTime(tzInput, date = new Date()) {
       day: "2-digit",
       month: "short",
     }).format(date);
-    return `${datePart}, ${timePart}`;
+    const localDayPart = new Intl.DateTimeFormat("id-ID", {
+      day: "2-digit",
+      month: "short",
+    }).format(date);
+    const formattedTime = timePart.replace(".", ":");
+    return {
+      hours: formattedTime.split(":")[0],
+      minutes: formattedTime.split(":")[1] || "00",
+      time: formattedTime,
+      fullDate: datePart,
+      fullDateTime: `${datePart}, ${formattedTime}`,
+      diffDay: datePart !== localDayPart,
+    };
   } catch {
-    return "-";
+    return null;
   }
+}
+
+export function formatGamTime(tzInput, date = new Date()) {
+  const parts = getGamTimeParts(tzInput, date);
+  if (!parts) return "-";
+  return parts.fullDateTime;
+}
+
+export function formatGamZoneWithTime(tzInput, date = new Date()) {
+  if (!tzInput || tzInput === "-") return "-";
+  const parts = getGamTimeParts(tzInput, date);
+  if (!parts) return tzInput;
+  const dateSuffix = parts.diffDay ? ` (${parts.fullDate})` : "";
+  return `${tzInput} · Jam ${parts.time}${dateSuffix}`;
 }
 
 export const resources = {
@@ -454,10 +490,11 @@ export const resources = {
           "-";
         const computedTime = formatGamTime(tz);
         const gamTime = computedTime !== "-" ? computedTime : (row.lastSyncTime || "-");
+        const reportTimeZone = formatGamZoneWithTime(tz);
         return {
           ...row,
           gamTime,
-          reportTimeZone: tz,
+          reportTimeZone,
         };
       });
     },
