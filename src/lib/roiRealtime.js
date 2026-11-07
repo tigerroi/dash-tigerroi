@@ -258,6 +258,33 @@ export function dedupeSnapshots(snapshots) {
   return [...byKey.values()];
 }
 
+export function isCampaignOff(row) {
+  if (!row) return true;
+  const spend = Number(row.spending ?? row.totalSpending ?? row.metaSpend ?? row.spend_idr ?? 0);
+  const earn = Number(row.earning ?? row.gamRevenue ?? row.revenue ?? row.raw_revenue ?? 0);
+  const clicks = Number(row.clicks || 0);
+  const impressions = Number(row.impressions || 0);
+
+  // Jika ada aktivitas (spend > 0, earning > 0, atau ada klik/impresi), maka campaign aktif
+  if (spend > 0 || earn > 0 || clicks > 0 || impressions > 0) {
+    return false;
+  }
+
+  // Jika baris memang membawa metrik belanja/pendapatan eksplisit dan keduanya bernilai 0
+  const hasExplicitMetrics =
+    row.spending !== undefined ||
+    row.meta_spend !== undefined ||
+    row.total_spending !== undefined ||
+    row.totalSpending !== undefined ||
+    row.spend_idr !== undefined ||
+    row.earning !== undefined ||
+    row.gam_revenue !== undefined ||
+    row.revenue !== undefined ||
+    row.raw_revenue !== undefined;
+
+  return hasExplicitMetrics && spend === 0 && earn === 0;
+}
+
 /**
  * Snapshot per sync, ditambah baris harian untuk hari-hari yang tidak punya snapshot.
  *
@@ -274,13 +301,18 @@ export function realtimeRoiRows(snapshots, dailyRows, domainsList = []) {
   const covered = new Set(dedupedSnaps.map(dayScopeOf));
   const rawRows = [...dedupedSnaps, ...daily.filter((row) => !covered.has(dayScopeOf(row)))];
 
-  // Saring keluar domain utama (root domain) agar tidak masuk ke Laporan ROI
+  // Saring keluar domain utama (root domain) dan baris ketika campaign sedang OFF (Rp 0 di semua metrik)
   const rows = rawRows.filter((row) => {
     const rawSub = cellText(row?.subDomain || row?.subdomain || row?.sub_domain || row?.site_code);
     const sub = canonicalSubDomain(rawSub) || rawSub;
     if (isRootDomain(sub, domainsList)) {
       return false;
     }
+
+    if (isCampaignOff(row)) {
+      return false;
+    }
+
     return true;
   });
 

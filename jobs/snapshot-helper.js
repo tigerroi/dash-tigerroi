@@ -86,12 +86,23 @@ export async function recordRoiSnapshot(supabase, targetDate) {
     "trayedit.com",
   ]);
 
-  // 3. Susun data snapshot baru (Hanya untuk subdomain iklan, abaikan domain utama)
+  // 3. Susun data snapshot baru (Hanya untuk subdomain iklan aktif, abaikan domain utama & campaign off)
   const validRows = currentRows.filter((row) => {
     const sub = String(row.sub_domain || row.subdomain || "").trim().toLowerCase();
     if (!sub || ROOT_DOMAINS.has(sub)) return false;
     const parts = sub.split(".").filter(Boolean);
     if (parts.length <= 2) return false; // Domain utama tanpa subdomain
+
+    const spending = Number(row.spending || row.meta_spend || row.spend_idr || 0);
+    const earning = Number(row.earning || row.gam_revenue || row.raw_revenue || 0);
+    const clicks = Number(row.clicks || 0);
+    const impressions = Number(row.impressions || 0);
+
+    // Jangan catat snapshot jika campaign OFF (tidak ada belanja dan tidak ada pendapatan sama sekali)
+    if (spending <= 0 && earning <= 0 && clicks <= 0 && impressions <= 0) {
+      return false;
+    }
+
     return true;
   });
 
@@ -152,8 +163,15 @@ export async function recordRoiSnapshot(supabase, targetDate) {
 
   console.log(`✅ [SNAPSHOT] Berhasil menyimpan ${snapshotRows.length} baris snapshot waktu ${currentTimeWib} WIB.`);
 
-  // 5. Pembersihan riwayat lama (retensi 60 hari agar riwayat bulan berjalan & bulan lalu tetap utuh)
+  // 5. Pembersihan snapshot kosong (campaign off) dan riwayat lama
   try {
+    // Bersihkan baris snapshot yang kosong melompong (campaign off / spending Rp 0 & earning Rp 0)
+    await supabase
+      .from("roi_snapshots")
+      .delete()
+      .eq("spending", 0)
+      .eq("earning", 0);
+
     const cutoffDate = new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10);
     const { error: pruneErr } = await supabase
       .from("roi_snapshots")
@@ -164,7 +182,7 @@ export async function recordRoiSnapshot(supabase, targetDate) {
       console.log(`🧹 [SNAPSHOT] Pembersihan riwayat snapshot sebelum ${cutoffDate} selesai.`);
     }
   } catch (err) {
-    console.warn(`⚠️ [SNAPSHOT] Gagal melakukan pruning snapshot lama: ${err.message}`);
+    console.warn(`⚠️ [SNAPSHOT] Gagal melakukan pruning snapshot: ${err.message}`);
   }
 }
 
