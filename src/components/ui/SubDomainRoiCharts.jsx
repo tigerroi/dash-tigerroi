@@ -11,6 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import { useChartPalette } from "../../hooks/useChartPalette";
+import { useLanguage } from "../../context/LanguageContext";
 import { formatRoiPercent } from "../../lib/adTax";
 import { seriesColor } from "../../lib/chartTheme";
 import { formatDayMonth } from "../../lib/formatDate";
@@ -53,6 +54,7 @@ function stampLabel(point) {
 
 /** Chip pemilih subdomain, dipakai kedua grafik. */
 function SubDomainChips({ series, selected, onToggle, onToggleAll, chipLabel = "Pilih subdomain:" }) {
+  const { t } = useLanguage();
   const chart = useChartPalette();
   const allNames = series.map((item) => item.name);
   const isAllSelected = allNames.length > 0 && allNames.every((name) => selected.includes(name));
@@ -73,17 +75,17 @@ function SubDomainChips({ series, selected, onToggle, onToggleAll, chipLabel = "
 
   return (
     <div className="subdomain-chips">
-      <span className="subdomain-chips-label">{chipLabel}</span>
+      <span className="subdomain-chips-label">{t(chipLabel, chipLabel)}</span>
       {series.length > 1 && (
         <button
           aria-pressed={isAllSelected}
           className={isAllSelected ? "subdomain-chip active" : "subdomain-chip"}
           onClick={handleToggleAll}
           style={isAllSelected ? { borderColor: "#10b981", color: "#10b981", fontWeight: 700 } : { fontWeight: 600 }}
-          title="Pilih atau batalkan semua sekaligus"
+          title={t("Pilih atau batalkan semua sekaligus")}
           type="button"
         >
-          Semua
+          {t("semua", "Semua")}
         </button>
       )}
       {series.map((item, index) => {
@@ -120,6 +122,7 @@ export function SubDomainRoiCurveChart({
   chipLabel,
   emptyMessage = "Belum ada subdomain yang dipilih — nyalakan chip di atas, atau pilih satu advertiser di filter grafik untuk menggambar seluruh subdomain miliknya.",
 }) {
+  const { t } = useLanguage();
   const chart = useChartPalette();
   const visible = series.filter((item) => selected.includes(item.name));
   const colorOf = (item) => seriesColor(chart, series.indexOf(item));
@@ -135,7 +138,7 @@ export function SubDomainRoiCurveChart({
       />
 
       {visible.length === 0 ? (
-        <EmptyMessage>{emptyMessage}</EmptyMessage>
+        <EmptyMessage>{t(emptyMessage, emptyMessage)}</EmptyMessage>
       ) : (
         <>
           <div className="line-chart-wrap">
@@ -227,6 +230,7 @@ function CurveTooltip({ active, payload, series, colorOf }) {
 }
 
 export function SubDomainRoiSpendChart({ bars, series, selected }) {
+  const { t } = useLanguage();
   const chart = useChartPalette();
   const colorByName = new Map(series.map((item, index) => [item.name, seriesColor(chart, index)]));
   const visible = bars.filter((item) => selected.includes(item.name));
@@ -234,8 +238,10 @@ export function SubDomainRoiSpendChart({ bars, series, selected }) {
   if (visible.length === 0) {
     return (
       <EmptyMessage>
-        Belum ada subdomain yang dipilih — nyalakan chip di grafik di atas, atau pilih satu
-        advertiser di filter grafik.
+        {t(
+          "belum ada subdomain yang dipilih — nyalakan chip di grafik di atas, atau pilih satu advertiser di filter grafik.",
+          "Belum ada subdomain yang dipilih — nyalakan chip di grafik di atas, atau pilih satu advertiser di filter grafik.",
+        )}
       </EmptyMessage>
     );
   }
@@ -295,11 +301,12 @@ export function SubDomainRoiSpendChart({ bars, series, selected }) {
 
       <div className="chart-legend">
         <span>
-          <i className="legend-dot" style={{ background: chart.axis }} /> Batang penuh: ROI (%)
+          <i className="legend-dot" style={{ background: chart.axis }} />{" "}
+          {t("batang penuh: roi (%)", "Batang penuh: ROI (%)")}
         </span>
         <span>
-          <i className="legend-dot" style={{ background: chart.axis, opacity: 0.42 }} /> Batang
-          redup: Total Spend (Rp, sumbu kanan)
+          <i className="legend-dot" style={{ background: chart.axis, opacity: 0.42 }} />{" "}
+          {t("batang redup: total spend (rp, sumbu kanan)", "Batang redup: Total Spend (Rp, sumbu kanan)")}
         </span>
       </div>
     </div>

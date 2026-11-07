@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { useChartPalette } from "../hooks/useChartPalette";
 import { useFillRate } from "../hooks/useFillRate";
+import { useLanguage } from "../context/LanguageContext";
 import { useUrlRange, useUrlState } from "../hooks/useUrlState";
 import { seriesColor } from "../lib/chartTheme";
 import {
@@ -82,6 +83,7 @@ const REQ_FIRST = { key: "req", direction: "desc" };
  * langsung. Bukan "Total rasio pengisian": `AD_REQUESTS` ditolak GAM bersama dimensi HOUR.
  */
 export function FillRate({ store }) {
+  const { lang, t } = useLanguage();
   const chart = useChartPalette();
   const [range, setRange] = useUrlRange("periode", wibTodayRange);
   const span = boundedRange(range);
@@ -89,6 +91,45 @@ export function FillRate({ store }) {
   const [advertiser, setAdvertiser] = useUrlState("advertiser", "");
   const [domain, setDomain] = useUrlState("domain", "");
   const [subDomain, setSubDomain] = useUrlState("subdomain", "");
+
+  const tableColumns = useMemo(
+    () => [
+      {
+        accessorKey: "subDomain",
+        header: t("situs", "Situs"),
+        cell: ({ row }) => (
+          <>
+            {row.original.subDomain}
+            {row.original.unregistered && (
+              <small className="cell-note muted">
+                {t("belum terdaftar di sub domains", "belum terdaftar di Sub Domains")}
+              </small>
+            )}
+          </>
+        ),
+      },
+      ["pic", "PIC"],
+      {
+        accessorKey: "req",
+        header: t(REQ_LABEL),
+        cell: ({ getValue }) => count(getValue()),
+        meta: { align: "right" },
+      },
+      {
+        accessorKey: "imp",
+        header: t(IMP_LABEL),
+        cell: ({ getValue }) => count(getValue()),
+        meta: { align: "right" },
+      },
+      {
+        accessorKey: "rate",
+        header: t(RATE_LABEL),
+        cell: ({ getValue }) => formatRate(getValue()),
+        meta: { align: "right" },
+      },
+    ],
+    [t],
+  );
 
   const owners = useMemo(
     () => fillRateOwners(subDomainOwnerIndex(store.subDomains, store.domains)),
@@ -150,8 +191,8 @@ export function FillRate({ store }) {
       <section className="panel">
         <div className="panel-header">
           <div>
-            <h2>Rasio Penayangan Ad Exchange per Jam</h2>
-            <StatusLine status={status} />
+            <h2>{t("rasio penayangan ad exchange per jam", "Rasio Penayangan Ad Exchange per Jam")}</h2>
+            <StatusLine status={status} t={t} />
           </div>
           <div className="header-actions">
             <DateRangePicker
@@ -164,13 +205,13 @@ export function FillRate({ store }) {
             />
             <FilterDialog
               activeCount={filterCount}
-              description="Menyaring ketiga grafik dan tabel di tab ini."
+              description={t("menyaring ketiga grafik dan tabel di tab ini.", "Menyaring ketiga grafik dan tabel di tab ini.")}
               onReset={() => {
                 setAdvertiser("");
                 setDomain("");
                 setSubDomain("");
               }}
-              title="Filter Rasio Penayangan"
+              title={t("filter rasio penayangan", "Filter Rasio Penayangan")}
             >
               <OwnerFilterFields
                 advertiser={advertiser}
@@ -189,12 +230,12 @@ export function FillRate({ store }) {
         {error ? (
           <EmptyMessage>Gagal membaca data: {error}</EmptyMessage>
         ) : loading ? (
-          <EmptyMessage>Memuat...</EmptyMessage>
+          <EmptyMessage>{t("memuat...", "Memuat...")}</EmptyMessage>
         ) : points.length === 0 ? (
-          <EmptyMessage>Belum ada data pada periode ini.</EmptyMessage>
+          <EmptyMessage>{t("belum ada data pada periode ini.", "Belum ada data pada periode ini.")}</EmptyMessage>
         ) : (
           <div className="line-chart-card">
-            <h3>{RATE_LABEL}</h3>
+            <h3>{t(RATE_LABEL, RATE_LABEL)}</h3>
             <div className="line-chart-wrap">
               <ResponsiveContainer width="100%" height={260}>
                 <RechartsLineChart data={rateData} margin={MARGIN}>
@@ -243,9 +284,9 @@ export function FillRate({ store }) {
                 </RechartsLineChart>
               </ResponsiveContainer>
             </div>
-            <SeriesLegend chart={chart} series={series} hasPartial={hasPartial} />
+            <SeriesLegend chart={chart} series={series} hasPartial={hasPartial} t={t} />
 
-            <h3>{REQ_LABEL}</h3>
+            <h3>{t(REQ_LABEL, REQ_LABEL)}</h3>
             <div className="line-chart-wrap">
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={rateData} margin={MARGIN}>
@@ -286,7 +327,7 @@ export function FillRate({ store }) {
             </div>
 
             <h3>
-              Gabungan: {REQ_LABEL} vs {RATE_LABEL}
+              {t("gabungan:", "Gabungan:")} {t(REQ_LABEL, REQ_LABEL)} vs {t(RATE_LABEL, RATE_LABEL)}
             </h3>
             <div className="line-chart-wrap">
               <ResponsiveContainer width="100%" height={280}>
@@ -322,7 +363,7 @@ export function FillRate({ store }) {
                   <Bar
                     yAxisId="req"
                     dataKey="totalReq"
-                    name={REQ_LABEL}
+                    name={t(REQ_LABEL, REQ_LABEL)}
                     fill={seriesColor(chart, 0)}
                     isAnimationActive={false}
                   >
@@ -333,7 +374,7 @@ export function FillRate({ store }) {
                   <Line
                     yAxisId="rate"
                     dataKey="totalRateSolid"
-                    name={RATE_LABEL}
+                    name={t(RATE_LABEL, RATE_LABEL)}
                     stroke={chart.roi}
                     strokeWidth={3}
                     dot={false}
@@ -357,14 +398,14 @@ export function FillRate({ store }) {
             <div className="chart-legend">
               <span>
                 <i className="legend-dot" style={{ background: seriesColor(chart, 0) }} />{" "}
-                {REQ_LABEL} (kiri)
+                {t(REQ_LABEL, REQ_LABEL)} ({t("kiri", "kiri")})
               </span>
               <span>
-                <i className="legend-dot roi" /> {RATE_LABEL} (kanan)
+                <i className="legend-dot roi" /> {t(RATE_LABEL, RATE_LABEL)} ({t("kanan", "kanan")})
               </span>
               {hasPartial && (
                 <span className="legend-running">
-                  <i className="legend-dash" /> Jam terakhir — belum lengkap
+                  <i className="legend-dash" /> {t("jam terakhir — belum lengkap", "Jam terakhir — belum lengkap")}
                 </span>
               )}
             </div>
@@ -375,13 +416,13 @@ export function FillRate({ store }) {
       <section className="panel">
         <div className="panel-header">
           <div>
-            <h2>Per situs</h2>
+            <h2>{t("per situs", "Per situs")}</h2>
           </div>
         </div>
         <DataTable
-          columns={TABLE_COLUMNS}
+          columns={tableColumns}
           defaultSort={REQ_FIRST}
-          emptyText="Belum ada data pada periode ini."
+          emptyText={t("belum ada data pada periode ini.", "Belum ada data pada periode ini.")}
           getRowId={(item) => item.subDomain}
           items={sites}
         />
@@ -391,8 +432,8 @@ export function FillRate({ store }) {
 }
 
 // Umur data: halaman yang menjanjikan realtime harus menyebut kapan terakhir ditarik.
-function StatusLine({ status }) {
-  if (!status?.lastRunAt) return <p>Belum pernah ditarik.</p>;
+function StatusLine({ status, t = (k, f) => f }) {
+  if (!status?.lastRunAt) return <p>{t("belum pernah ditarik.", "Belum pernah ditarik.")}</p>;
   const networks = Object.values(status.networks || {});
   const failed = networks.filter((item) => !item.ok).map((item) => item.name);
   const last = networks
@@ -401,14 +442,14 @@ function StatusLine({ status }) {
     .at(-1);
   return (
     <p>
-      Ditarik {formatDateTime(status.lastRunAt)} WIB
-      {last ? ` · jam terakhir ${last.slice(11)}:00 (belum lengkap)` : ""}
-      {failed.length ? ` · gagal ditarik: ${failed.join(", ")}` : ""}
+      {t("ditarik", "Ditarik")} {formatDateTime(status.lastRunAt)} WIB
+      {last ? ` · ${t("jam terakhir", "jam terakhir")} ${last.slice(11)}:00 ${t("(belum lengkap)", "(belum lengkap)")}` : ""}
+      {failed.length ? ` · ${t("gagal ditarik:", "gagal ditarik:")} ${failed.join(", ")}` : ""}
     </p>
   );
 }
 
-function SeriesLegend({ chart, series, hasPartial }) {
+function SeriesLegend({ chart, series, hasPartial, t = (k, f) => f }) {
   return (
     <div className="chart-legend">
       {series.map((item, index) => (
@@ -419,7 +460,7 @@ function SeriesLegend({ chart, series, hasPartial }) {
       ))}
       {hasPartial && (
         <span className="legend-running">
-          <i className="legend-dash" /> Jam terakhir — belum lengkap
+          <i className="legend-dash" /> {t("jam terakhir — belum lengkap", "Jam terakhir — belum lengkap")}
         </span>
       )}
     </div>

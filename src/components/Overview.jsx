@@ -1001,13 +1001,13 @@ export function Overview({ store, navigate, tab, role, viewer }) {
           <section className="panel">
             <div className="panel-header">
               <div>
-                <h2>Pendapatan vs Pengeluaran vs Profit</h2>
+                <h2>{t("pendapatan vs pengeluaran vs profit", "Pendapatan vs Pengeluaran vs Profit")}</h2>
               </div>
             </div>
             {financialsData.length > 0 ? (
               <LineChart data={financialsData} hourly={isHourlyFinancials} />
             ) : (
-              <EmptyMessage>Tidak ada data grafik pada range tanggal ini.</EmptyMessage>
+              <EmptyMessage>{t("tidak ada data grafik pada range tanggal ini.", "Tidak ada data grafik pada range tanggal ini.")}</EmptyMessage>
             )}
           </section>
 
@@ -1016,13 +1016,13 @@ export function Overview({ store, navigate, tab, role, viewer }) {
           <section className="panel">
             <div className="panel-header">
               <div>
-                <h2>Kurva ROI (%)</h2>
+                <h2>{t("kurva roi (%)", "Kurva ROI (%)")}</h2>
               </div>
             </div>
             {financialsData.length > 0 ? (
               <RoiCurveChart data={financialsData} hourly={isHourlyFinancials} />
             ) : (
-              <EmptyMessage>Tidak ada data grafik pada range tanggal ini.</EmptyMessage>
+              <EmptyMessage>{t("tidak ada data grafik pada range tanggal ini.", "Tidak ada data grafik pada range tanggal ini.")}</EmptyMessage>
             )}
           </section>
 
@@ -1039,13 +1039,13 @@ export function Overview({ store, navigate, tab, role, viewer }) {
           <section className="panel">
             <div className="panel-header">
               <div>
-                <h2>Kurva ROI per Advertiser</h2>
+                <h2>{t("kurva roi per advertiser", "Kurva ROI per Advertiser")}</h2>
               </div>
             </div>
             {advertiserSeries.series.length > 0 ? (
               <SubDomainRoiCurveChart
-                chipLabel="Pilih advertiser:"
-                emptyMessage="Belum ada advertiser yang dipilih — nyalakan chip di atas."
+                chipLabel={t("pilih advertiser:", "Pilih advertiser:")}
+                emptyMessage={t("belum ada advertiser yang dipilih — nyalakan chip di atas.", "Belum ada advertiser yang dipilih — nyalakan chip di atas.")}
                 onToggle={toggleAdvertiserSeries}
                 onToggleAll={toggleAllAdvertisers}
                 points={advertiserSeries.points}
@@ -1055,8 +1055,8 @@ export function Overview({ store, navigate, tab, role, viewer }) {
             ) : (
               <EmptyMessage>
                 {chartFilterCount > 0
-                  ? "Tidak ada advertiser yang cocok dengan filter ini pada periode tersebut."
-                  : "Belum ada baris ROI per advertiser pada periode ini."}
+                  ? t("tidak ada advertiser yang cocok dengan filter ini pada periode tersebut.", "Tidak ada advertiser yang cocok dengan filter ini pada periode tersebut.")
+                  : t("belum ada baris roi per advertiser pada periode ini.", "Belum ada baris ROI per advertiser pada periode ini.")}
               </EmptyMessage>
             )}
           </section>
@@ -1064,7 +1064,7 @@ export function Overview({ store, navigate, tab, role, viewer }) {
           <section className="panel">
             <div className="panel-header">
               <div>
-                <h2>Kurva ROI per Subdomain</h2>
+                <h2>{t("kurva roi per subdomain", "Kurva ROI per Subdomain")}</h2>
               </div>
             </div>
             {subDomainSeries.series.length > 0 ? (
@@ -1078,8 +1078,8 @@ export function Overview({ store, navigate, tab, role, viewer }) {
             ) : (
               <EmptyMessage>
                 {chartFilterCount > 0
-                  ? "Tidak ada subdomain yang cocok dengan filter ini pada periode tersebut."
-                  : "Belum ada baris ROI per subdomain pada periode ini."}
+                  ? t("tidak ada subdomain yang cocok dengan filter ini pada periode tersebut.", "Tidak ada subdomain yang cocok dengan filter ini pada periode tersebut.")
+                  : t("belum ada baris roi per subdomain pada periode ini.", "Belum ada baris ROI per subdomain pada periode ini.")}
               </EmptyMessage>
             )}
           </section>
@@ -1091,11 +1091,11 @@ export function Overview({ store, navigate, tab, role, viewer }) {
                 keadaan pada sync terakhir tiap subdomain — dan baris snapshot kumulatif sejak
                 tengah malam, jadi "pukul 15:06" adalah seluruh hari sampai pukul itu. */}
                 <h2>
-                  ROI vs Total Spend
+                  {t("roi vs total spend", "ROI vs Total Spend")}
                   {subDomainSeries.latestStamp
-                    ? ` (pukul ${subDomainSeries.latestStamp.slice(11)})`
+                    ? ` (${t("pukul", "pukul")} ${subDomainSeries.latestStamp.slice(11)})`
                     : ""}{" "}
-                  — perbandingan antar subdomain
+                  — {t("perbandingan antar subdomain", "perbandingan antar subdomain")}
                 </h2>
               </div>
             </div>

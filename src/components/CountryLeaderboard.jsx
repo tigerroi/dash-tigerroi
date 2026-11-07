@@ -551,7 +551,9 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
           <h3 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0 }}>{t("klasemen negara", "Klasemen negara")}</h3>
           {filterThresholdActive && hiddenCount > 0 && (
             <p className="muted-line" style={{ marginTop: "0.2rem", fontSize: "0.8rem", color: "#71717a" }}>
-              {hiddenCount} {t("negara dengan Total Spend di bawah Rp 100.000 disembunyikan.", "negara dengan Total Spend di bawah Rp 100.000 disembunyikan.")}
+              {lang === "en"
+                ? `${hiddenCount} countries with Total Spend below Rp 100,000 are hidden.`
+                : `${hiddenCount} negara dengan Total Spend di bawah Rp 100.000 disembunyikan.`}
             </p>
           )}
         </div>
