@@ -144,7 +144,14 @@ export function DashboardShell({
             {expanded ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
             <span>{t("nav.collapse", "Collapse")}</span>
           </button>
-          <button className="logout-button" onClick={onLogout} type="button">
+          <button
+            className="logout-button"
+            onClick={() => {
+              setMobileOpen(false);
+              onLogout();
+            }}
+            type="button"
+          >
             <LogOut size={16} />
             <span>{t("nav.logout", "Logout")}</span>
           </button>
@@ -207,6 +214,15 @@ export function DashboardShell({
             <div className="user-pill">
               {user.name} / {user.role}
             </div>
+            <button
+              className="topbar-logout-button"
+              onClick={onLogout}
+              title={t("nav.logout", "Logout")}
+              aria-label="Logout"
+              type="button"
+            >
+              <LogOut size={16} />
+            </button>
           </div>
         </header>
         <main className="content">

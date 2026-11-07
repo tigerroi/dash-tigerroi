@@ -775,6 +775,29 @@ button:disabled {
     border-color 0.15s ease;
 }
 
+.topbar-logout-button {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--destructive);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.topbar-logout-button:hover {
+  background: var(--danger-bg);
+  border-color: var(--destructive);
+  color: var(--danger-fg);
+}
+
 .theme-toggle:hover {
   border-color: var(--border-strong);
   color: var(--foreground);
@@ -4252,15 +4275,41 @@ button.country-breakdown-badge:focus-visible {
 
   .sidebar {
     position: fixed;
-    z-index: 20;
+    z-index: 50;
     inset: 0 auto 0 0;
     width: min(86vw, 300px);
+    height: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    display: flex;
+    flex-direction: column;
     transform: translateX(-105%);
     transition: transform 180ms ease;
+    box-shadow: var(--shadow-dialog);
   }
 
   .sidebar.open {
     transform: translateX(0);
+  }
+
+  .sidebar nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebar-footer {
+    flex-shrink: 0;
+    padding: 10px 12px calc(14px + env(safe-area-inset-bottom, 0px));
+    background: var(--background);
+    border-top: 1px solid var(--border);
+  }
+
+  .sidebar-footer .logout-button {
+    height: 40px;
+    font-size: 14px;
+    font-weight: 600;
   }
 
   .sidebar-collapsed .brand-text,
@@ -4282,7 +4331,7 @@ button.country-breakdown-badge:focus-visible {
     display: block;
     position: fixed;
     inset: 0;
-    z-index: 15;
+    z-index: 45;
     border: 0;
     background: var(--backdrop-soft);
   }
