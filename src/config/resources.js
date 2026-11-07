@@ -121,21 +121,57 @@ const monthValue = (value) => {
 const today = () => toDateKey(new Date());
 
 // Zona waktu bawaan untuk masing-masing network GAM yang umum
-// Digunakan saat sync belum sempat mengisi kolom report_time_zone
+// Mengikuti zona waktu resmi GAM yang telah diset di akun:
+// cmhhealths.com: GMT+1, trayedit.com: GMT+6, tiktokmodapk.net: GMT+5,
+// tacobellmenuu.us: GMT+5, ihopmenuwithprices.us: GMT-3, uniqueinfo24.com: GMT+6
 const GAM_DEFAULT_TIMEZONES = {
-  "trayedit.com": "America/New_York",
-  "tiktokmodapk.net": "America/New_York",
-  "ihopmenuwithprices.us": "America/New_York",
-  "tacobellmenuu.us": "Asia/Kolkata",
-  "cmhhealths.com": "America/New_York",
-  "uniqueinfo24.com": "America/New_York",
-  "23344333667": "America/New_York",
-  "23367555867": "America/New_York",
-  "23380486168": "Asia/Kolkata",
-  "23340206616": "America/New_York",
-  "23350466753": "America/New_York",
-  "23342288590": "America/New_York",
+  "cmhhealths.com": "GMT+1",
+  "trayedit.com": "GMT+6",
+  "tiktokmodapk.net": "GMT+5",
+  "tacobellmenuu.us": "GMT+5",
+  "ihopmenuwithprices.us": "GMT-3",
+  "uniqueinfo24.com": "GMT+6",
+  "23350466753": "GMT+1",
+  "23344333667": "GMT+6",
+  "23367555867": "GMT+5",
+  "23380486168": "GMT+5",
+  "23340206616": "GMT-3",
+  "23342288590": "GMT+6",
 };
+
+export function formatGamTime(tzInput, date = new Date()) {
+  if (!tzInput || tzInput === "-") return "-";
+  const str = String(tzInput).trim();
+  const gmtMatch = str.match(/^(?:GMT|UTC)?([+-]\d+)(?::(\d+))?$/i);
+  if (gmtMatch) {
+    const hours = parseInt(gmtMatch[1], 10);
+    const mins = gmtMatch[2] ? parseInt(gmtMatch[2], 10) : 0;
+    const offsetMs = (hours * 60 + (hours < 0 ? -mins : mins)) * 60 * 1000;
+    const utcMs = date.getTime() + date.getTimezoneOffset() * 60 * 1000;
+    const targetDate = new Date(utcMs + offsetMs);
+    const h = String(targetDate.getHours()).padStart(2, "0");
+    const m = String(targetDate.getMinutes()).padStart(2, "0");
+    const day = String(targetDate.getDate()).padStart(2, "0");
+    const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    return `${day} ${months[targetDate.getMonth()]}, ${h}:${m}`;
+  }
+  try {
+    const timePart = new Intl.DateTimeFormat("id-ID", {
+      timeZone: str,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(date);
+    const datePart = new Intl.DateTimeFormat("id-ID", {
+      timeZone: str,
+      day: "2-digit",
+      month: "short",
+    }).format(date);
+    return `${datePart}, ${timePart}`;
+  } catch {
+    return "-";
+  }
+}
 
 export const resources = {
   users: {
@@ -408,37 +444,20 @@ export const resources = {
     derive: (items, store) => {
       const balanced = accountBalanceRows(items, store?.adsenseAccounts, "AdSense");
       return balanced.map((row) => {
+        const domainName = String(row.name || "").trim().toLowerCase();
+        const netCode = String(row.networkCode || "").trim();
         const tz =
           row.reportTimeZone ||
           row.timeZone ||
-          GAM_DEFAULT_TIMEZONES[row.name] ||
-          GAM_DEFAULT_TIMEZONES[row.networkCode];
-        let gamTime = "-";
-        if (tz) {
-          try {
-            const now = new Date();
-            const timePart = new Intl.DateTimeFormat("id-ID", {
-              timeZone: tz,
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-            }).format(now);
-            const datePart = new Intl.DateTimeFormat("id-ID", {
-              timeZone: tz,
-              day: "2-digit",
-              month: "short",
-            }).format(now);
-            gamTime = `${datePart}, ${timePart}`;
-          } catch {
-            gamTime = row.lastSyncTime || "-";
-          }
-        } else if (row.lastSyncTime) {
-          gamTime = row.lastSyncTime;
-        }
+          GAM_DEFAULT_TIMEZONES[domainName] ||
+          GAM_DEFAULT_TIMEZONES[netCode] ||
+          "-";
+        const computedTime = formatGamTime(tz);
+        const gamTime = computedTime !== "-" ? computedTime : (row.lastSyncTime || "-");
         return {
           ...row,
           gamTime,
-          reportTimeZone: tz || "-",
+          reportTimeZone: tz,
         };
       });
     },

@@ -69,6 +69,24 @@ const GAM_FX_RATES = {
   "23342288590": 18155.28, // UniqueInfo24 (USD)
 };
 
+// Zona waktu resmi untuk masing-masing network Google Ad Manager:
+// cmhhealths.com: GMT+1, trayedit.com: GMT+6, tiktokmodapk.net: GMT+5,
+// tacobellmenuu.us: GMT+5, ihopmenuwithprices.us: GMT-3, uniqueinfo24.com: GMT+6
+const GAM_PRESET_TIMEZONES = {
+  "cmhhealths.com": "GMT+1",
+  "trayedit.com": "GMT+6",
+  "tiktokmodapk.net": "GMT+5",
+  "tacobellmenuu.us": "GMT+5",
+  "ihopmenuwithprices.us": "GMT-3",
+  "uniqueinfo24.com": "GMT+6",
+  "23350466753": "GMT+1",
+  "23344333667": "GMT+6",
+  "23367555867": "GMT+5",
+  "23380486168": "GMT+5",
+  "23340206616": "GMT-3",
+  "23342288590": "GMT+6",
+};
+
 function formatIsoDate(d) {
   if (!d) return "";
   const s = String(d).replace(/\D/g, "");
@@ -341,26 +359,57 @@ export async function runSyncGam() {
           }
         }
 
-        // Tarik info jaringan (termasuk zona waktu resmi dari GAM)
-        let networkTimeZone = "America/New_York";
-        try {
-          const netInfo = await getGamNetwork(net.networkCode, accessToken);
-          if (netInfo?.timeZone) {
-            networkTimeZone = netInfo.timeZone;
-            console.log(`    Zona Waktu Network GAM: ${networkTimeZone}`);
+        // Tentukan zona waktu GAM untuk network ini (prioritas: setelan database -> preset domain -> Google API)
+        const domainKey = String(net.domain || "").toLowerCase().trim();
+        const codeKey = String(net.networkCode || "").trim();
+        const existingAcc = (gamAccountsList || []).find(
+          (a) =>
+            String(a.network_code || "").trim() === codeKey ||
+            String(a.name || "").toLowerCase().trim() === domainKey,
+        );
+        let networkTimeZone =
+          existingAcc?.report_time_zone ||
+          GAM_PRESET_TIMEZONES[domainKey] ||
+          GAM_PRESET_TIMEZONES[codeKey];
+
+        if (!networkTimeZone) {
+          try {
+            const netInfo = await getGamNetwork(net.networkCode, accessToken);
+            if (netInfo?.timeZone) {
+              networkTimeZone = netInfo.timeZone;
+              console.log(`    Zona Waktu Network GAM: ${networkTimeZone}`);
+            }
+          } catch (tzErr) {
+            console.warn(`    ⚠️ Gagal membaca zona waktu GAM (${net.domain}): ${tzErr.message}`);
           }
-        } catch (tzErr) {
-          console.warn(`    ⚠️ Gagal membaca zona waktu GAM (${net.domain}): ${tzErr.message}`);
         }
+        if (!networkTimeZone) networkTimeZone = "GMT+0";
 
         // Hitung waktu lokal saat ini di zona waktu GAM tersebut
         const now = new Date();
-        const gamLocalTime = new Intl.DateTimeFormat("en-GB", {
-          timeZone: networkTimeZone,
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        }).format(now);
+        let gamLocalTime = "";
+        const gmtMatch = String(networkTimeZone).trim().match(/^(?:GMT|UTC)?([+-]\d+)(?::(\d+))?$/i);
+        if (gmtMatch) {
+          const hours = parseInt(gmtMatch[1], 10);
+          const mins = gmtMatch[2] ? parseInt(gmtMatch[2], 10) : 0;
+          const offsetMs = (hours * 60 + (hours < 0 ? -mins : mins)) * 60 * 1000;
+          const utcMs = now.getTime() + now.getTimezoneOffset() * 60 * 1000;
+          const targetDate = new Date(utcMs + offsetMs);
+          const h = String(targetDate.getHours()).padStart(2, "0");
+          const m = String(targetDate.getMinutes()).padStart(2, "0");
+          gamLocalTime = `${h}:${m}`;
+        } else {
+          try {
+            gamLocalTime = new Intl.DateTimeFormat("en-GB", {
+              timeZone: networkTimeZone,
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            }).format(now);
+          } catch {
+            gamLocalTime = "";
+          }
+        }
 
         // Hitung total pendapatan dan tanggal laporan terbaru untuk tabel gam_accounts
         let netTotalRev = 0;
