@@ -120,6 +120,23 @@ const monthValue = (value) => {
 // menginap semalaman tidak menawarkan tanggal kemarin.
 const today = () => toDateKey(new Date());
 
+// Zona waktu bawaan untuk masing-masing network GAM yang umum
+// Digunakan saat sync belum sempat mengisi kolom report_time_zone
+const GAM_DEFAULT_TIMEZONES = {
+  "trayedit.com": "America/New_York",
+  "tiktokmodapk.net": "America/New_York",
+  "ihopmenuwithprices.us": "America/New_York",
+  "tacobellmenuu.us": "Asia/Kolkata",
+  "cmhhealths.com": "America/New_York",
+  "uniqueinfo24.com": "America/New_York",
+  "23344333667": "America/New_York",
+  "23367555867": "America/New_York",
+  "23380486168": "Asia/Kolkata",
+  "23340206616": "America/New_York",
+  "23350466753": "America/New_York",
+  "23342288590": "America/New_York",
+};
+
 export const resources = {
   users: {
     title: "Team",
@@ -388,7 +405,43 @@ export const resources = {
     syncField: "syncStatus",
     // Kolom "Saldo Kembar": publisher yang barisnya juga berdiri di halaman AdSense. Diturunkan,
     // tidak disimpan — lihat src/lib/accountBalance.js.
-    derive: (items, store) => accountBalanceRows(items, store?.adsenseAccounts, "AdSense"),
+    derive: (items, store) => {
+      const balanced = accountBalanceRows(items, store?.adsenseAccounts, "AdSense");
+      return balanced.map((row) => {
+        const tz =
+          row.reportTimeZone ||
+          row.timeZone ||
+          GAM_DEFAULT_TIMEZONES[row.name] ||
+          GAM_DEFAULT_TIMEZONES[row.networkCode];
+        let gamTime = "-";
+        if (tz) {
+          try {
+            const now = new Date();
+            const timePart = new Intl.DateTimeFormat("id-ID", {
+              timeZone: tz,
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            }).format(now);
+            const datePart = new Intl.DateTimeFormat("id-ID", {
+              timeZone: tz,
+              day: "2-digit",
+              month: "short",
+            }).format(now);
+            gamTime = `${datePart}, ${timePart}`;
+          } catch {
+            gamTime = row.lastSyncTime || "-";
+          }
+        } else if (row.lastSyncTime) {
+          gamTime = row.lastSyncTime;
+        }
+        return {
+          ...row,
+          gamTime,
+          reportTimeZone: tz || "-",
+        };
+      });
+    },
     columns: [
       ["name", "Nama Domain"],
       ["publisherId", "ID Publisher"],
@@ -402,6 +455,8 @@ export const resources = {
       ["syncStatus", "Status Sync"],
       ["syncEarning", "Earning (Sync)"],
       ["lastSyncReportDate", "Tgl Laporan"],
+      ["reportTimeZone", "Zona Waktu GAM"],
+      ["gamTime", "Waktu GAM"],
       ["emailAkun", "Email Akun"],
       ["passwordAkun", "Pass Akun"],
       ["hargaBeli", "Harga Beli"],
@@ -511,6 +566,16 @@ export const resources = {
       { name: "saldo", label: "Saldo (Rp)", type: "currency" },
       { name: "namaRekening", label: "Nama Rekening" },
       { name: "noRekening", label: "No Rekening" },
+      {
+        name: "reportTimeZone",
+        label: "Zona Waktu GAM",
+        compute: (values) => values.reportTimeZone || "",
+      },
+      {
+        name: "lastSyncTime",
+        label: "Waktu Terakhir Sinkronisasi",
+        compute: (values) => values.lastSyncTime || "",
+      },
       // Sepola `syncDisabled` di Ad Accounts: akun yang ditutup Google berhenti ditanya tiap run
       // (dan berhenti gagal terus), kolom earning/status/saldonya membeku di nilai terakhir.
       {
@@ -619,6 +684,16 @@ export const resources = {
       { name: "saldo", label: "Saldo (Rp)", type: "currency" },
       { name: "namaRekening", label: "Nama Rekening" },
       { name: "noRekening", label: "No Rekening" },
+      {
+        name: "reportTimeZone",
+        label: "Zona Waktu GAM",
+        compute: (values) => values.reportTimeZone || "",
+      },
+      {
+        name: "lastSyncTime",
+        label: "Waktu Terakhir Sinkronisasi",
+        compute: (values) => values.lastSyncTime || "",
+      },
       // Sepola `syncDisabled` di Ad Accounts: akun yang ditutup Google berhenti ditanya tiap run
       // (dan berhenti gagal terus), kolom earning/status/saldonya membeku di nilai terakhir.
       {

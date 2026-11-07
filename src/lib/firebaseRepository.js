@@ -122,6 +122,7 @@ export function formatGamAccountPayload(values = {}) {
   delete payload.google_credential;
   delete payload.status_auto;
   delete payload.status_detail;
+  delete payload.gam_time;
 
   if (payload.network_code !== undefined && payload.network_code !== null) {
     payload.network_code = String(payload.network_code).trim();

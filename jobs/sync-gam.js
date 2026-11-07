@@ -5,6 +5,7 @@ import {
   fetchGamDailyRevenue,
   fetchGamHourlyFillRate,
   fetchGamHourlyRevenue,
+  getGamNetwork,
   getGoogleServiceAccountToken,
 } from "./gam-client.js";
 import { recordHourlyGamSnapshots, recordRoiSnapshot } from "./snapshot-helper.js";
@@ -48,12 +49,14 @@ loadEnv();
 const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/+$/, "");
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
-// Daftar 4 Network GAM beserta domain utamanya
+// Daftar 6 Network GAM beserta domain utamanya
 const GAM_NETWORKS = [
   { domain: "trayedit.com", networkCode: "23344333667", defaultSiteCode: "tray-decor" },
   { domain: "tiktokmodapk.net", networkCode: "23367555867", defaultSiteCode: "tiktok-mod" },
   { domain: "tacobellmenuu.us", networkCode: "23380486168", defaultSiteCode: "taco-fries" },
   { domain: "ihopmenuwithprices.us", networkCode: "23340206616", defaultSiteCode: "ihop-menu" },
+  { domain: "cmhhealths.com", networkCode: "23350466753", defaultSiteCode: "cmhhealths" },
+  { domain: "uniqueinfo24.com", networkCode: "23342288590", defaultSiteCode: "uniqueinfo24" },
 ];
 
 // Kurs resmi konversi mata uang GAM ke IDR
@@ -62,6 +65,8 @@ const GAM_FX_RATES = {
   "23344333667": 18155.28, // Trayedit (USD)
   "23367555867": 18155.28, // TikTok Mod (USD)
   "23340206616": 18155.28, // IHOP (USD)
+  "23350466753": 18155.28, // CMH Healths (USD)
+  "23342288590": 18155.28, // UniqueInfo24 (USD)
 };
 
 function formatIsoDate(d) {
@@ -336,6 +341,27 @@ export async function runSyncGam() {
           }
         }
 
+        // Tarik info jaringan (termasuk zona waktu resmi dari GAM)
+        let networkTimeZone = "America/New_York";
+        try {
+          const netInfo = await getGamNetwork(net.networkCode, accessToken);
+          if (netInfo?.timeZone) {
+            networkTimeZone = netInfo.timeZone;
+            console.log(`    Zona Waktu Network GAM: ${networkTimeZone}`);
+          }
+        } catch (tzErr) {
+          console.warn(`    ⚠️ Gagal membaca zona waktu GAM (${net.domain}): ${tzErr.message}`);
+        }
+
+        // Hitung waktu lokal saat ini di zona waktu GAM tersebut
+        const now = new Date();
+        const gamLocalTime = new Intl.DateTimeFormat("en-GB", {
+          timeZone: networkTimeZone,
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        }).format(now);
+
         // Hitung total pendapatan dan tanggal laporan terbaru untuk tabel gam_accounts
         let netTotalRev = 0;
         let netLatestDate = "";
@@ -358,11 +384,15 @@ export async function runSyncGam() {
             status_detail: null,
             sync_earning: formattedEarning,
             last_sync_report_date: cleanReportDate,
+            report_time_zone: networkTimeZone,
+            last_sync_time: gamLocalTime,
             updated_at: new Date().toISOString(),
           })
           .eq("network_code", net.networkCode);
 
-        console.log(`    ✅ Updated gam_accounts (${net.domain}): ${formattedEarning}, Tgl: ${cleanReportDate}`);
+        console.log(
+          `    ✅ Updated gam_accounts (${net.domain}): ${formattedEarning}, Tgl: ${cleanReportDate}, Waktu GAM: ${gamLocalTime} (${networkTimeZone})`,
+        );
 
         // 5b. Tarik Laporan Rasio Penayangan (Fill Rate) per jam dari GAM
         console.log(`    --> Menarik Laporan Rasio Penayangan (Fill Rate) per jam...`);
