@@ -1067,16 +1067,24 @@ function buildProfileFromStore(user, store) {
   // Sinkronisasi Breakdown ROI per Negara dari tabel Supabase country_roi
   const userCountryRoiRows = rowsForSubDomains(toArray(store.countryRoi), ownedKeys);
 
-  // Peta total pendapatan GAM per subdomain dan tanggal dari laporan resmi GAM
+  // Peta total pendapatan GAM dan pengeluaran Meta per subdomain dan tanggal
   const gamRevBySubDate = new Map();
+  const metaSpendBySubDate = new Map();
   for (const r of allProfileRoiReports) {
     const rawSub = String(r.subDomain || r.subdomain || r.sub_domain || r.siteCode || r.site_code || "").trim().toLowerCase();
     const d = String(r.date || "").slice(0, 10);
     const rev = Number(r.earning || r.gamRevenue || r.gam_revenue || r.revenue || r.raw_revenue || 0);
+    const sp = Number(r.spend || r.metaSpend || r.meta_spend || r.spending || 0);
     if (rawSub && rev > 0) {
       gamRevBySubDate.set(`${d}__${rawSub}`, rev);
       if (rawSub.includes(".")) {
         gamRevBySubDate.set(`${d}__${rawSub.split(".")[0]}`, rev);
+      }
+    }
+    if (rawSub && sp > 0) {
+      metaSpendBySubDate.set(`${d}__${rawSub}`, sp);
+      if (rawSub.includes(".")) {
+        metaSpendBySubDate.set(`${d}__${rawSub.split(".")[0]}`, sp);
       }
     }
   }
@@ -1105,14 +1113,29 @@ function buildProfileFromStore(user, store) {
     const gKey = `${d}__${slug}`;
     const gt = groupTotals.get(gKey) || { clicks: 0, impressions: 0, spending: 0, earning: 0 };
     const gamRev = gamRevBySubDate.get(gKey) || gamRevBySubDate.get(`${d}__${rawSub}`) || 0;
+    const metaSpend = metaSpendBySubDate.get(gKey) || metaSpendBySubDate.get(`${d}__${rawSub}`) || 0;
 
-    const spending = Number(row.spend ?? row.spending ?? 0);
+    let spending = Number(row.spend ?? row.spending ?? 0);
     const clicks = Number(row.clicks || 0);
     const impressions = Number(row.impressions || 0);
     let earning = Number(row.earning ?? row.revenue ?? 0);
     // Normalisasi guardrail jika data lama di Supabase terkalikan ganda kurs USD 18.155,28
     if (earning > 10000000 && impressions < 10000) {
       earning = Math.round((earning / 18155.28) * 100) / 100;
+    }
+
+    // Bila spending negara di country_roi masih 0 tapi total spending Meta subdomain diketahui,
+    // distribusikan secara proporsional berdasarkan klik / impresi / earning
+    if (spending <= 0.01 && metaSpend > 0) {
+      const share =
+        gt.clicks > 0
+          ? clicks / gt.clicks
+          : gt.impressions > 0
+            ? impressions / gt.impressions
+            : gt.earning > 0
+              ? earning / gt.earning
+              : 0;
+      spending = Math.round(share * metaSpend * 100) / 100;
     }
 
     // Bila earning negara belum terisi (atau mendekati 0), distribusikan revenue GAM subdomain secara proporsional

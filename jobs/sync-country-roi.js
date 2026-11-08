@@ -561,6 +561,30 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
       console.warn(`⚠️ Gagal memuat revenue GAM dari daily_stats: ${dsErr.message}`);
     }
 
+    // 4c. Ambil total pengeluaran harian Meta dari daily_stats sebagai basis proporsional
+    // jika laporan per negara dari Meta belum turun atau akun Meta ditarik tanpa token negara
+    const metaSubdomainSpendMap = new Map();
+    try {
+      const { data: dailyStatsMeta } = await supabase
+        .from("daily_stats")
+        .select("date, subdomain, site_code, spend")
+        .eq("source", "meta")
+        .gte("date", start)
+        .lte("date", end);
+
+      for (const ds of dailyStatsMeta || []) {
+        const d = String(ds.date || "").slice(0, 10);
+        const sub = resolveCanonicalSubDomain(ds.subdomain || ds.site_code, subdomains, ds.site_code);
+        const sp = Number(ds.spend || 0);
+        if (sub && sp > 0) {
+          const k = `${d}__${sub}`;
+          metaSubdomainSpendMap.set(k, (metaSubdomainSpendMap.get(k) || 0) + sp);
+        }
+      }
+    } catch (dsErr) {
+      console.warn(`⚠️ Gagal memuat spend Meta dari daily_stats: ${dsErr.message}`);
+    }
+
     // Hitung total klik dan spend per kelompok (tanggal + subdomain) dari spendMap
     const subTotalsMap = new Map();
     for (const [, s] of spendMap.entries()) {
@@ -570,6 +594,17 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
       cur.clicks += Number(s.clicks || 0);
       cur.impressions += Number(s.impressions || 0);
       subTotalsMap.set(gKey, cur);
+    }
+
+    // Hitung total klik, impresi, dan earning per kelompok (tanggal + subdomain) dari earnMap
+    const earnTotalsMap = new Map();
+    for (const [, e] of earnMap.entries()) {
+      const gKey = `${e.date}__${e.subDomain}`;
+      const cur = earnTotalsMap.get(gKey) || { earning: 0, clicks: 0, impressions: 0 };
+      cur.earning += Number(e.earning || 0);
+      cur.clicks += Number(e.clicks || 0);
+      cur.impressions += Number(e.impressions || 0);
+      earnTotalsMap.set(gKey, cur);
     }
 
     // 5. Gabungkan spend dan earning untuk semua hari
@@ -586,14 +621,29 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
       const countryCode = spendItem.countryCode || earnItem.countryCode || "UNKNOWN";
       const countryName = resolveCountryName(earnItem.countryName || countryCode);
 
-      const spend = Number(spendItem.spend || 0);
+      let spend = Number(spendItem.spend || 0);
       const impressions = Number(earnItem.impressions || spendItem.impressions || 0);
       const clicks = Number(earnItem.clicks || spendItem.clicks || 0);
       let earning = Number(earnItem.earning || 0);
 
       const gKey = `${rowDate}__${subDomain}`;
       const gamSubRev = gamSubdomainRevMap.get(gKey) || 0;
+      const metaSubSpend = metaSubdomainSpendMap.get(gKey) || 0;
       const subTotals = subTotalsMap.get(gKey) || { spend: 0, clicks: 0, impressions: 0 };
+      const earnTotals = earnTotalsMap.get(gKey) || { earning: 0, clicks: 0, impressions: 0 };
+
+      // Bila spend breakdown negara dari Meta belum terisi, distribusikan spend Meta subdomain secara proporsional
+      if (spend <= 0.01 && metaSubSpend > 0) {
+        const share =
+          earnTotals.clicks > 0
+            ? clicks / earnTotals.clicks
+            : earnTotals.impressions > 0
+              ? impressions / earnTotals.impressions
+              : earnTotals.earning > 0
+                ? earning / earnTotals.earning
+                : 0;
+        spend = Math.round(share * metaSubSpend * 100) / 100;
+      }
 
       // Bila earning breakdown negara dari GAM belum terisi, distribusikan revenue GAM subdomain secara proporsional
       if (earning <= 0.01 && gamSubRev > 0) {
