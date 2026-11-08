@@ -213,25 +213,21 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
   let start = startDate;
   let end = endDate;
 
-  // Jika tidak ada argumen, cari rentang tanggal dari database view_daily_roi
-  if (!start) {
-    const { data: roiDates } = await supabase
-      .from("view_daily_roi")
-      .select("date")
-      .order("date", { ascending: true });
+  const dateToday = getJakartaDate(0);
+  const currentMonthStart = dateToday.slice(0, 7) + "-01";
 
-    if (roiDates && roiDates.length > 0) {
-      start = roiDates[0].date;
-      end = roiDates[roiDates.length - 1].date;
-    } else {
-      start = getJakartaDate(30); // 30 hari ke belakang
-      end = getJakartaDate(0);
+  // Jika tidak ada argumen, batasi default sync rutin ke bulan berjalan agar tidak menimpa bulan lampau
+  if (!start) {
+    const daysBack = Number(process.env.DAYS_BACK || 7);
+    let calculatedStart = getJakartaDate(daysBack);
+    if (!process.env.ALLOW_PAST_MONTHS && calculatedStart < currentMonthStart) {
+      calculatedStart = currentMonthStart;
     }
+    start = calculatedStart;
+    end = dateToday;
   } else if (!end) {
     end = start;
   }
-
-  const dateToday = getJakartaDate(0);
 
   const startedAt = new Date().toISOString();
   console.log(`===============================================================`);

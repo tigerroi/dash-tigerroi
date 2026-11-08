@@ -28,3 +28,4 @@ test("GAM_DEFAULT_TIMEZONES memuat 6 domain resmi", () => {
   assert.equal(GAM_DEFAULT_TIMEZONES["ihopmenuwithprices.us"], "GMT-3");
   assert.equal(GAM_DEFAULT_TIMEZONES["uniqueinfo24.com"], "GMT+6");
 });
+
