@@ -60,13 +60,19 @@ export function CountryBreakdownBadge({ rows, subDomain }) {
               <span className="num">
                 {row.earningKnown ? renderCell(row.earning, "earning") : "-"}
               </span>
-              <span className="num">{formatRoiPercent(row.roi)}</span>
+              <span className="num">
+                {row.earningKnown ? formatRoiPercent(row.roi) : "-"}
+              </span>
             </Fragment>
           ))}
           <span className="name total">Total</span>
           <span className="num total">{renderCell(summary.totalSpending, "totalSpending")}</span>
-          <span className="num total">{renderCell(summary.earning, "earning")}</span>
-          <span className="num total">{formatRoiPercent(summary.roi)}</span>
+          <span className="num total">
+            {summary.earningKnown !== false ? renderCell(summary.earning, "earning") : "-"}
+          </span>
+          <span className="num total">
+            {summary.earningKnown !== false && summary.roi !== null ? formatRoiPercent(summary.roi) : "-"}
+          </span>
         </span>
         {summary.unknown ? (
           <em>

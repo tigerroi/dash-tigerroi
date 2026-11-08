@@ -449,6 +449,41 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
       console.log("ℹ️ Kredensial Service Account GAM belum ditemukan di environment. Bagian GAM dilewati.");
     }
 
+    // 4b. Ambil total pendapatan harian GAM dari daily_stats sebagai basis proporsional
+    // jika laporan per negara dari GAM untuk hari berjalan belum turun
+    const gamSubdomainRevMap = new Map();
+    try {
+      const { data: dailyStatsGam } = await supabase
+        .from("daily_stats")
+        .select("date, subdomain, site_code, revenue")
+        .in("source", ["gam", "adsense"])
+        .gte("date", start)
+        .lte("date", end);
+
+      for (const ds of dailyStatsGam || []) {
+        const d = String(ds.date || "").slice(0, 10);
+        const sub = resolveCanonicalSubDomain(ds.subdomain || ds.site_code, subdomains);
+        const rev = Number(ds.revenue || 0);
+        if (sub && rev > 0) {
+          const k = `${d}__${sub}`;
+          gamSubdomainRevMap.set(k, (gamSubdomainRevMap.get(k) || 0) + rev);
+        }
+      }
+    } catch (dsErr) {
+      console.warn(`⚠️ Gagal memuat revenue GAM dari daily_stats: ${dsErr.message}`);
+    }
+
+    // Hitung total klik dan spend per kelompok (tanggal + subdomain) dari spendMap
+    const subTotalsMap = new Map();
+    for (const [, s] of spendMap.entries()) {
+      const gKey = `${s.date}__${s.subDomain}`;
+      const cur = subTotalsMap.get(gKey) || { spend: 0, clicks: 0, impressions: 0 };
+      cur.spend += Number(s.spend || 0);
+      cur.clicks += Number(s.clicks || 0);
+      cur.impressions += Number(s.impressions || 0);
+      subTotalsMap.set(gKey, cur);
+    }
+
     // 5. Gabungkan spend dan earning untuk semua hari
     const allKeys = new Set([...spendMap.keys(), ...earnMap.keys()]);
     console.log(`\nMenggabungkan data: total ${allKeys.size} kombinasi (tanggal x subdomain x negara).`);
@@ -466,14 +501,35 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
       const spend = Number(spendItem.spend || 0);
       const impressions = Number(earnItem.impressions || spendItem.impressions || 0);
       const clicks = Number(earnItem.clicks || spendItem.clicks || 0);
-      const earning = Number(earnItem.earning || 0);
+      let earning = Number(earnItem.earning || 0);
+
+      const gKey = `${rowDate}__${subDomain}`;
+      const gamSubRev = gamSubdomainRevMap.get(gKey) || 0;
+      const subTotals = subTotalsMap.get(gKey) || { spend: 0, clicks: 0, impressions: 0 };
+
+      // Bila earning breakdown negara dari GAM belum terisi, distribusikan revenue GAM subdomain secara proporsional
+      if (earning <= 0.01 && gamSubRev > 0) {
+        const share =
+          subTotals.clicks > 0
+            ? clicks / subTotals.clicks
+            : subTotals.impressions > 0
+              ? impressions / subTotals.impressions
+              : subTotals.spend > 0
+                ? spend / subTotals.spend
+                : 0;
+        earning = Math.round(share * gamSubRev * 100) / 100;
+      }
 
       const adTax = spend * AD_TAX_RATE;
       const totalSpending = spend + adTax;
       const profit = earning - totalSpending;
 
       let roi = 0;
-      if (totalSpending >= 100) {
+      // Jika hari berjalan dan belum ada laporan pendapatan sama sekali dari GAM, jangan anggap minus 100%
+      const isPendingEarning = rowDate === dateToday && earning <= 0.01 && gamSubRev <= 0.01;
+      if (isPendingEarning) {
+        roi = 0;
+      } else if (totalSpending >= 100) {
         roi = ((earning - totalSpending) / totalSpending) * 100;
       } else if (totalSpending > 0) {
         roi = Math.min(((earning - totalSpending) / totalSpending) * 100, 999999.99);

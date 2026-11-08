@@ -732,10 +732,10 @@ export function Overview({ store, navigate, tab, role, viewer }) {
   // perilaku yang sama dengan tabelnya sendiri, yang sumbernya `roiSnapshots`.
   const countryBreakdown = useMemo(() => {
     if (Array.isArray(store.countryRoi) && store.countryRoi.length > 0) {
-      return buildCountryBreakdownFromRows(store.countryRoi, adTaxRate, roiReports);
+      return buildCountryBreakdownFromRows(store.countryRoi, adTaxRate, realtimeRows);
     }
     return buildCountryBreakdown(countryRoiSources(store.users, store.userReports), adTaxRate);
-  }, [store.countryRoi, store.users, store.userReports, adTaxRate, roiReports]);
+  }, [store.countryRoi, store.users, store.userReports, adTaxRate, realtimeRows]);
   // ═══ Tab Kalender ═══
   //
   // Bulan yang dibuka dan tanggal yang dipilih tinggal di ALAMAT, seperti filter lain di dashboard

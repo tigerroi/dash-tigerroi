@@ -80,16 +80,22 @@ export function buildCountryBreakdown(users, rate) {
 export function buildCountryBreakdownFromRows(countryRoiRows, rate, roiReports = []) {
   const index = new Map();
 
-  // Peta total revenue GAM dari roiReports
+  // Peta total revenue GAM dari roiReports / realtimeRows
   const gamRevMap = new Map();
   for (const r of Array.isArray(roiReports) ? roiReports : []) {
     const d = String(r.date || "").slice(0, 10);
-    const sub = String(r.subDomain || r.siteCode || "").trim().toLowerCase();
-    const rev = Number(r.earning || r.gamRevenue || r.revenue || 0);
-    if (sub && rev > 0) {
-      gamRevMap.set(`${d}__${sub}`, rev);
-      if (sub.includes(".")) {
-        gamRevMap.set(`${d}__${sub.split(".")[0]}`, rev);
+    const sub = String(r.subDomain || r.subdomain || r.sub_domain || "").trim().toLowerCase();
+    const site = String(r.siteCode || r.site_code || "").trim().toLowerCase();
+    const rev = Number(r.earning || r.gamRevenue || r.gam_revenue || r.revenue || r.raw_revenue || 0);
+    if (rev > 0) {
+      if (sub) {
+        gamRevMap.set(`${d}__${sub}`, rev);
+        if (sub.includes(".")) {
+          gamRevMap.set(`${d}__${sub.split(".")[0]}`, rev);
+        }
+      }
+      if (site) {
+        gamRevMap.set(`${d}__${site}`, rev);
       }
     }
   }
@@ -152,9 +158,17 @@ export function buildCountryBreakdownFromRows(countryRoiRows, rate, roiReports =
     const code = String(item.country_code || item.countryCode || "").toUpperCase();
     const rawName = item.country_name || item.countryName || item.country || code;
     const name = resolveCountryName(rawName || code);
-    const profit = earning - totalSpending;
-    const roi = (item.roi !== undefined && item.roi !== null && earning === Number(item.earning || 0)) ? Number(item.roi) : totalSpending > 0 ? Math.round(((earning - totalSpending) / totalSpending) * 100 * 100) / 100 : 0;
-    const countryLabel = name && name !== code ? `${name} (${code})` : (name || code);
+    const isEarningPending = earning <= 0.01 && gamRev <= 0.01 && spending > 0;
+    const isEarningKnown = item.earningKnown !== false && !isEarningPending;
+    const profit = isEarningPending ? 0 : earning - totalSpending;
+    const roi = isEarningPending
+      ? 0
+      : item.roi !== undefined && item.roi !== null && earning === Number(item.earning || 0)
+        ? Number(item.roi)
+        : totalSpending > 0
+          ? Math.round(((earning - totalSpending) / totalSpending) * 100 * 100) / 100
+          : 0;
+    const countryLabel = name && name !== code ? `${name} (${code})` : name || code;
 
     rows.push({
       id: item.id || `${key}__${code}`,
@@ -165,7 +179,8 @@ export function buildCountryBreakdownFromRows(countryRoiRows, rate, roiReports =
       adTax,
       totalSpending,
       earning,
-      earningKnown: item.earningKnown !== false,
+      earningKnown: isEarningKnown,
+      pendingEarning: isEarningPending,
       impressions,
       clicks,
       cpc:

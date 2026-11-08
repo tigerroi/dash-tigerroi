@@ -228,9 +228,12 @@ export function summarizeCountryRoi(rows) {
     if (isNumber(row?.clicks)) clicks = (clicks || 0) + Number(row.clicks);
   }
 
+  const allUnknown = rows && rows.length > 0 && unknown === rows.length;
+
   return {
     ...totals,
     unknown,
+    earningKnown: !allUnknown,
     impressions,
     clicks,
     // Pembagi nol -> 0 (angkanya memang nol); pembagi yang tidak dilaporkan -> null, dan panelnya
@@ -241,7 +244,7 @@ export function summarizeCountryRoi(rows) {
     // Lantai belanja yang sama dengan seluruh dashboard (`roiPercent`): negara yang menghabiskan
     // Rp 43 tidak melaporkan ROI enam angka, dan negara tanpa belanja sama sekali tidak melaporkan
     // "0%" untuk earning yang seluruhnya keuntungan.
-    roi: roiPercent(totals.earning, totals.totalSpending),
+    roi: allUnknown ? null : roiPercent(totals.earning, totals.totalSpending),
   };
 }
 

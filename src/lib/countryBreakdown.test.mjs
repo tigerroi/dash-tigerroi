@@ -185,4 +185,62 @@ describe("countryBreakdown", () => {
     assert.equal(rowsBySlug.length, 2);
     assert.equal(rowsBySlug[0].countryLabel, "Italia (IT)");
   });
+
+  test("buildCountryBreakdownFromRows mendistribusikan earning GAM secara proporsional dan menandai pending saat belum closing", () => {
+    // Skenario A: Ada spend Meta hari ini, tapi data breakdown GAM belum closing (earning 0) dan belum ada revenue GAM di snapshot
+    const pendingRows = [
+      {
+        id: "pend_1",
+        date: "2026-11-08",
+        sub_domain: "decor.trayedit.com",
+        country_code: "US",
+        country_name: "United States",
+        spend: 100000,
+        impressions: 500,
+        clicks: 100,
+        earning: 0,
+      },
+    ];
+    const indexPending = buildCountryBreakdownFromRows(pendingRows, 0.05, []);
+    const resPending = countriesOf(indexPending, { date: "2026-11-08", subDomain: "decor.trayedit.com" });
+    assert.equal(resPending.length, 1);
+    assert.equal(resPending[0].earningKnown, false);
+    assert.equal(resPending[0].roi, 0); // Tidak minus -100% saat belum closing
+
+    // Skenario B: Ada revenue GAM hari ini dari snapshot (Rp 400.000)
+    const realtimeReports = [
+      {
+        date: "2026-11-08",
+        subDomain: "decor.trayedit.com",
+        gamRevenue: 400000,
+      },
+    ];
+    const multiCountryRows = [
+      {
+        id: "mc_1",
+        date: "2026-11-08",
+        sub_domain: "decor.trayedit.com",
+        country_code: "US",
+        spend: 60000,
+        clicks: 60,
+        earning: 0,
+      },
+      {
+        id: "mc_2",
+        date: "2026-11-08",
+        sub_domain: "decor.trayedit.com",
+        country_code: "GB",
+        spend: 40000,
+        clicks: 40,
+        earning: 0,
+      },
+    ];
+    const indexProp = buildCountryBreakdownFromRows(multiCountryRows, 0.05, realtimeReports);
+    const resProp = countriesOf(indexProp, { date: "2026-11-08", subDomain: "decor.trayedit.com" });
+    assert.equal(resProp.length, 2);
+    // US mendapat 60% dari 400.000 = 240.000
+    assert.equal(resProp[0].earning, 240000);
+    assert.equal(resProp[0].earningKnown, true);
+    assert.ok(resProp[0].roi > 0); // ROI bernilai positif, bukan minus!
+  });
 });

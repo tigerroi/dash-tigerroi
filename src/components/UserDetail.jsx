@@ -1035,15 +1035,21 @@ function buildProfileFromStore(user, store) {
         ? toArray(user.roiReports)
         : rowsForSubDomains(toArray(store.roiReports), ownedKeys);
 
+  // Sertakan juga snapshot realtime hari ini agar pendapatan GAM hari berjalan ikut terbaca
+  const allProfileRoiReports = [
+    ...toArray(profileReports),
+    ...rowsForSubDomains(toArray(store.roiSnapshots), ownedKeys),
+  ];
+
   // Sinkronisasi Breakdown ROI per Negara dari tabel Supabase country_roi
   const userCountryRoiRows = rowsForSubDomains(toArray(store.countryRoi), ownedKeys);
 
   // Peta total pendapatan GAM per subdomain dan tanggal dari laporan resmi GAM
   const gamRevBySubDate = new Map();
-  for (const r of toArray(profileReports)) {
-    const rawSub = String(r.subDomain || r.siteCode || "").trim().toLowerCase();
+  for (const r of allProfileRoiReports) {
+    const rawSub = String(r.subDomain || r.subdomain || r.sub_domain || r.siteCode || r.site_code || "").trim().toLowerCase();
     const d = String(r.date || "").slice(0, 10);
-    const rev = Number(r.earning || r.gamRevenue || r.revenue || 0);
+    const rev = Number(r.earning || r.gamRevenue || r.gam_revenue || r.revenue || r.raw_revenue || 0);
     if (rawSub && rev > 0) {
       gamRevBySubDate.set(`${d}__${rawSub}`, rev);
       if (rawSub.includes(".")) {
@@ -1099,10 +1105,15 @@ function buildProfileFromStore(user, store) {
       earning = Math.round(share * gamRev * 100) / 100;
     }
 
+    const isPendingEarning = earning <= 0.01 && gamRev <= 0.01 && spending > 0;
     const adTax = spending * 0.05;
     const totalSpending = spending + adTax;
-    const profit = Math.round((earning - totalSpending) * 100) / 100;
-    const roi = totalSpending > 0 ? Math.round(((earning - totalSpending) / totalSpending) * 10000) / 100 : 0;
+    const profit = isPendingEarning ? 0 : Math.round((earning - totalSpending) * 100) / 100;
+    const roi = isPendingEarning
+      ? 0
+      : totalSpending > 0
+        ? Math.round(((earning - totalSpending) / totalSpending) * 10000) / 100
+        : 0;
     const cpc = clicks > 0 ? Math.round((spending / clicks) * 100) / 100 : Number(row.cpc || 0);
     const ecpm =
       impressions > 0 && earning > 0
@@ -1127,6 +1138,8 @@ function buildProfileFromStore(user, store) {
       ecpm,
       clicks,
       impressions,
+      earningKnown: !isPendingEarning,
+      pendingEarning: isPendingEarning,
     };
   });
   const profileCountryRoi =

@@ -183,23 +183,69 @@ export async function fetchAccountOverview(actId, token) {
  */
 export async function fetchCampaignInsights(actId, token, dateRange) {
   const id = normalizeActId(actId);
-  const params = {
+  const baseParams = {
     level: "campaign",
     fields: "campaign_id,campaign_name,spend,impressions,clicks,cpc,actions,cost_per_action_type",
     limit: "500",
   };
 
-  if (dateRange?.since && dateRange?.until) {
-    params.time_range = { since: dateRange.since, until: dateRange.until };
-    params.time_increment = "1"; // Return per hari
+  const rows = [];
+  const isMultiDayRange = Boolean(dateRange?.since && dateRange?.until);
+
+  if (isMultiDayRange) {
+    // 1. Ambil data historis harian dari Meta
+    const historyParams = {
+      ...baseParams,
+      time_range: { since: dateRange.since, until: dateRange.until },
+      time_increment: "1",
+    };
+    try {
+      const histRows = await graphAll(`${id}/insights`, token, historyParams);
+      rows.push(...histRows);
+    } catch (histErr) {
+      console.warn(`[Meta] Gagal menarik data historis harian untuk ${id}: ${histErr.message}`);
+    }
+
+    // 2. Ambil data hari ini (real-time hari berjalan) secara eksplisit dengan date_preset: "today"
+    // Di Meta Graph API, time_increment: "1" seringkali tidak menyertakan hari berjalan karena interval 1 hari belum tutup
+    try {
+      const todayParams = {
+        ...baseParams,
+        date_preset: "today",
+      };
+      const todayRows = await graphAll(`${id}/insights`, token, todayParams);
+      const todayDateStr = dateRange.until;
+
+      for (const tr of todayRows) {
+        tr.date_start = todayDateStr;
+        tr.date_stop = todayDateStr;
+        // Cari apakah sudah ada di rows dengan date_start === todayDateStr dan campaign_id sama
+        const existIdx = rows.findIndex(
+          (r) =>
+            (r.date_start === todayDateStr || r.date === todayDateStr) &&
+            String(r.campaign_id || "") === String(tr.campaign_id || "")
+        );
+        if (existIdx >= 0) {
+          rows[existIdx] = tr; // Timpa dengan data hari ini real-time terkini
+        } else {
+          rows.push(tr);
+        }
+      }
+    } catch (todayErr) {
+      console.warn(`[Meta] Gagal menarik date_preset today untuk ${id}: ${todayErr.message}`);
+    }
   } else {
-    params.date_preset = "today";
+    // Mode satu hari (hari ini)
+    const todayParams = {
+      ...baseParams,
+      date_preset: "today",
+    };
+    const todayRows = await graphAll(`${id}/insights`, token, todayParams);
+    rows.push(...todayRows);
   }
 
-  const rows = await graphAll(`${id}/insights`, token, params);
-
   return rows.map((r) => ({
-    date: r.date_start || dateRange?.since || new Date().toISOString().slice(0, 10),
+    date: r.date_start || dateRange?.until || new Date().toISOString().slice(0, 10),
     campaignId: String(r.campaign_id || ""),
     campaignName: r.campaign_name || "",
     spend: Number(r.spend || 0),
@@ -264,24 +310,66 @@ export async function fetchAccountCampaigns(actId, token) {
  */
 export async function fetchCampaignSpendByCountry(actId, token, dateRange) {
   const id = normalizeActId(actId);
-  const params = {
+  const baseParams = {
     level: "campaign",
     breakdowns: "country",
     fields: "campaign_id,campaign_name,spend,impressions,clicks",
     limit: "500",
   };
 
-  if (dateRange?.since && dateRange?.until) {
-    params.time_range = { since: dateRange.since, until: dateRange.until };
-    params.time_increment = "1";
+  const rows = [];
+  const isMultiDayRange = Boolean(dateRange?.since && dateRange?.until);
+
+  if (isMultiDayRange) {
+    const historyParams = {
+      ...baseParams,
+      time_range: { since: dateRange.since, until: dateRange.until },
+      time_increment: "1",
+    };
+    try {
+      const histRows = await graphAll(`${id}/insights`, token, historyParams);
+      rows.push(...histRows);
+    } catch (histErr) {
+      console.warn(`[Meta Country] Gagal menarik data historis harian negara untuk ${id}: ${histErr.message}`);
+    }
+
+    try {
+      const todayParams = {
+        ...baseParams,
+        date_preset: "today",
+      };
+      const todayRows = await graphAll(`${id}/insights`, token, todayParams);
+      const todayDateStr = dateRange.until;
+
+      for (const tr of todayRows) {
+        tr.date_start = todayDateStr;
+        tr.date_stop = todayDateStr;
+        const existIdx = rows.findIndex(
+          (r) =>
+            (r.date_start === todayDateStr || r.date === todayDateStr) &&
+            String(r.campaign_id || "") === String(tr.campaign_id || "") &&
+            String(r.country || "").toUpperCase() === String(tr.country || "").toUpperCase()
+        );
+        if (existIdx >= 0) {
+          rows[existIdx] = tr;
+        } else {
+          rows.push(tr);
+        }
+      }
+    } catch (todayErr) {
+      console.warn(`[Meta Country] Gagal menarik date_preset today untuk negara ${id}: ${todayErr.message}`);
+    }
   } else {
-    params.date_preset = "today";
+    const todayParams = {
+      ...baseParams,
+      date_preset: "today",
+    };
+    const todayRows = await graphAll(`${id}/insights`, token, todayParams);
+    rows.push(...todayRows);
   }
 
-  const rows = await graphAll(`${id}/insights`, token, params);
-
   return rows.map((r) => ({
-    date: r.date_start || dateRange?.since || new Date().toISOString().slice(0, 10),
+    date: r.date_start || dateRange?.until || new Date().toISOString().slice(0, 10),
     campaignId: String(r.campaign_id || ""),
     campaignName: r.campaign_name || "",
     countryCode: String(r.country || "").trim().toUpperCase(),
