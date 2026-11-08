@@ -231,6 +231,8 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
     end = start;
   }
 
+  const dateToday = getJakartaDate(0);
+
   const startedAt = new Date().toISOString();
   console.log(`===============================================================`);
   console.log(`   TIGERROI - SINKRONISASI ROI PER NEGARA (MULTI-HARI)`);
