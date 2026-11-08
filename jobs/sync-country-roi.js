@@ -150,13 +150,56 @@ const GAM_NETWORKS = [
 
 function matchSubDomain(campaignName, subdomains, defaultSubDomain = "") {
   const nameLower = String(campaignName || "").toLowerCase();
+  const firstWord = (nameLower.split(/[\s_-]+/)[0] || "").toLowerCase();
+
+  // Prioritas 1: Cocokkan kode campaign dari subdomains.campaign_codes
+  if (firstWord) {
+    for (const sub of subdomains) {
+      if (!sub.campaign_codes) continue;
+      const codes = String(sub.campaign_codes)
+        .split(/[^A-Za-z0-9]+/)
+        .map((k) => k.trim().toLowerCase())
+        .filter(Boolean);
+      if (codes.includes(firstWord)) {
+        return sub.name;
+      }
+    }
+  }
+
+  // Prioritas 2: Cocokkan FQDN lengkap
   for (const sub of subdomains) {
-    const subName = (sub.name || "").toLowerCase();
-    const slug = subName.split(".")[0];
-    if (slug && nameLower.includes(slug)) {
+    if (!sub.name) continue;
+    const subName = sub.name.toLowerCase();
+    if (nameLower.includes(subName)) {
       return sub.name;
     }
   }
+
+  // Prioritas 3: Cocokkan slug dengan pembatas kata, prioritaskan jika nama campaign mengandung parent domain
+  for (const sub of subdomains) {
+    if (!sub.name) continue;
+    const subName = sub.name.toLowerCase();
+    const slug = subName.split(".")[0];
+    const parent = String(sub.parent_domain || "").toLowerCase().split(".")[0];
+    const regex = new RegExp(`(^|[^a-z0-9])(${slug})([^a-z0-9]|$)`, "i");
+    if (regex.test(nameLower)) {
+      if (parent && nameLower.includes(parent)) {
+        return sub.name;
+      }
+    }
+  }
+
+  // Fallback: Cocokkan slug dengan pembatas kata
+  for (const sub of subdomains) {
+    if (!sub.name) continue;
+    const subName = sub.name.toLowerCase();
+    const slug = subName.split(".")[0];
+    const regex = new RegExp(`(^|[^a-z0-9])(${slug})([^a-z0-9]|$)`, "i");
+    if (regex.test(nameLower)) {
+      return sub.name;
+    }
+  }
+
   return defaultSubDomain || "unmapped";
 }
 
@@ -186,26 +229,70 @@ function resolveCountryName(codeOrName) {
 
 // Menyamakan nama subdomain antara GAM (domain utuh: keto.ihopmenuwithprices.us) dan Meta (slug: keto)
 // Keduanya akan selalu dinormalkan menjadi FQDN resmi yang sama persis (misal: keto.ihopmenuwithprices.us)
-function resolveCanonicalSubDomain(rawName, subdomains) {
+function resolveCanonicalSubDomain(rawName, subdomains, defaultParentOrSite = "") {
   const clean = String(rawName || "").trim().toLowerCase().replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
   if (!clean || clean === "unmapped") return clean;
-  const slug = clean.split(".")[0];
 
+  const cleanParts = clean.split(".");
+  const slug = cleanParts[0];
+  const hasDomain = cleanParts.length > 1;
+  const cleanDomain = hasDomain ? cleanParts.slice(1).join(".") : "";
+
+  // 1. Pass 1: Exact match dengan nama subdomain lengkap
+  for (const s of subdomains) {
+    const sName = String(s.name || "").trim().toLowerCase();
+    if (clean === sName) return sName;
+  }
+
+  // 2. Pass 2: Jika clean membawa nama domain induk (FQDN), cocokkan slug DAN parent domain
+  if (hasDomain) {
+    for (const s of subdomains) {
+      const sName = String(s.name || "").trim().toLowerCase();
+      const sSlug = sName.split(".")[0];
+      const parent = String(s.parent_domain || "").trim().toLowerCase();
+
+      if (slug === sSlug) {
+        if (parent && (cleanDomain.includes(parent) || parent.includes(cleanDomain))) {
+          return sName.includes(".") ? sName : (parent ? `${sSlug}.${parent}` : sName);
+        }
+        if (sName.includes(".") && sName.endsWith(cleanDomain)) {
+          return sName;
+        }
+      }
+    }
+    // Jika tidak ditemukan di subdomains tapi sudah FQDN, pertahankan FQDN-nya
+    return clean;
+  }
+
+  // 3. Pass 3: Slug pendek (misal 'insurance')
+  // Bila ada hint defaultParentOrSite (misal dari network GAM / campaign Meta), prioritaskan yang cocok dengan hint
+  const hint = String(defaultParentOrSite || "").trim().toLowerCase();
+  if (hint) {
+    for (const s of subdomains) {
+      const sName = String(s.name || "").trim().toLowerCase();
+      const sSlug = sName.split(".")[0];
+      const parent = String(s.parent_domain || "").trim().toLowerCase();
+      const siteCode = String(s.site_code || "").trim().toLowerCase();
+
+      if (slug === sSlug) {
+        if (hint.includes(parent) || (parent && parent.includes(hint)) || hint === siteCode || siteCode.includes(hint)) {
+          return sName.includes(".") ? sName : (parent ? `${sSlug}.${parent}` : sName);
+        }
+      }
+    }
+  }
+
+  // 4. Pass 4: Fallback slug match pertama
   for (const s of subdomains) {
     const sName = String(s.name || "").trim().toLowerCase();
     const sSlug = sName.split(".")[0];
-    const parent = String(s.parent_domain || "")
-      .toLowerCase()
-      .replace(/^https?:\/\//i, "")
-      .replace(/\/.*$/, "")
-      .trim();
+    const parent = String(s.parent_domain || "").trim().toLowerCase();
 
-    if (slug === sSlug || clean === sName) {
-      if (sName.includes(".")) return sName;
-      if (parent) return `${sSlug}.${parent}`;
-      return sName;
+    if (slug === sSlug) {
+      return sName.includes(".") ? sName : (parent ? `${sSlug}.${parent}` : sName);
     }
   }
+
   return clean;
 }
 
@@ -258,7 +345,7 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
     // 2. Ambil master subdomain beserta parent_domain untuk pembentukan FQDN
     const { data: subdomainsData } = await supabase
       .from("subdomains")
-      .select("id, name, site_code, pic, parent_domain");
+      .select("id, name, site_code, pic, parent_domain, campaign_codes");
     const subdomains = subdomainsData || [];
 
     const { data: sitesData } = await supabase
@@ -326,9 +413,11 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
 
         for (const r of countryRows) {
           const rowDate = r.date || start;
+          const matchedSub = matchSubDomain(r.campaignName, subdomains);
           const subDomain = resolveCanonicalSubDomain(
-            matchSubDomain(r.campaignName, subdomains),
+            matchedSub,
             subdomains,
+            r.campaignName,
           );
           const cCode = r.countryCode || "UNKNOWN";
           const key = `${rowDate}__${subDomain}__${cCode}`;
@@ -416,6 +505,7 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
               const subDomain = resolveCanonicalSubDomain(
                 mapped.subdomainName || gr.siteName || net.domain,
                 subdomains,
+                net.domain || net.defaultSiteCode,
               );
               const cCode = gr.countryCode || "UNKNOWN";
               const key = `${rowDate}__${subDomain}__${cCode}`;
@@ -460,7 +550,7 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
 
       for (const ds of dailyStatsGam || []) {
         const d = String(ds.date || "").slice(0, 10);
-        const sub = resolveCanonicalSubDomain(ds.subdomain || ds.site_code, subdomains);
+        const sub = resolveCanonicalSubDomain(ds.subdomain || ds.site_code, subdomains, ds.site_code);
         const rev = Number(ds.revenue || 0);
         if (sub && rev > 0) {
           const k = `${d}__${sub}`;
