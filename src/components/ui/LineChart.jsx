@@ -12,6 +12,7 @@ import {
 import { useChartPalette } from "../../hooks/useChartPalette";
 import { MIN_ROI_SPEND } from "../../lib/adTax";
 import { formatDate, formatDayMonth } from "../../lib/formatDate";
+import { useLanguage } from "../../context/LanguageContext";
 
 const formatShortRupiah = (value) => {
   if (value >= 1_000_000) {
@@ -92,6 +93,7 @@ function withPartialSeries(data) {
 const formatStampTime = (stamp) => String(stamp).slice(11);
 
 export function LineChart({ data, hourly = false }) {
+  const { t } = useLanguage();
   const chart = useChartPalette();
   const chartData = withPartialSeries(data);
   const hasPartial = data.some((item) => item?.partial === true);
@@ -113,21 +115,21 @@ export function LineChart({ data, hourly = false }) {
   return (
     <div className="line-chart-card">
       <div className="chart-summary-grid">
-        <ChartMetric label="Pendapatan" value={formatRupiah(totalRevenue)} tone="positive" />
+        <ChartMetric label={t("pendapatan", "Pendapatan")} value={formatRupiah(totalRevenue)} tone="positive" />
         {/* Sudah termasuk ad tax — sama dengan kolom Total Spend di tabel ROI, jadi "Netto" di
             sebelahnya adalah ROI yang sama persis. */}
         <ChartMetric
-          label="Pengeluaran (+ ad tax)"
+          label={t("pengeluaran (+ ad tax)", "Pengeluaran (+ ad tax)")}
           value={formatRupiah(totalSpend)}
           tone="negative"
         />
         <ChartMetric
-          label="Profit"
+          label={t("profit", "Profit")}
           value={formatSignedRupiah(netProfit)}
           tone={netProfit >= 0 ? "positive" : "negative"}
         />
         <ChartMetric
-          label="Netto"
+          label={t("netto", "Netto")}
           value={formatPercent(netPercentage)}
           tone={netProfit >= 0 ? "positive" : "negative"}
         />
@@ -264,6 +266,7 @@ export function LineChart({ data, hourly = false }) {
 }
 
 function ChartTooltip({ active, payload, label, hourly = false }) {
+  const { t } = useLanguage();
   if (!active || !payload?.length) {
     return null;
   }
@@ -275,15 +278,15 @@ function ChartTooltip({ active, payload, label, hourly = false }) {
       {/* Tooltip punya ruang, jadi tahunnya ikut disebut — sumbu yang sempit tidak. Saat "Hari Ini",
           label-nya stempel per sync; yang berarti di situ jamnya, bukan tanggalnya. */}
       <strong>{hourly ? formatStampTime(label) : formatDate(label)}</strong>
-      {row.partial && <span className="chart-tooltip-running">Hari berjalan, belum selesai</span>}
-      <span className="chart-tooltip-revenue">Pendapatan: {formatRupiah(row.grossRevenue)}</span>
+      {row.partial && <span className="chart-tooltip-running">{t("hari berjalan, belum selesai", "Hari berjalan, belum selesai")}</span>}
+      <span className="chart-tooltip-revenue">{t("pendapatan", "Pendapatan")}: {formatRupiah(row.grossRevenue)}</span>
       <span className="chart-tooltip-spend">
-        Pengeluaran (+ ad tax): {formatRupiah(row.totalSpend)}
+        {t("pengeluaran (+ ad tax)", "Pengeluaran (+ ad tax)")}: {formatRupiah(row.totalSpend)}
       </span>
-      <span className="chart-tooltip-profit">Profit: {formatSignedRupiah(row.profit)}</span>
+      <span className="chart-tooltip-profit">{t("profit", "Profit")}: {formatSignedRupiah(row.profit)}</span>
       {/* Netto tidak punya garis di grafik ini — ia dapat biru karena angka yang sama persis
           digambar sebagai garis biru di panel "Kurva ROI (%)" tepat di bawahnya. */}
-      <span className="chart-tooltip-roi">Netto: {formatPercent(row.netPercentage)}</span>
+      <span className="chart-tooltip-roi">{t("netto", "Netto")}: {formatPercent(row.netPercentage)}</span>
     </div>
   );
 }

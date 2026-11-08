@@ -10,6 +10,7 @@ import {
 import { useChartPalette } from "../../hooks/useChartPalette";
 import { formatDate, formatDayMonth } from "../../lib/formatDate";
 import { getNetPercentage } from "./LineChart";
+import { useLanguage } from "../../context/LanguageContext";
 
 // Netto = ROI: sama rumus, sama sumber (grossRevenue vs totalSpend yang sudah termasuk ad tax) dengan
 // kartu "Pendapatan vs Pengeluaran". Diambil dari sana supaya tidak ada rumus ROI kedua.
@@ -112,6 +113,7 @@ export function RoiCurveChart({ data, hourly = false }) {
 }
 
 function RoiTooltip({ active, payload, label, hourly = false }) {
+  const { t } = useLanguage();
   if (!active || !payload?.length) {
     return null;
   }
@@ -121,12 +123,12 @@ function RoiTooltip({ active, payload, label, hourly = false }) {
   return (
     <div className="recharts-tooltip-card">
       <strong>{hourly ? formatStampTime(label) : formatDate(label)}</strong>
-      {row.partial && <span className="chart-tooltip-running">Hari berjalan, belum selesai</span>}
+      {row.partial && <span className="chart-tooltip-running">{t("hari berjalan, belum selesai", "Hari berjalan, belum selesai")}</span>}
       {/* GAM masuk & spend ikut tampil: ROI yang meledak (mis. spend Rp 41, GAM Rp 153rb → 355.000%)
           langsung terbaca sebagai penyebut yang nyaris nol, bukan angka yang berdiri sendiri. */}
-      <span className="chart-tooltip-revenue">GAM masuk: {formatRupiah(row.grossRevenue)}</span>
+      <span className="chart-tooltip-revenue">{t("gam masuk", "GAM masuk")}: {formatRupiah(row.grossRevenue)}</span>
       <span className="chart-tooltip-spend">
-        Pengeluaran (+ ad tax): {formatRupiah(row.totalSpend)}
+        {t("pengeluaran (+ ad tax)", "Pengeluaran (+ ad tax)")}: {formatRupiah(row.totalSpend)}
       </span>
       <span className="chart-tooltip-roi">ROI: {formatPercent(row.roi)}</span>
     </div>

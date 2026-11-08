@@ -148,6 +148,11 @@ export const PHRASE_DICTIONARY_EN = {
   "pilih negara:": "Select country:",
   "pendapatan": "Revenue",
   "pengeluaran": "Spending",
+  "pengeluaran (+ ad tax)": "Spending (+ ad tax)",
+  "profit": "Profit",
+  "netto": "Net Margin",
+  "gam masuk": "GAM Revenue",
+  "hari berjalan, belum selesai": "In progress, not finalized",
   "batang penuh: roi (%)": "Solid bar: ROI (%)",
   "batang redup: total spend (rp, sumbu kanan)": "Dim bar: Total Spend (Rp, right axis)",
 
