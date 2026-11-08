@@ -829,11 +829,17 @@ function CountryRoiGroups({ groups }) {
             <small>
               Total Spend {formatRupiah(group.summary.totalSpending)} (Meta{" "}
               {formatRupiah(group.summary.spending)} + Ad Tax {formatRupiah(group.summary.adTax)}) /
-              GAM Revenue {formatRupiah(group.summary.earning)}
+              GAM Revenue{" "}
+              {group.summary.earningKnown !== false
+                ? formatRupiah(group.summary.earning)
+                : "-"}
               {group.summary.unknown
                 ? ` (${group.summary.unknown} negara belum ada earning-nya)`
                 : ""}{" "}
-              / ROI {formatRoiPercent(group.summary.roi)}
+              / ROI{" "}
+              {group.summary.earningKnown !== false && group.summary.roi !== null
+                ? formatRoiPercent(group.summary.roi)
+                : "-"}
               {/* CPC dan eCPM sesubdomain, sebagai pembanding tiap barisnya: yang dicari di
                   tabel ini adalah negara yang menarik rata-ratanya naik atau turun, dan tanpa
                   rata-ratanya di layar tiap baris harus dibandingkan dengan angka di kepala. */}
@@ -875,7 +881,14 @@ function CountryRoiTable({ items }) {
         ["spending", "Spend (Meta)"],
         ["adTax", "Ad Tax"],
         ["totalSpending", "Total Spend"],
-        ["earning", "Earnings (GAM)"],
+        {
+          accessorKey: "earning",
+          header: "Earnings (GAM)",
+          cell: ({ row, getValue }) =>
+            row.original.earningKnown !== false && !row.original.pendingEarning
+              ? formatRupiah(getValue())
+              : "-",
+        },
         // Sisi trafiknya, dari laporan GAM yang sama dengan earning di sebelahnya. Yang paling
         // dicari di antara ketiganya adalah CPC: CTR tiap negara berdempetan, sementara CPC-nya
         // berbeda berkali lipat — itulah yang membuat satu negara menarik eCPM subdomain naik.
@@ -895,8 +908,18 @@ function CountryRoiTable({ items }) {
           // angkanya tanpa "%" — 138 dan 138% terbaca sangat berbeda.
           accessorKey: "roi",
           header: "ROI %",
-          cell: ({ getValue }) => formatRoiPercent(getValue()),
-          meta: { className: (item) => (item.roi < 0 ? "money-negative" : "money-positive") },
+          cell: ({ row, getValue }) =>
+            row.original.earningKnown !== false && !row.original.pendingEarning
+              ? formatRoiPercent(getValue())
+              : "-",
+          meta: {
+            className: (item) =>
+              item.earningKnown === false || item.pendingEarning
+                ? "muted-cell"
+                : item.roi < 0
+                  ? "money-negative"
+                  : "money-positive",
+          },
         },
         ["status", "Status"],
       ]}
@@ -1230,7 +1253,7 @@ function buildProfileFromStore(user, store) {
             costPerResult,
           };
         })
-      : toArray(profileReports)
+      : toArray(allProfileRoiReports)
           .filter((r) => r.campaign && (r.spending || r.spend || r.date))
           .map((r) => {
             const subInfo = subDomainLookup.get(String(r.subDomain || r.campaign || "").toLowerCase().trim());
@@ -1270,7 +1293,7 @@ function buildProfileFromStore(user, store) {
   let finalDailySpend = rawDailySpend;
   if (finalDailySpend.length === 0) {
     const spendMap = new Map();
-    for (const r of toArray(profileReports)) {
+    for (const r of toArray(allProfileRoiReports)) {
       const d = r.date;
       const spend = Number(r.spending || r.spend || 0);
       if (d && spend > 0) {
