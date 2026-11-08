@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { fetchAccountCampaigns, fetchAccountOverview, fetchCampaignInsights } from "./meta-client.js";
 import { recordRoiSnapshot } from "./snapshot-helper.js";
-import { adjustDateByGamTimezone, getGamTimezoneForSubdomain } from "./timezone-cutoff.js";
+import { getGamTimezoneForSubdomain, resolveGamTargetDate } from "./timezone-cutoff.js";
 
 /**
  * Job Sinkronisasi Meta Ads ke Supabase TigerROI
@@ -31,6 +31,16 @@ function getJakartaDate(daysAgo = 0) {
     day: "2-digit",
   });
   return formatter.format(d);
+}
+
+// Jam saat ini di zona waktu Jakarta (WIB / UTC+7, 0 s/d 23)
+function getJakartaHour() {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    hour: "2-digit",
+    hour12: false,
+  });
+  return parseInt(formatter.format(new Date()), 10) || 0;
 }
 
 // Pencocokan nama campaign Meta ke site_code menggunakan tabel subdomains & sites
@@ -220,9 +230,8 @@ export async function runSyncMeta() {
           `    Saldo/Limit: ${overview.currency} ${overview.remainingBudget.toLocaleString()} | Spent: ${overview.amountSpent}`,
         );
 
-        // B. Ambil insights campaign (spend harian & per jam)
-        // Opsi hourly: true mengaktifkan breakdown per jam agar spend sebelum cut-off GAM masuk ke hari sebelumnya
-        const insights = await fetchCampaignInsights(account.account_id, token, dateRange, { hourly: true });
+        // B. Ambil insights campaign (spend harian Meta Ads 30 hari)
+        const insights = await fetchCampaignInsights(account.account_id, token, dateRange);
         console.log(`    Ditemukan ${insights.length} baris insights campaign.`);
 
         let accountSpendToday = 0;
@@ -333,9 +342,10 @@ export async function runSyncMeta() {
             matchedSubName = fallbackSub ? fallbackSub.name : "";
           }
 
-          // Selaraskan tanggal spending Meta dengan zona waktu GAM masing-masing domain
+          // Selaraskan tanggal spending Meta dengan siklus cut-off zona waktu GAM masing-masing domain
+          const currentHourWib = getJakartaHour();
           const tzGam = getGamTimezoneForSubdomain(matchedSubName, subdomains, gamAccounts);
-          const targetDate = adjustDateByGamTimezone(row.date, row.hour, tzGam);
+          const targetDate = resolveGamTargetDate(row.date, dateToday, currentHourWib, tzGam);
 
           const aggKey = `${targetDate}__${siteCode}__${matchedSubName}`;
 

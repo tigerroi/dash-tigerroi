@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import {
-  adjustDateByGamTimezone,
   DOMAIN_GAM_TIMEZONES,
   getGamTimezoneForSubdomain,
   getWibCutoffHour,
+  resolveGamTargetDate,
 } from "./timezone-cutoff.js";
 
 describe("timezone-cutoff", () => {
@@ -26,29 +26,28 @@ describe("timezone-cutoff", () => {
     assert.equal(getGamTimezoneForSubdomain("deals.ihopmenuwithprices.us"), "GMT-3");
   });
 
-  test("mengalokasikan spending sebelum cut-off ke hari kemarin (T-1) untuk GMT lebih lambat", () => {
+  test("resolveGamTargetDate: alokasikan ke T-1 jika jam sekarang belum capai cutoff", () => {
     // GMT+5 (cut-off 02:00 WIB)
-    assert.equal(adjustDateByGamTimezone("2026-11-08", 0, "GMT+5"), "2026-11-07");
-    assert.equal(adjustDateByGamTimezone("2026-11-08", 1, "GMT+5"), "2026-11-07");
-    assert.equal(adjustDateByGamTimezone("2026-11-08", 2, "GMT+5"), "2026-11-08");
-    assert.equal(adjustDateByGamTimezone("2026-11-08", 14, "GMT+5"), "2026-11-08");
+    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 0, "GMT+5"), "2026-11-07");
+    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 1, "GMT+5"), "2026-11-07");
+    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 2, "GMT+5"), "2026-11-08");
+    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 7, "GMT+5"), "2026-11-08");
 
     // GMT+6 (cut-off 01:00 WIB)
-    assert.equal(adjustDateByGamTimezone("2026-11-08", 0, "GMT+6"), "2026-11-07");
-    assert.equal(adjustDateByGamTimezone("2026-11-08", 1, "GMT+6"), "2026-11-08");
+    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 0, "GMT+6"), "2026-11-07");
+    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 1, "GMT+6"), "2026-11-08");
+    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 7, "GMT+6"), "2026-11-08");
 
     // GMT+1 (cut-off 06:00 WIB)
-    assert.equal(adjustDateByGamTimezone("2026-11-08", 5, "GMT+1"), "2026-11-07");
-    assert.equal(adjustDateByGamTimezone("2026-11-08", 6, "GMT+1"), "2026-11-08");
+    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 5, "GMT+1"), "2026-11-07");
+    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 6, "GMT+1"), "2026-11-08");
+    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 7, "GMT+1"), "2026-11-08");
 
     // GMT-3 (cut-off 10:00 WIB)
-    assert.equal(adjustDateByGamTimezone("2026-11-08", 9, "GMT-3"), "2026-11-07");
-    assert.equal(adjustDateByGamTimezone("2026-11-08", 10, "GMT-3"), "2026-11-08");
-  });
+    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 7, "GMT-3"), "2026-11-07");
+    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 10, "GMT-3"), "2026-11-08");
 
-  test("mengalokasikan spending setelah cut-off ke hari esok (T+1) untuk GMT lebih cepat", () => {
-    // GMT+8 (cut-off 23:00 WIB)
-    assert.equal(adjustDateByGamTimezone("2026-11-08", 22, "GMT+8"), "2026-11-08");
-    assert.equal(adjustDateByGamTimezone("2026-11-08", 23, "GMT+8"), "2026-11-09");
+    // Tanggal lampau tidak diubah
+    assert.equal(resolveGamTargetDate("2026-11-07", "2026-11-08", 0, "GMT+5"), "2026-11-07");
   });
 });

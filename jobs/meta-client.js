@@ -178,11 +178,10 @@ export async function fetchAccountOverview(actId, token) {
 }
 
 /**
- * Mengambil data spend, impressions, clicks di level campaign.
+ * Mengambil data spend, impressions, clicks harian di level campaign.
  * Rentang waktu: { since: "YYYY-MM-DD", until: "YYYY-MM-DD" }
- * Mendukung opsi breakdown per jam (hourly) untuk menyelaraskan cut-off zona waktu GAM.
  */
-export async function fetchCampaignInsights(actId, token, dateRange, options = {}) {
+export async function fetchCampaignInsights(actId, token, dateRange) {
   const id = normalizeActId(actId);
   const params = {
     level: "campaign",
@@ -190,49 +189,26 @@ export async function fetchCampaignInsights(actId, token, dateRange, options = {
     limit: "500",
   };
 
-  if (options?.hourly) {
-    params.breakdowns = "hourly_stats_aggregated_by_advertiser_time_zone";
-  }
-
   if (dateRange?.since && dateRange?.until) {
     params.time_range = { since: dateRange.since, until: dateRange.until };
-    if (!options?.hourly) {
-      params.time_increment = "1"; // Return per hari jika non-hourly
-    }
+    params.time_increment = "1"; // Return per hari
   } else {
     params.date_preset = "today";
   }
 
-  try {
-    const rows = await graphAll(`${id}/insights`, token, params);
+  const rows = await graphAll(`${id}/insights`, token, params);
 
-    return rows.map((r) => {
-      let hour = null;
-      if (r.hourly_stats_aggregated_by_advertiser_time_zone) {
-        const start = parseInt(String(r.hourly_stats_aggregated_by_advertiser_time_zone).split(":")[0], 10);
-        if (Number.isFinite(start)) hour = start;
-      }
-
-      return {
-        date: r.date_start || dateRange?.since || new Date().toISOString().slice(0, 10),
-        hour,
-        campaignId: String(r.campaign_id || ""),
-        campaignName: r.campaign_name || "",
-        spend: Number(r.spend || 0),
-        impressions: Number(r.impressions || 0),
-        clicks: Number(r.clicks || 0),
-        cpc: Number(r.cpc || 0),
-        results: Number(r.clicks || 0),
-        cpr: Number(r.clicks || 0) > 0 ? Math.round((Number(r.spend || 0) / Number(r.clicks || 0)) * 100) / 100 : 0,
-      };
-    });
-  } catch (err) {
-    if (options?.hourly) {
-      console.warn(`[Meta] Hourly breakdown gagal untuk ${id}: ${err.message}. Menggunakan fallback harian.`);
-      return fetchCampaignInsights(actId, token, dateRange, { ...options, hourly: false });
-    }
-    throw err;
-  }
+  return rows.map((r) => ({
+    date: r.date_start || dateRange?.since || new Date().toISOString().slice(0, 10),
+    campaignId: String(r.campaign_id || ""),
+    campaignName: r.campaign_name || "",
+    spend: Number(r.spend || 0),
+    impressions: Number(r.impressions || 0),
+    clicks: Number(r.clicks || 0),
+    cpc: Number(r.cpc || 0),
+    results: Number(r.clicks || 0),
+    cpr: Number(r.clicks || 0) > 0 ? Math.round((Number(r.spend || 0) / Number(r.clicks || 0)) * 100) / 100 : 0,
+  }));
 }
 
 /**

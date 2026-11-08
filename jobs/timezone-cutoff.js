@@ -72,43 +72,37 @@ export function getWibCutoffHour(tzGam) {
 }
 
 /**
- * Mengalokasikan tanggal spending Meta berdasarkan jam terjadinya (WIB) dan zona waktu GAM.
- * - Jika zona waktu GAM lebih lambat dari GMT+7 (misal GMT+5, GMT+1, GMT-3):
- *   Jam sebelum cut-off WIB dialokasikan ke hari sebelumnya (T-1).
- * - Jika zona waktu GAM lebih cepat dari GMT+7 (misal GMT+8, GMT+9):
- *   Jam setelah cut-off WIB dialokasikan ke hari berikutnya (T+1).
- * 
- * @param {string} dateStr Tanggal spending WIB (YYYY-MM-DD)
- * @param {number} hourWib Jam terjadinya spend di WIB (0 s/d 23)
- * @param {string} tzGam Zona waktu GAM (misal "GMT+5")
- * @returns {string} Tanggal target yang selaras dengan GAM (YYYY-MM-DD)
+ * Menentukan tanggal alokasi spending Meta hari ini berdasarkan jam eksekusi WIB saat ini.
+ * Jika jam sekarang di WIB belum mencapai jam cut-off GAM domain tersebut,
+ * maka spending hari ini dimasukkan ke hari sebelumnya (T-1).
+ * Begitu jam cut-off tercapai atau terlewati, spending hari ini masuk ke hari ini (T).
+ *
+ * @param {string} dateStr Tanggal spending dari Meta (YYYY-MM-DD)
+ * @param {string} dateToday Tanggal hari ini di WIB (YYYY-MM-DD)
+ * @param {number} currentHourWib Jam saat ini di WIB (0 s/d 23)
+ * @param {string} tzGam Zona waktu GAM domain (misal "GMT+5", "GMT-3")
+ * @returns {string} Tanggal target yang selaras dengan siklus GAM
  */
-export function adjustDateByGamTimezone(dateStr, hourWib, tzGam) {
-  if (!tzGam || tzGam === "-" || hourWib === undefined || hourWib === null) return dateStr;
-  const match = String(tzGam).trim().match(/^(?:GMT|UTC)?([+-]\d+)/i);
-  if (!match) return dateStr;
-  const offsetGam = parseInt(match[1], 10);
-
-  const cutoffHourWib = (7 - offsetGam + 24) % 24;
-  const d = new Date(dateStr + "T12:00:00Z");
-
-  if (offsetGam < 7) {
-    // GAM lebih lambat dari WIB
-    if (hourWib < cutoffHourWib) {
-      // Masuk ke hari sebelumnya (T-1)
-      d.setUTCDate(d.getUTCDate() - 1);
-      return d.toISOString().slice(0, 10);
-    }
-    return dateStr;
-  } else if (offsetGam > 7) {
-    // GAM lebih cepat dari WIB
-    if (hourWib >= cutoffHourWib) {
-      // Masuk ke hari berikutnya (T+1)
-      d.setUTCDate(d.getUTCDate() + 1);
-      return d.toISOString().slice(0, 10);
-    }
+export function resolveGamTargetDate(dateStr, dateToday, currentHourWib, tzGam) {
+  // Hanya sesuaikan tanggal hari ini (hari berjalan)
+  if (dateStr !== dateToday) {
     return dateStr;
   }
 
-  return dateStr;
+  const cutoffHourWib = getWibCutoffHour(tzGam);
+  const match = String(tzGam || "").trim().match(/^(?:GMT|UTC)?([+-]\d+)/i);
+  const offsetGam = match ? parseInt(match[1], 10) : 7;
+
+  if (offsetGam < 7) {
+    // GAM lebih lambat dari WIB
+    // Jika jam sekarang di WIB belum mencapai jam cut-off pergantian hari GAM:
+    if (currentHourWib < cutoffHourWib) {
+      // Masukkan ke hari kemarin (T-1)
+      const d = new Date(dateToday + "T12:00:00Z");
+      d.setUTCDate(d.getUTCDate() - 1);
+      return d.toISOString().slice(0, 10);
+    }
+  }
+
+  return dateToday;
 }
