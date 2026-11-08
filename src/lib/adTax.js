@@ -55,10 +55,10 @@ export function withAdTax(row, rate) {
   const earningKnown = hasAmount(row?.earning ?? row?.revenue ?? row?.gamRevenue ?? row?.grossRevenue ?? row?.adsense);
   const spending = toAmount(row?.spending ?? row?.metaAds);
   const earning = toAmount(row?.earning ?? row?.revenue ?? row?.gamRevenue ?? row?.grossRevenue ?? row?.adsense);
-  const adTax = hasAmount(row?.adTax) ? toAmount(row.adTax) : round(spending * rate);
-  const totalSpending = hasAmount(row?.totalSpending)
-    ? toAmount(row.totalSpending)
-    : round(spending + adTax);
+  const explicitTax = toAmount(row?.adTax ?? row?.ad_tax);
+  const adTax = explicitTax > 0 ? explicitTax : round(spending * rate);
+  const explicitTotal = toAmount(row?.totalSpending ?? row?.total_spending);
+  const totalSpending = explicitTotal > spending ? explicitTotal : round(spending + adTax);
   // Baris yang laporan GAM-nya gagal tidak membawa earning sama sekali. Dibaca sebagai 0, ia
   // akan menulis "ROI -100%" untuk subdomain yang sebenarnya untung — persis seperti subdomain
   // yang beriklan tanpa hasil, dan tidak ada di layar yang bisa membedakan keduanya. Jadi ketiga

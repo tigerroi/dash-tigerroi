@@ -132,12 +132,19 @@ export async function recordRoiSnapshot(supabase, targetDate) {
       pic: row.pic || "-",
       spending,
       meta_spend: spending,
-      ad_tax: Number(row.ad_tax || 0),
-      total_spending: Number(row.total_spending || spending),
+      ad_tax: Number(row.ad_tax) > 0 ? Number(row.ad_tax) : Math.round(spending * 0.05),
+      total_spending: Number(row.total_spending) > spending
+        ? Number(row.total_spending)
+        : Math.round(spending + (Number(row.ad_tax) || Math.round(spending * 0.05))),
       earning,
       gam_revenue: earning,
       adsense_revenue: 0,
-      profit: Number(row.profit || earning - spending),
+      profit: Math.round(
+        earning -
+          (Number(row.total_spending) > spending
+            ? Number(row.total_spending)
+            : Math.round(spending + (Number(row.ad_tax) || Math.round(spending * 0.05)))),
+      ),
       roi,
       clicks: Number(row.clicks || 0),
       impressions: Number(row.impressions || 0),
