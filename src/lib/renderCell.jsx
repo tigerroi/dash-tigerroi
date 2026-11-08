@@ -2,6 +2,7 @@ import { CopyButton } from "../components/ui/CopyButton";
 import { countryName, flagUrl } from "./countries.js";
 import { firstValue } from "./firstValue";
 import { formatDate, formatDateTime, formatMonth, isDateLike, isMonthLike } from "./formatDate";
+import { formatGamZoneWithTime } from "./gamTimezone.js";
 
 const secretKeys = ["passwordAkun", "passwordDomain", "passwordWp", "clientSecret"];
 // `adApproval` = status persetujuan situs di sisi Google (lihat functions/site-approval.js).
@@ -212,6 +213,12 @@ export function renderCell(value, key) {
 
   if (key === "country") {
     return <CountryCell code={value} />;
+  }
+
+  if (key === "reportTimeZone" || key === "report_time_zone" || key === "zonaWaktuGam") {
+    if (!value || value === "-") return "-";
+    const formatted = formatGamZoneWithTime(value);
+    return <strong>{formatted}</strong>;
   }
 
   if (moneyKeys.includes(key) || isRupiahText(value)) {

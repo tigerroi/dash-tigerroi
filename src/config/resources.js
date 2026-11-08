@@ -122,92 +122,19 @@ const today = () => toDateKey(new Date());
 
 // Zona waktu bawaan untuk masing-masing network GAM yang umum
 // Mengikuti zona waktu resmi GAM yang telah diset di akun:
-// cmhhealths.com: GMT+1, trayedit.com: GMT+6, tiktokmodapk.net: GMT+5,
-// tacobellmenuu.us: GMT+5, ihopmenuwithprices.us: GMT-3, uniqueinfo24.com: GMT+6
-const GAM_DEFAULT_TIMEZONES = {
-  "cmhhealths.com": "GMT+1",
-  "trayedit.com": "GMT+6",
-  "tiktokmodapk.net": "GMT+5",
-  "tacobellmenuu.us": "GMT+5",
-  "ihopmenuwithprices.us": "GMT-3",
-  "uniqueinfo24.com": "GMT+6",
-  "23350466753": "GMT+1",
-  "23344333667": "GMT+6",
-  "23367555867": "GMT+5",
-  "23380486168": "GMT+5",
-  "23340206616": "GMT-3",
-  "23342288590": "GMT+6",
+import {
+  GAM_DEFAULT_TIMEZONES,
+  getGamTimeParts,
+  formatGamTime,
+  formatGamZoneWithTime,
+} from "../lib/gamTimezone.js";
+
+export {
+  GAM_DEFAULT_TIMEZONES,
+  getGamTimeParts,
+  formatGamTime,
+  formatGamZoneWithTime,
 };
-
-export function getGamTimeParts(tzInput, date = new Date()) {
-  if (!tzInput || tzInput === "-") return null;
-  const str = String(tzInput).trim();
-  const gmtMatch = str.match(/^(?:GMT|UTC)?([+-]\d+)(?::(\d+))?$/i);
-  if (gmtMatch) {
-    const hours = parseInt(gmtMatch[1], 10);
-    const mins = gmtMatch[2] ? parseInt(gmtMatch[2], 10) : 0;
-    const offsetMs = (hours * 60 + (hours < 0 ? -mins : mins)) * 60 * 1000;
-    const utcMs = date.getTime() + date.getTimezoneOffset() * 60 * 1000;
-    const targetDate = new Date(utcMs + offsetMs);
-    const h = String(targetDate.getHours()).padStart(2, "0");
-    const m = String(targetDate.getMinutes()).padStart(2, "0");
-    const day = String(targetDate.getDate()).padStart(2, "0");
-    const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-    const month = months[targetDate.getMonth()];
-    return {
-      hours: h,
-      minutes: m,
-      time: `${h}:${m}`,
-      day,
-      month,
-      fullDate: `${day} ${month}`,
-      fullDateTime: `${day} ${month}, ${h}:${m}`,
-      diffDay: date.getDate() !== targetDate.getDate(),
-    };
-  }
-  try {
-    const timePart = new Intl.DateTimeFormat("id-ID", {
-      timeZone: str,
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(date);
-    const datePart = new Intl.DateTimeFormat("id-ID", {
-      timeZone: str,
-      day: "2-digit",
-      month: "short",
-    }).format(date);
-    const localDayPart = new Intl.DateTimeFormat("id-ID", {
-      day: "2-digit",
-      month: "short",
-    }).format(date);
-    const formattedTime = timePart.replace(".", ":");
-    return {
-      hours: formattedTime.split(":")[0],
-      minutes: formattedTime.split(":")[1] || "00",
-      time: formattedTime,
-      fullDate: datePart,
-      fullDateTime: `${datePart}, ${formattedTime}`,
-      diffDay: datePart !== localDayPart,
-    };
-  } catch {
-    return null;
-  }
-}
-
-export function formatGamTime(tzInput, date = new Date()) {
-  const parts = getGamTimeParts(tzInput, date);
-  if (!parts) return "-";
-  return parts.fullDateTime;
-}
-
-export function formatGamZoneWithTime(tzInput, date = new Date()) {
-  if (!tzInput || tzInput === "-") return "-";
-  const parts = getGamTimeParts(tzInput, date);
-  if (!parts) return tzInput;
-  const dateSuffix = parts.diffDay ? ` (${parts.fullDate})` : "";
-  return `${tzInput} · Jam ${parts.time}${dateSuffix}`;
-}
 
 export const resources = {
   users: {

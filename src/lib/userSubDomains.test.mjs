@@ -113,3 +113,25 @@ test("tanpa subdomain, tabelnya kosong — bukan jatuh kembali ke pencocokan pic
   assert.deepEqual(rowsForSubDomains(rows, new Set()), []);
   assert.deepEqual(rowsForSubDomains(rows, []), []);
 });
+
+test("Sullivan / Sullvian mengenali insurance.tiktok dan insurance.tiktokmodapk.net", () => {
+  const user = { id: "u_sul", name: "Sullvian", username: "sullivan", email: "sullivan@tigerroi.com" };
+  const subDomains = [
+    { name: "insurance.tiktokmodapk.net", pic: "Sullivan" },
+    { name: "careers.tiktokmodapk.net", pic: "Moskov" },
+  ];
+  const assigned = assignedSubDomains(user, subDomains);
+  assert.equal(assigned.length, 1);
+  assert.equal(assigned[0].name, "insurance.tiktokmodapk.net");
+
+  const keys = subDomainNameKeys(assigned);
+  const rows = [
+    { sub_domain: "insurance.tiktok", spend: 100 },
+    { sub_domain: "insurance.tiktokmodapk.net", spend: 200 },
+    { sub_domain: "insurance", spend: 50 },
+    { sub_domain: "careers.tiktokmodapk.net", spend: 300 },
+  ];
+  const matched = rowsForSubDomains(rows, keys);
+  assert.equal(matched.length, 3);
+  assert.deepEqual(matched.map((r) => r.spend), [100, 200, 50]);
+});

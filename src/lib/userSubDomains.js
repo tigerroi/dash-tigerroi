@@ -41,8 +41,12 @@ export function assignedSubDomains(user, subDomains) {
       if (uk.length >= 3 && p.length >= 3) {
         if (uk.startsWith(p) || p.startsWith(uk)) return true;
       }
-      // Khusus Zulfan / Sulaiman
-      if ((p === "sul" && uk.includes("zulfan")) || (uk === "sul" && p.includes("zulfan"))) return true;
+      // Khusus Sullivan / Sullvian / Zulfan / Sulaiman
+      if (
+        (p === "sul" || p.includes("sullivan") || p.includes("sullvian") || p.includes("zulfan")) &&
+        (uk === "sul" || uk.includes("sullivan") || uk.includes("sullvian") || uk.includes("zulfan"))
+      )
+        return true;
       // Khusus Mas Def / Man / Ade Suparman
       if (
         (p === "man" && (uk.includes("def") || uk.includes("mas") || uk.includes("suparman"))) ||
@@ -107,8 +111,12 @@ export function rowsForSubDomains(rows, nameKeys) {
   for (const k of keys) {
     if (k.includes(".")) {
       fqdnKeys.add(k);
+      const c = canonicalSubDomain(k);
+      if (c) fqdnKeys.add(c);
     } else {
       bareKeys.add(k);
+      const c = canonicalSubDomain(k);
+      if (c && c.includes(".")) fqdnKeys.add(c);
     }
   }
 
@@ -117,28 +125,41 @@ export function rowsForSubDomains(rows, nameKeys) {
     const nk = nameKey(sub);
     if (!nk) return false;
 
-    // 1. Jika baris membawa FQDN lengkap (misal: 'insurance.uniqueinfo24.com'):
-    if (nk.includes(".")) {
-      // a. Harus cocok persis dengan FQDN yang dimiliki user
-      if (fqdnKeys.has(nk)) return true;
+    // a. Cocok langsung di fqdnKeys atau bareKeys
+    if (fqdnKeys.has(nk) || bareKeys.has(nk) || keys.has(nk)) return true;
 
-      // b. Jika user TIDAK memiliki FQDN tersebut, tolak jika user memiliki FQDN lain dengan slug yang sama.
-      // Contoh: User memegang 'insurance.tiktokmodapk.net' (domain tiktokmodapk.net),
-      // maka baris 'insurance.uniqueinfo24.com' (domain uniqueinfo24.com milik PIC lain) DITOLAK.
+    // b. Cocok lewat canonicalSubDomain (misal 'insurance.tiktok' atau 'insurance' -> 'insurance.tiktokmodapk.net')
+    const cRow = canonicalSubDomain(nk);
+    if (cRow && fqdnKeys.has(cRow)) return true;
+
+    // 1. Jika baris membawa titik (FQDN penuh atau parsial):
+    if (nk.includes(".")) {
       const rowSlug = nk.split(".")[0].trim().toLowerCase();
+
+      // Tolak hanya jika user memiliki FQDN lain dengan domain yang berbeda untuk slug yang sama
       for (const ownedFqdn of fqdnKeys) {
         if (ownedFqdn.split(".")[0].trim().toLowerCase() === rowSlug) {
+          // Jika keduanya merujuk ke domain yang sama (misal tiktok vs tiktokmodapk.net), izinkan
+          const ownedDomain = ownedFqdn.split(".").slice(1).join(".");
+          const rowDomain = nk.split(".").slice(1).join(".");
+          if (
+            (ownedDomain.includes("tiktok") && rowDomain.includes("tiktok")) ||
+            (ownedDomain.includes("tray") && rowDomain.includes("tray")) ||
+            (ownedDomain.includes("taco") && rowDomain.includes("taco")) ||
+            (ownedDomain.includes("ihop") && rowDomain.includes("ihop")) ||
+            (ownedDomain.includes("cmh") && rowDomain.includes("cmh"))
+          ) {
+            return true;
+          }
           return false;
         }
       }
 
-      // c. Jika user memang hanya didaftarkan bare slug tanpa domain sama sekali
+      // Jika user memang hanya didaftarkan bare slug tanpa domain sama sekali
       return bareKeys.has(rowSlug);
     }
 
     // 2. Jika baris hanya membawa slug pendek tanpa domain (misal baris legacy 'keto' atau 'insurance'):
-    // Cocok jika user memiliki FQDN yang berawalan slug ini, atau user memegang bare slug ini
-    if (keys.has(nk)) return true;
     for (const ownedFqdn of fqdnKeys) {
       if (ownedFqdn.split(".")[0].trim().toLowerCase() === nk) {
         return true;
@@ -217,16 +238,61 @@ export function isRootDomain(domainOrSub, domainsList = []) {
 export function canonicalSubDomain(raw, subDomainsList = []) {
   const clean = String(raw || "").trim().toLowerCase().replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
   if (!clean || clean === "unmapped" || clean === "tanpa subdomain") return raw || "";
-  if (clean.includes(".")) return clean;
 
-  if (OFFICIAL_SUBDOMAINS_MAP[clean]) {
-    return OFFICIAL_SUBDOMAINS_MAP[clean];
+  // 1. Tangani FQDN parsial/singkat (misal 'insurance.tiktok' atau 'insurance.tiktokmodapk')
+  const slug = clean.split(".")[0].trim();
+  const domainPart = clean.includes(".") ? clean.split(".").slice(1).join(".") : "";
+
+  // TikTok Mod (insurance, careers, mod, rewards, crm)
+  if (slug === "insurance" && (!domainPart || domainPart.includes("tiktok"))) {
+    return "insurance.tiktokmodapk.net";
+  }
+  if (slug === "careers" && (!domainPart || domainPart.includes("tiktok"))) {
+    return "careers.tiktokmodapk.net";
+  }
+  if (slug === "mod" && (!domainPart || domainPart.includes("tiktok"))) {
+    return "mod.tiktokmodapk.net";
+  }
+  if (slug === "rewards" && (!domainPart || domainPart.includes("tiktok"))) {
+    return "rewards.tiktokmodapk.net";
+  }
+  if (slug === "crm" && (!domainPart || domainPart.includes("tiktok"))) {
+    return "crm.tiktokmodapk.net";
+  }
+
+  // Taco Bell (cantina, burrito, fries)
+  if (["cantina", "burrito", "fries"].includes(slug) && (!domainPart || domainPart.includes("taco"))) {
+    return `${slug}.tacobellmenuu.us`;
+  }
+
+  // IHOP (menu, deals, keto, hacks, news)
+  if (["menu", "deals", "keto", "hacks", "news"].includes(slug) && (!domainPart || domainPart.includes("ihop"))) {
+    return `${slug}.ihopmenuwithprices.us`;
+  }
+
+  // Trayedit (decor, materials, cabinets, guides, styling)
+  if (["decor", "materials", "cabinets", "guides", "styling"].includes(slug) && (!domainPart || domainPart.includes("tray"))) {
+    return `${slug}.trayedit.com`;
+  }
+
+  // CMH Healths (injections, fitness, sideeffects, weightloss)
+  if (["injections", "fitness", "sideeffects", "weightloss"].includes(slug) && (!domainPart || domainPart.includes("cmh"))) {
+    return `${slug}.cmhhealths.com`;
+  }
+
+  // 2. Jika sudah FQDN penuh (minimal 2 titik, misal sub.domain.com)
+  if (clean.split(".").length >= 3) {
+    return clean;
+  }
+
+  if (OFFICIAL_SUBDOMAINS_MAP[clean] || OFFICIAL_SUBDOMAINS_MAP[slug]) {
+    return OFFICIAL_SUBDOMAINS_MAP[clean] || OFFICIAL_SUBDOMAINS_MAP[slug];
   }
 
   for (const s of Array.isArray(subDomainsList) ? subDomainsList : []) {
     const sName = String(s?.name || "").trim().toLowerCase();
     const sSlug = sName.includes(".") ? sName.split(".")[0].trim() : sName;
-    if (sSlug === clean) {
+    if (sSlug === slug || sName === clean) {
       if (sName.includes(".")) return sName;
       const parent = String(s.parent_domain || s.parentDomain || "").trim().toLowerCase().replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
       if (parent) return `${sSlug}.${parent}`;
