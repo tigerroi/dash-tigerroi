@@ -244,17 +244,62 @@ export async function fetchCampaignInsights(actId, token, dateRange) {
     rows.push(...todayRows);
   }
 
-  return rows.map((r) => ({
-    date: r.date_start || dateRange?.until || new Date().toISOString().slice(0, 10),
-    campaignId: String(r.campaign_id || ""),
-    campaignName: r.campaign_name || "",
-    spend: Number(r.spend || 0),
-    impressions: Number(r.impressions || 0),
-    clicks: Number(r.clicks || 0),
-    cpc: Number(r.cpc || 0),
-    results: Number(r.clicks || 0),
-    cpr: Number(r.clicks || 0) > 0 ? Math.round((Number(r.spend || 0) / Number(r.clicks || 0)) * 100) / 100 : 0,
-  }));
+  return rows.map((r) => {
+    const spend = Number(r.spend || 0);
+    const actions = Array.isArray(r.actions) ? r.actions : [];
+    const cpaList = Array.isArray(r.cost_per_action_type) ? r.cost_per_action_type : [];
+
+    // Prioritas jenis action untuk kolom Hasil (Results) di Meta Ads Manager:
+    // 1. Melihat Konten Situs / Halaman Arahan (landing_page_view, view_content, omni_view_content)
+    const contentAction = actions.find((a) =>
+      ["landing_page_view", "omni_view_content", "view_content", "onsite_conversion.view_content"].includes(a.action_type),
+    );
+    // 2. Klik Tautan / Outbound Clicks
+    const clickAction = actions.find((a) =>
+      ["outbound_click", "link_click"].includes(a.action_type),
+    );
+    // 3. Action konversi relevan lainnya
+    const otherAction = actions.find(
+      (a) => !["page_engagement", "post_engagement", "post_reaction", "comment"].includes(a.action_type),
+    );
+
+    const results =
+      (contentAction && Number(contentAction.value) > 0 ? Number(contentAction.value) : null) ||
+      (clickAction && Number(clickAction.value) > 0 ? Number(clickAction.value) : null) ||
+      (otherAction && Number(otherAction.value) > 0 ? Number(otherAction.value) : null) ||
+      Number(r.clicks || 0);
+
+    // Hitung atau ambil Cost Per Result (CPR) resmi dari Meta
+    const contentCpa = cpaList.find((a) =>
+      ["landing_page_view", "omni_view_content", "view_content", "onsite_conversion.view_content"].includes(a.action_type),
+    );
+    const clickCpa = cpaList.find((a) =>
+      ["outbound_click", "link_click"].includes(a.action_type),
+    );
+
+    let cpr = 0;
+    if (contentCpa && Number(contentCpa.value) > 0) {
+      cpr = Math.round(Number(contentCpa.value) * 100) / 100;
+    } else if (clickCpa && Number(clickCpa.value) > 0) {
+      cpr = Math.round(Number(clickCpa.value) * 100) / 100;
+    } else if (results > 0 && spend > 0) {
+      cpr = Math.round((spend / results) * 100) / 100;
+    }
+
+    return {
+      date: r.date_start || dateRange?.until || new Date().toISOString().slice(0, 10),
+      campaignId: String(r.campaign_id || ""),
+      campaignName: r.campaign_name || "",
+      spend,
+      impressions: Number(r.impressions || 0),
+      // Clicks Meta Ads mewakili kolom Hasil (Results) di Meta Ads Manager
+      clicks: results,
+      rawClicks: Number(r.clicks || 0),
+      cpc: Number(r.cpc || 0),
+      results,
+      cpr,
+    };
+  });
 }
 
 /**
