@@ -110,19 +110,56 @@ export function toSnakeCasePayload(payload) {
   return result;
 }
 
+const GAM_ACCOUNT_COLUMNS = new Set([
+  "name",
+  "network_code",
+  "publisher_id",
+  "status",
+  "status_auto",
+  "status_detail",
+  "sync_status",
+  "sync_earning",
+  "last_sync_report_date",
+  "email_akun",
+  "password_akun",
+  "harga_beli",
+  "total_payout",
+  "kode_customer",
+  "nomor_hp",
+  "email_pemulihan",
+  "negara",
+  "registrar_domain",
+  "exp_domain",
+  "email_domain",
+  "password_domain",
+  "server",
+  "username_wp",
+  "password_wp",
+  "saldo_adsense",
+  "saldo_ad_exchange",
+  "saldo",
+  "saldo_currency",
+  "saldo_shared",
+  "saldo_detail",
+  "nama_rekening",
+  "no_rekening",
+]);
+
 /**
  * Normalisasi payload Akun GAM (gam_accounts) agar kompatibel dengan PostgreSQL
  */
 export function formatGamAccountPayload(values = {}) {
-  const payload = toSnakeCasePayload(values);
+  const raw = toSnakeCasePayload(values);
+  const payload = {};
+
+  for (const [k, v] of Object.entries(raw)) {
+    if (GAM_ACCOUNT_COLUMNS.has(k)) {
+      payload[k] = v;
+    }
+  }
+
   delete payload.id;
   delete payload.created_at;
-
-  // Hapus field frontend yang bukan kolom fisik tabel gam_accounts
-  delete payload.google_credential;
-  delete payload.status_auto;
-  delete payload.status_detail;
-  delete payload.gam_time;
 
   if (payload.network_code !== undefined && payload.network_code !== null) {
     payload.network_code = String(payload.network_code).trim();
@@ -538,7 +575,7 @@ export async function createResource(key, values, actor = "system") {
 
   return tracked(`create:${key}`, table, nameOf(values), async () => {
     let { data, error } = await supabase.from(table).insert(payload).select().single();
-    if (error && error.code === "PGRST204") {
+    while (error && error.code === "PGRST204") {
       const match = error.message.match(/Could not find the '([^']+)' column/);
       if (match && match[1]) {
         console.warn(`[Supabase] Kolom '${match[1]}' belum ada di tabel '${table}', mencoba simpan tanpa kolom tersebut...`);
@@ -546,6 +583,8 @@ export async function createResource(key, values, actor = "system") {
         const retry = await supabase.from(table).insert(payload).select().single();
         data = retry.data;
         error = retry.error;
+      } else {
+        break;
       }
     }
     if (error) throw error;
@@ -566,7 +605,7 @@ export async function createResourceAt(key, id, values, actor = "system") {
 
   return tracked(`create:${key}`, `${table}/${id}`, nameOf(values), async () => {
     let { data, error } = await supabase.from(table).upsert(payload).select().single();
-    if (error && error.code === "PGRST204") {
+    while (error && error.code === "PGRST204") {
       const match = error.message.match(/Could not find the '([^']+)' column/);
       if (match && match[1]) {
         console.warn(`[Supabase] Kolom '${match[1]}' belum ada di tabel '${table}', mencoba simpan tanpa kolom tersebut...`);
@@ -574,6 +613,8 @@ export async function createResourceAt(key, id, values, actor = "system") {
         const retry = await supabase.from(table).upsert(payload).select().single();
         data = retry.data;
         error = retry.error;
+      } else {
+        break;
       }
     }
     if (error) throw error;
@@ -608,13 +649,15 @@ export async function updateResource(key, id, values, actor = "system") {
 
   return tracked(`update:${key}`, `${table}/${id}`, changedFields(values), async () => {
     let { error } = await supabase.from(table).update(payload).eq("id", id);
-    if (error && error.code === "PGRST204") {
+    while (error && error.code === "PGRST204") {
       const match = error.message.match(/Could not find the '([^']+)' column/);
       if (match && match[1]) {
         console.warn(`[Supabase] Kolom '${match[1]}' belum ada di tabel '${table}', mencoba update tanpa kolom tersebut...`);
         delete payload[match[1]];
         const retry = await supabase.from(table).update(payload).eq("id", id);
         error = retry.error;
+      } else {
+        break;
       }
     }
     if (error) throw error;
