@@ -380,6 +380,15 @@ export async function fetchAccountCampaigns(actId, token) {
       status = "Terjadwal";
     }
 
+    const cleanAdSets = sets.map((s) => ({
+      id: String(s.id || ""),
+      name: s.name || "",
+      status: s.status || "",
+      effectiveStatus: s.effective_status || "",
+      startTime: s.start_time || "",
+      endTime: s.end_time || "",
+    }));
+
     return {
       campaignId: cId,
       campaign: c.name || "",
@@ -390,6 +399,7 @@ export async function fetchAccountCampaigns(actId, token) {
       dailyBudget: c.daily_budget ? toMajor(c.daily_budget) : null,
       lifetimeBudget: c.lifetime_budget ? toMajor(c.lifetime_budget) : null,
       objective: c.objective || "",
+      adSets: cleanAdSets,
     };
   });
 }

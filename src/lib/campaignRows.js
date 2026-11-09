@@ -60,6 +60,7 @@ export function normalizeCampaignRows(items) {
     dailyBudget: firstValue(item.dailyBudget),
     spendToday: firstValue(item.spendToday),
     spendDate: firstValue(item.spendDate, item.date),
+    adSets: Array.isArray(item.adSets) ? item.adSets : [],
   }));
 }
 

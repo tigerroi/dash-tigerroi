@@ -76,20 +76,55 @@ export function ScheduledLaunches({ store, viewer }) {
           .replace(" ", "T")
           .slice(0, 16);
 
-        rows.push({
-          id: `${c.account || primaryAccount.name}__${c.campaignId || c.campaign}`,
-          adSetId: String(c.campaignId || ""),
-          adSet: c.campaign || "Campaign Utama",
-          campaignId: String(c.campaignId || ""),
-          campaign: c.campaign || "",
-          campaignScheduled: true,
-          startMs: validStartMs,
-          startWib,
-          accountId: primaryAccount.id || "BD R 16",
-          account: c.account || primaryAccount.name || "BD R 16",
-          pic: c.pic || c.owner || "",
-          subDomain: c.subDomain || "",
-        });
+        const campAdSets = Array.isArray(c.adSets) && c.adSets.length > 0 ? c.adSets : null;
+
+        if (campAdSets) {
+          // Ambil ad set yang aktif/terjadwal (bukan PAUSED) jika ada
+          const activeOrScheduled = campAdSets.filter(
+            (s) => s.status !== "PAUSED" && s.effectiveStatus !== "PAUSED"
+          );
+          const setsToUse = activeOrScheduled.length > 0 ? activeOrScheduled : campAdSets;
+
+          for (const s of setsToUse) {
+            const sStartMs = s.startTime ? Date.parse(s.startTime) : validStartMs;
+            const validSetStartMs = Number.isFinite(sStartMs) ? sStartMs : validStartMs;
+            const setD = new Date(validSetStartMs);
+            const setStartWib = setD
+              .toLocaleString("sv-SE", { timeZone: "Asia/Jakarta" })
+              .replace(" ", "T")
+              .slice(0, 16);
+
+            rows.push({
+              id: `${c.account || primaryAccount.name}__${s.id || c.campaignId}`,
+              adSetId: String(s.id || ""),
+              adSet: s.name || c.campaign || "Ad Set",
+              campaignId: String(c.campaignId || ""),
+              campaign: c.campaign || "",
+              campaignScheduled: true,
+              startMs: validSetStartMs,
+              startWib: setStartWib,
+              accountId: c.account || primaryAccount.name || "BD R 16",
+              account: c.account || primaryAccount.name || "BD R 16",
+              pic: c.pic || c.owner || "",
+              subDomain: c.subDomain || "",
+            });
+          }
+        } else {
+          rows.push({
+            id: `${c.account || primaryAccount.name}__${c.campaignId || c.campaign}`,
+            adSetId: String(c.campaignId || ""),
+            adSet: c.campaign || "Campaign Utama",
+            campaignId: String(c.campaignId || ""),
+            campaign: c.campaign || "",
+            campaignScheduled: true,
+            startMs: validStartMs,
+            startWib,
+            accountId: c.account || primaryAccount.name || "BD R 16",
+            account: c.account || primaryAccount.name || "BD R 16",
+            pic: c.pic || c.owner || "",
+            subDomain: c.subDomain || "",
+          });
+        }
       }
     }
 
