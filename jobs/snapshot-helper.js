@@ -174,15 +174,9 @@ export async function recordRoiSnapshot(supabase, targetDate) {
 
   console.log(`✅ [SNAPSHOT] Berhasil menyimpan ${snapshotRows.length} baris snapshot waktu ${currentTimeWib} WIB.`);
 
-  // 5. Pembersihan snapshot kosong (campaign off) dan riwayat lama
+  // 5. Pembersihan riwayat lama (> 60 hari)
+  // Catatan: Jangan pernah menghapus baris snapshot jam-jam sebelumnya (00:00 s/d 23:00) pada hari berjalan!
   try {
-    // Bersihkan baris snapshot yang kosong melompong (campaign off / spending Rp 0 & earning Rp 0)
-    await supabase
-      .from("roi_snapshots")
-      .delete()
-      .eq("spending", 0)
-      .eq("earning", 0);
-
     const cutoffDate = new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10);
     const { error: pruneErr } = await supabase
       .from("roi_snapshots")
@@ -246,6 +240,21 @@ export async function recordHourlyGamSnapshots(supabase, hourlyGamRows, subdomai
     hData.clicks += Number(row.clicks || 0);
   }
 
+  // Ambil snapshot yang sudah ada di database untuk tanggal tersebut agar data spending Meta tidak tertimpa Rp 0
+  const dates = [...new Set(hourlyGamRows.map((r) => r.date).filter(Boolean))];
+  const { data: existingSnaps } = await supabase
+    .from("roi_snapshots")
+    .select("*")
+    .in("date", dates);
+
+  const existingMap = new Map();
+  for (const s of existingSnaps || []) {
+    existingMap.set(s.id, s);
+    const sub = (s.sub_domain || "").toLowerCase().trim();
+    const timeNorm = (s.time || "").slice(0, 5);
+    existingMap.set(`${s.date}__${timeNorm}__${sub}`, s);
+  }
+
   // Hitung kumulatif sepanjang hari dan siapkan baris snapshot
   const snapshotRows = [];
   for (const group of hourlyGroup.values()) {
@@ -270,6 +279,23 @@ export async function recordHourlyGamSnapshots(supabase, hourlyGamRows, subdomai
 
       const timeStr = `${h}:00`;
       const snapshotId = `${group.date}T${h}-00__${group.site_code}__${group.sub_domain || "root"}`;
+      const existing = existingMap.get(snapshotId) || existingMap.get(`${group.date}__${timeStr}__${group.sub_domain}`);
+
+      // Pertahankan spending Meta yang sudah dicatat sebelumnya pada jam tersebut
+      const spending = existing ? Number(existing.spending || existing.meta_spend || 0) : 0;
+      const metaSpend = existing ? Number(existing.meta_spend || spending) : 0;
+      const adTax = existing ? Number(existing.ad_tax || Math.round(spending * 0.05)) : Math.round(spending * 0.05);
+      const totalSpending = existing ? Number(existing.total_spending || (spending + adTax)) : (spending + adTax);
+      const metaClicks = existing ? Number(existing.meta_clicks || existing.clicks || 0) : 0;
+      const cpr = existing && Number(existing.cpr) > 0 ? Number(existing.cpr) : (metaClicks > 0 ? Math.round((totalSpending / metaClicks) * 100) / 100 : 0);
+
+      const earning = cumulativeRev;
+      const profit = Math.round(earning - totalSpending);
+      const roi = totalSpending > 0 ? Math.round(((earning - totalSpending) / totalSpending) * 10000) / 100 : 0;
+
+      const ctr = cumulativeImp > 0 ? Math.round((cumulativeClicks / cumulativeImp) * 10000) / 100 : 0;
+      const cpc = cumulativeClicks > 0 ? Math.round((earning / cumulativeClicks) * 100) / 100 : 0;
+      const ecpm = cumulativeImp > 0 ? Math.round(((earning / cumulativeImp) * 1000) * 100) / 100 : 0;
 
       snapshotRows.push({
         id: snapshotId,
@@ -279,25 +305,31 @@ export async function recordHourlyGamSnapshots(supabase, hourlyGamRows, subdomai
         sub_domain: group.sub_domain,
         campaign,
         domain: parentDomain,
-        pic,
-        spending: 0,
-        meta_spend: 0,
-        ad_tax: 0,
-        total_spending: 0,
-        earning: cumulativeRev,
-        gam_revenue: cumulativeRev,
+        pic: existing?.pic && existing.pic !== "-" ? existing.pic : pic,
+        spending,
+        meta_spend: metaSpend,
+        ad_tax: adTax,
+        total_spending: totalSpending,
+        earning,
+        gam_revenue: earning,
         adsense_revenue: 0,
-        profit: cumulativeRev,
-        roi: 0,
-        clicks: cumulativeClicks,
+        profit,
+        roi,
+        clicks: metaClicks,
+        meta_clicks: metaClicks,
+        gam_clicks: cumulativeClicks,
+        gam_impressions: cumulativeImp,
         impressions: cumulativeImp,
-        cpc: 0,
+        ctr,
+        cpc,
+        cpr,
+        ecpm,
         currency: "IDR",
         fx_rate: 1.0,
-        fluk_spend: 0,
+        fluk_spend: existing?.fluk_spend || 0,
         fluk_earn: hourRev, // Pendapatan pada 1 jam tersebut
-        fluk_roi: 0,
-        created_at: new Date().toISOString(),
+        fluk_roi: existing?.fluk_roi || 0,
+        created_at: existing?.created_at || new Date().toISOString(),
       });
     }
   }

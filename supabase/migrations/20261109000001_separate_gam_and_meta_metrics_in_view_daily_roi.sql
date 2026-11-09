@@ -231,3 +231,4 @@ FROM public.view_daily_roi v
 GROUP BY v.date;
 
 GRANT SELECT ON public.view_daily_financials TO anon, authenticated, service_role;
+

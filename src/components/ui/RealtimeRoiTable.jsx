@@ -351,11 +351,22 @@ function realtimeRoiColumns(earningSource) {
       meta: { headerClassName: "master-country-head", className: "master-country-cell" },
     }),
     {
-      // Metrik GAM (Google Ad Manager): CTR ditarik dari GAM, CPC pendapatan per klik GAM, RPM / eCPM pendapatan per 1000 impresi
+      // Metrik GAM (Google Ad Manager): Clicks GAM, CTR GAM, CPC pendapatan per klik GAM, RPM / eCPM pendapatan per 1000 impresi
       id: "earningMetrics",
       header: `${earningSource} M.`,
       meta: { headerClassName: "master-gam-group" },
       columns: [
+        sub({
+          accessorKey: "gamClicks",
+          header: "Clicks",
+          cell: ({ getValue }) => {
+            const val = getValue();
+            if (val === undefined || val === null || val === "" || val === "-") return "-";
+            const num = Number(val);
+            return Number.isFinite(num) ? num.toLocaleString("id-ID") : String(val);
+          },
+          meta: { className: "center master-money-cell gam" },
+        }),
         sub({
           accessorKey: "ctr",
           header: "CTR",

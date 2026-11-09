@@ -217,6 +217,18 @@ export function dedupeSnapshots(snapshots) {
       Number(existing.clicks || 0),
       Number(row.clicks || 0),
     );
+    const metaClicks = Math.max(
+      Number(existing.metaClicks ?? existing.meta_clicks ?? 0),
+      Number(row.metaClicks ?? row.meta_clicks ?? 0),
+    );
+    const gamClicks = Math.max(
+      Number(existing.gamClicks ?? existing.gam_clicks ?? 0),
+      Number(row.gamClicks ?? row.gam_clicks ?? 0),
+    );
+    const gamImpressions = Math.max(
+      Number(existing.gamImpressions ?? existing.gam_impressions ?? 0),
+      Number(row.gamImpressions ?? row.gam_impressions ?? 0),
+    );
     const pic = String(row.pic || "").trim() && row.pic !== "-" ? row.pic : existing.pic;
     const campaign =
       String(row.campaign || "").trim() && !row.campaign.startsWith("unmapped")
@@ -246,6 +258,12 @@ export function dedupeSnapshots(snapshots) {
       gamRevenue: earning,
       impressions,
       clicks,
+      metaClicks,
+      meta_clicks: metaClicks,
+      gamClicks,
+      gam_clicks: gamClicks,
+      gamImpressions,
+      gam_impressions: gamImpressions,
       flukSpend,
       fluk_spend: flukSpend,
       flukEarn,
@@ -375,6 +393,7 @@ export function normalizeRealtimeRoiRow(item, rate, countryBreakdown) {
     validMetric(item.gamClicks) ||
     validMetric(item.gam_clicks) ||
     (countryGamClicks > 0 ? countryGamClicks : null) ||
+    (Number(item.gamRevenue || item.gam_revenue || 0) > 0 && !validMetric(item.metaSpend) ? validMetric(item.clicks) : null) ||
     0;
 
   const totalGamEarning = Number(money.earning || item.earning || item.gamRevenue || item.gam_revenue || 0);
@@ -494,12 +513,12 @@ export function normalizeRealtimeRoiRow(item, rate, countryBreakdown) {
     flukRoi: firstValue(item.flukRoi, item.roiFluctuation),
 
     // Metrik GAM:
+    gamClicks: gamClicks || 0,
+    gamImpressions: gamImpressions || 0,
     ctr: computedCtr !== null && computedCtr !== undefined ? computedCtr : "-",
     cpc: computedGamCpc || "-",
     pageRpm: computedEcpm || "-",
     ecpm: computedEcpm || "-",
-    gamClicks: gamClicks || "-",
-    gamImpressions: gamImpressions || "-",
 
     // Metrik Meta Ads:
     clicks: metaClicks || 0,
