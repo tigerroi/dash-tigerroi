@@ -146,6 +146,7 @@ const GAM_NETWORKS = [
   { domain: "ihopmenuwithprices.us", networkCode: "23340206616", defaultSiteCode: "ihop-menu" },
   { domain: "cmhhealths.com", networkCode: "23350466753", defaultSiteCode: "cmhhealths" },
   { domain: "uniqueinfo24.com", networkCode: "23342288590", defaultSiteCode: "uniqueinfo24" },
+  { domain: "ziperto.org", networkCode: "23355757170", defaultSiteCode: "ziperto" },
 ];
 
 function matchSubDomain(campaignName, subdomains, defaultSubDomain = "") {
@@ -469,8 +470,11 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
     if (clientEmail && privateKey) {
       try {
         const gamToken = await getGoogleServiceAccountToken({ clientEmail, privateKey });
-        // Gabungkan seluruh network GAM dari database gam_accounts jika ada
-        const { data: dbGamAccounts } = await supabase.from("gam_accounts").select("name, network_code");
+        // Gabungkan seluruh network GAM dari database gam_accounts dan domains jika ada
+        const [{ data: dbGamAccounts }, { data: dbDomains }] = await Promise.all([
+          supabase.from("gam_accounts").select("name, network_code"),
+          supabase.from("domains").select("domain_url, network_code").not("network_code", "is", null),
+        ]);
         const networksToSync = [...GAM_NETWORKS];
         if (Array.isArray(dbGamAccounts)) {
           for (const dga of dbGamAccounts) {
@@ -480,6 +484,18 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
                 domain: dga.name,
                 networkCode: netCode,
                 defaultSiteCode: (dga.name || "").split(".")[0],
+              });
+            }
+          }
+        }
+        if (Array.isArray(dbDomains)) {
+          for (const dom of dbDomains) {
+            const netCode = String(dom.network_code || "").trim();
+            if (netCode && !networksToSync.some((n) => n.networkCode === netCode)) {
+              networksToSync.push({
+                domain: dom.domain_url,
+                networkCode: netCode,
+                defaultSiteCode: (dom.domain_url || "").split(".")[0],
               });
             }
           }

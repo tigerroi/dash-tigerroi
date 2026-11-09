@@ -57,6 +57,7 @@ const GAM_NETWORKS = [
   { domain: "ihopmenuwithprices.us", networkCode: "23340206616", defaultSiteCode: "ihop-menu" },
   { domain: "cmhhealths.com", networkCode: "23350466753", defaultSiteCode: "cmhhealths" },
   { domain: "uniqueinfo24.com", networkCode: "23342288590", defaultSiteCode: "uniqueinfo24" },
+  { domain: "ziperto.org", networkCode: "23355757170", defaultSiteCode: "ziperto" },
 ];
 
 // Kurs resmi konversi mata uang GAM ke IDR
@@ -67,11 +68,13 @@ const GAM_FX_RATES = {
   "23340206616": 18155.28, // IHOP (USD)
   "23350466753": 18155.28, // CMH Healths (USD)
   "23342288590": 18155.28, // UniqueInfo24 (USD)
+  "23355757170": 18155.28, // Ziperto (USD)
 };
 
 // Zona waktu resmi untuk masing-masing network Google Ad Manager:
 // cmhhealths.com: GMT+1, trayedit.com: GMT+6, tiktokmodapk.net: GMT+5,
-// tacobellmenuu.us: GMT+5, ihopmenuwithprices.us: GMT-3, uniqueinfo24.com: GMT+6
+// tacobellmenuu.us: GMT+5, ihopmenuwithprices.us: GMT-3, uniqueinfo24.com: GMT+6,
+// ziperto.org: America/New_York
 const GAM_PRESET_TIMEZONES = {
   "cmhhealths.com": "GMT+1",
   "trayedit.com": "GMT+6",
@@ -79,12 +82,14 @@ const GAM_PRESET_TIMEZONES = {
   "tacobellmenuu.us": "GMT+5",
   "ihopmenuwithprices.us": "GMT-3",
   "uniqueinfo24.com": "GMT+6",
+  "ziperto.org": "America/New_York",
   "23350466753": "GMT+1",
   "23344333667": "GMT+6",
   "23367555867": "GMT+5",
   "23380486168": "GMT+5",
   "23340206616": "GMT-3",
   "23342288590": "GMT+6",
+  "23355757170": "America/New_York",
 };
 
 function formatIsoDate(d) {
@@ -261,17 +266,18 @@ export async function runSyncGam() {
     console.log(`Mengautentikasi Service Account: ${creds.clientEmail}...`);
     const accessToken = await getGoogleServiceAccountToken(creds);
 
-    // 4. Ambil daftar sites, subdomains, dan gam_accounts untuk sinkronisasi
-    const [{ data: sitesList }, { data: subdomainsList }, { data: gamAccountsList }] = await Promise.all([
+    // 4. Ambil daftar sites, subdomains, gam_accounts, dan domains untuk sinkronisasi
+    const [{ data: sitesList }, { data: subdomainsList }, { data: gamAccountsList }, { data: domainsList }] = await Promise.all([
       supabase.from("sites").select("site_code, is_active").eq("is_active", true),
       supabase.from("subdomains").select("name, site_code, parent_domain"),
       supabase.from("gam_accounts").select("name, network_code, status"),
+      supabase.from("domains").select("domain_url, network_code, status").not("network_code", "is", null),
     ]);
 
     const sites = sitesList || [];
     const subdomains = subdomainsList || [];
 
-    // Bangun daftar Network GAM dinamis dari database Supabase (tabel gam_accounts), fallback ke GAM_NETWORKS
+    // Bangun daftar Network GAM dinamis dari database Supabase (tabel gam_accounts & domains), fallback ke GAM_NETWORKS
     const activeNetworks = [];
     const seenCodes = new Set();
 
@@ -286,7 +292,24 @@ export async function runSyncGam() {
         activeNetworks.push({
           domain: acc.name || preset?.domain || "unknown",
           networkCode: code,
-          defaultSiteCode: preset?.defaultSiteCode || acc.name || "unmapped",
+          defaultSiteCode: preset?.defaultSiteCode || (acc.name || "").split(".")[0] || "unmapped",
+        });
+      }
+    }
+
+    if (domainsList && domainsList.length > 0) {
+      for (const dom of domainsList) {
+        if (!dom.network_code) continue;
+        const code = String(dom.network_code).trim();
+        if (seenCodes.has(code)) continue;
+        const status = String(dom.status || "").toLowerCase();
+        if (status === "inactive" || status === "nonaktif" || status === "banned") continue;
+        seenCodes.add(code);
+        const preset = GAM_NETWORKS.find((n) => n.networkCode === code);
+        activeNetworks.push({
+          domain: dom.domain_url || preset?.domain || "unknown",
+          networkCode: code,
+          defaultSiteCode: preset?.defaultSiteCode || (dom.domain_url || "").split(".")[0] || "unmapped",
         });
       }
     }
