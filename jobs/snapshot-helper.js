@@ -95,11 +95,9 @@ export async function recordRoiSnapshot(supabase, targetDate) {
 
     const spending = Number(row.spending || row.meta_spend || row.spend_idr || 0);
     const earning = Number(row.earning || row.gam_revenue || row.raw_revenue || 0);
-    const clicks = Number(row.clicks || 0);
-    const impressions = Number(row.impressions || 0);
 
-    // Jangan catat snapshot jika campaign OFF (tidak ada belanja dan tidak ada pendapatan sama sekali)
-    if (spending <= 0 && earning <= 0 && clicks <= 0 && impressions <= 0) {
+    // Jangan catat snapshot jika campaign OFF (tidak ada belanja dan tidak ada pendapatan sama sekali, abaikan sisa klik organik/bot)
+    if (spending <= 0.01 && earning <= 0.01) {
       return false;
     }
 
