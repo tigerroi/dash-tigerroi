@@ -9,3 +9,4 @@ UPDATE public.roi_snapshots
 SET time = SUBSTRING(time FROM 1 FOR 2) || ':00'
 WHERE time ~ '^[0-2][0-9]:[0-9]{2}$'
   AND time NOT LIKE '%:00';
+

@@ -351,29 +351,44 @@ function realtimeRoiColumns(earningSource) {
       meta: { headerClassName: "master-country-head", className: "master-country-cell" },
     }),
     {
-      // Clicks, CPC, dan eCPM ketiganya dihitung dari laporan earning-nya (CPC = earning ÷ klik),
-      // jadi keduanya yang pertama dulu berdiri di bawah judul "META M." yang salah — dan CPR, yang
-      // memang biaya Meta per hasil, berdiri di bawah "ADS M.".
+      // Metrik GAM (Google Ad Manager): CTR ditarik dari GAM, CPC pendapatan per klik GAM, RPM / eCPM pendapatan per 1000 impresi
       id: "earningMetrics",
       header: `${earningSource} M.`,
       meta: { headerClassName: "master-gam-group" },
       columns: [
         sub({
-          accessorKey: "clicks",
-          header: "Clicks",
-          cell: ({ getValue }) => getValue(),
-          meta: { className: "center" },
+          accessorKey: "ctr",
+          header: "CTR",
+          cell: ({ getValue }) => {
+            const val = getValue();
+            if (val === undefined || val === null || val === "" || val === "-") return "-";
+            const num = Number(val);
+            return Number.isFinite(num) ? `${num.toFixed(2)}%` : String(val);
+          },
+          meta: { className: "center master-money-cell gam" },
         }),
         money("cpc", "CPC", "cpc", "gam"),
         // Kunci `pageRpm` di kedua tabel — yang membaca kunci barisnya adalah PENGURUTAN kolom.
-        money("pageRpm", "eCPM", "ecpm", "gam"),
+        money("pageRpm", "RPM / eCPM", "ecpm", "gam"),
       ],
     },
     {
+      // Metrik Meta Ads: Clicks = hasil klik di Meta Ads, CPR = Biaya Per Hasil, META BAL. = Saldo Akun
       id: "metaMetrics",
       header: "META M.",
       meta: { headerClassName: "master-meta-metrics-group" },
       columns: [
+        sub({
+          accessorKey: "metaClicks",
+          header: "Clicks",
+          cell: ({ getValue }) => {
+            const val = getValue();
+            if (val === undefined || val === null || val === "" || val === "-") return "-";
+            const num = Number(val);
+            return Number.isFinite(num) ? num.toLocaleString("id-ID") : String(val);
+          },
+          meta: { className: "center master-money-cell meta" },
+        }),
         money("cpr", "CPR", "cpr", "meta"),
         money("metaBalance", "META BAL.", "balance", "meta"),
       ],

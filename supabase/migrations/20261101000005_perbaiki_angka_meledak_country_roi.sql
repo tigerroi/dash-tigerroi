@@ -18,3 +18,4 @@ SET
 WHERE earning > 10000000; -- Hanya baris yang terlanjur membengkak di atas 10 juta rupiah per negara
 
 COMMIT;
+

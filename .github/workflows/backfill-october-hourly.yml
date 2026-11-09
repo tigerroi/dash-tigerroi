@@ -37,3 +37,4 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           node jobs/backfill-october-hourly-snapshots.js --start="${{ github.event.inputs.start_date }}" --end="${{ github.event.inputs.end_date }}"
+

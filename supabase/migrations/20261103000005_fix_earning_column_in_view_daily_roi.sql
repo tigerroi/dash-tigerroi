@@ -183,3 +183,4 @@ GROUP BY v.date
 ORDER BY v.date DESC;
 
 GRANT SELECT ON public.view_daily_financials TO anon, authenticated, service_role;
+

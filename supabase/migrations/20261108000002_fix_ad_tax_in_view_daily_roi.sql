@@ -16,7 +16,7 @@ WITH site_dates AS (
         site_code, 
         COALESCE(subdomain, '') AS subdomain,
         MAX(updated_at) AS last_updated_at
-    FROM public.daily_stats
+    FROM public.daily_stats 
     WHERE COALESCE(subdomain, '') <> '' 
        OR NOT EXISTS (
            SELECT 1 FROM public.daily_stats s2 
@@ -187,3 +187,4 @@ GROUP BY v.date
 ORDER BY v.date DESC;
 
 GRANT SELECT ON public.view_daily_financials TO anon, authenticated, service_role;
+

@@ -360,38 +360,71 @@ export function normalizeRealtimeRoiRow(item, rate, countryBreakdown) {
   // Dijodohkan dari `item` yang mentah — tanggal ISO dan nama subdomain apa adanya
   const countries = countriesOf(countryBreakdown, item);
 
-  // Impressions GAM: ambil dari item.impressions atau agregasi impresi seluruh negara di baris ini
-  const totalImpressions =
+  // 1. METRIK GAM (Google Ad Manager)
+  const countryGamImpressions = countries.reduce((sum, c) => sum + (Number(c.impressions) || 0), 0);
+  const countryGamClicks = countries.reduce((sum, c) => sum + (Number(c.clicks) || 0), 0);
+
+  const gamImpressions =
+    validMetric(item.gamImpressions) ||
+    validMetric(item.gam_impressions) ||
+    (countryGamImpressions > 0 ? countryGamImpressions : null) ||
     validMetric(item.impressions) ||
-    countries.reduce((sum, c) => sum + (Number(c.impressions) || 0), 0) ||
     0;
 
-  const totalGamClicks = validMetric(item.clicks) || 0;
-  const totalGamEarning = Number(money.earning || 0);
+  const gamClicks =
+    validMetric(item.gamClicks) ||
+    validMetric(item.gam_clicks) ||
+    (countryGamClicks > 0 ? countryGamClicks : null) ||
+    0;
 
+  const totalGamEarning = Number(money.earning || item.earning || item.gamRevenue || item.gam_revenue || 0);
+
+  // GAM CTR (%): Rasio klik iklan GAM per impresi GAM
+  let computedCtr = validMetric(item.ctr);
+  if (computedCtr === null || computedCtr === undefined) {
+    if (gamImpressions > 0 && gamClicks > 0) {
+      computedCtr = Math.round((gamClicks / gamImpressions) * 10000) / 100;
+    }
+  }
+
+  // GAM CPC: Pendapatan per klik GAM (gamRevenue / gamClicks)
+  let computedGamCpc = validMetric(item.gamCpc) || validMetric(item.gam_cpc);
+  if (computedGamCpc === null || computedGamCpc === undefined) {
+    if (gamClicks > 0 && totalGamEarning > 0) {
+      computedGamCpc = Math.round((totalGamEarning / gamClicks) * 100) / 100;
+    } else if (validMetric(item.cpc) && Number(item.cpc) > 0) {
+      computedGamCpc = Number(item.cpc);
+    }
+  }
+
+  // GAM RPM / eCPM: Pendapatan per 1000 impresi GAM ((gamRevenue / gamImpressions) * 1000)
   let computedEcpm = validMetric(item.pageRpm) || validMetric(item.ecpm);
   if (!computedEcpm) {
-    if (totalImpressions > 0 && totalGamEarning > 0) {
-      computedEcpm = Math.round((totalGamEarning / totalImpressions) * 1000);
-    } else if (totalGamClicks > 0 && totalGamEarning > 0) {
-      // Jika impresi tidak dilaporkan GAM, estimasi dengan CTR rata-rata standar (~3.5%)
-      const estImpressions = Math.round(totalGamClicks / 0.035);
+    if (gamImpressions > 0 && totalGamEarning > 0) {
+      computedEcpm = Math.round((totalGamEarning / gamImpressions) * 1000);
+    } else if (gamClicks > 0 && totalGamEarning > 0) {
+      const estImpressions = Math.round(gamClicks / 0.035);
       computedEcpm = Math.round((totalGamEarning / estImpressions) * 1000);
     }
   }
 
-  // Clicks & Spend Meta untuk CPR
-  const metaSpending = Number(money.spending || item.metaSpend || item.meta_spend || 0);
+  // 2. METRIK META ADS
+  // Clicks = Hasil klik / results di Meta Ads
   const metaClicks =
-    validMetric(item.adClicks) ||
     validMetric(item.metaClicks) ||
-    countries.reduce((sum, c) => sum + (Number(c.clicks) || 0), 0) ||
+    validMetric(item.meta_clicks) ||
+    validMetric(item.adClicks) ||
     validMetric(item.clicks) ||
     0;
 
+  const totalMetaSpend = Number(
+    money.totalSpending || item.totalSpending || item.total_spending || money.spending || item.spending || 0
+  );
+
+  // CPR = Cost Per Result / Biaya Per Hasil di Meta Ads (Total Spend / Meta Clicks)
   let computedCpr = validMetric(item.cpr) || validMetric(item.costPerResult);
-  if (!computedCpr && metaSpending > 0 && metaClicks > 0) {
-    computedCpr = Math.round((metaSpending / metaClicks) * 100) / 100;
+  if (!computedCpr && totalMetaSpend > 0 && metaClicks > 0) {
+    computedCpr = Math.round((totalMetaSpend / metaClicks) * 100) / 100;
   }
 
   let gamAds = sources.gam;
@@ -459,11 +492,18 @@ export function normalizeRealtimeRoiRow(item, rate, countryBreakdown) {
     flukEarn: firstValue(item.flukEarn, item.fluctuationEarn, item.earningFluctuation),
     subDomain: canonicalSubOf(item) || firstValue(item.subDomain),
     flukRoi: firstValue(item.flukRoi, item.roiFluctuation),
-    clicks: firstValue(item.clicks),
-    cpc: firstValue(item.cpc),
-    // Satu kunci untuk kolom eCPM (Google Ad Manager / AdSense)
+
+    // Metrik GAM:
+    ctr: computedCtr !== null && computedCtr !== undefined ? computedCtr : "-",
+    cpc: computedGamCpc || "-",
     pageRpm: computedEcpm || "-",
-    // CPR (Cost Per Result / Meta Ads)
+    ecpm: computedEcpm || "-",
+    gamClicks: gamClicks || "-",
+    gamImpressions: gamImpressions || "-",
+
+    // Metrik Meta Ads:
+    clicks: metaClicks || 0,
+    metaClicks: metaClicks || 0,
     cpr: computedCpr || "-",
     metaBalance: firstValue(item.metaBalance, item.balance),
     campaigns: toCampaignList(item.campaigns),
@@ -484,13 +524,12 @@ export function earningSourceLabel(rows) {
 
 // Nada warna kolom: sisi Meta (merah), sisi earning (oranye), ROI (biru), fluktuasi (hijau).
 export function realtimeRoiColumnTone(key) {
-  if (["metaSpend", "adTax", "totalSpending", "cpr", "metaBalance"].includes(key)) {
+  if (["metaSpend", "adTax", "totalSpending", "clicks", "metaClicks", "cpr", "metaBalance"].includes(key)) {
     return "meta";
   }
 
-  // Clicks/CPC/eCPM datang dari laporan earning-nya, bukan Meta — CPC di sini adalah earning per
-  // klik.
-  if (["gamAds", "adsenseAds", "gamRevenue", "clicks", "cpc", "pageRpm"].includes(key)) {
+  // Metrik GAM: gamAds, adsenseAds, gamRevenue, ctr, cpc, pageRpm, ecpm
+  if (["gamAds", "adsenseAds", "gamRevenue", "gamClicks", "ctr", "cpc", "pageRpm", "ecpm"].includes(key)) {
     return "gam";
   }
 
