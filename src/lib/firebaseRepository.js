@@ -1,5 +1,5 @@
 import { supabase } from "../config/supabase.js";
-import { logActivity } from "./activityRecorder";
+import { logActivity } from "./activityRecorder.js";
 import { dedupeRoiReports } from "./roiRealtime.js";
 import { formatAdAccountPayload, normalizeAdAccountRow } from "./adAccountAdapter.js";
 import {
