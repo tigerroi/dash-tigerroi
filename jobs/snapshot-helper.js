@@ -94,10 +94,9 @@ export async function recordRoiSnapshot(supabase, targetDate) {
     if (parts.length <= 2) return false; // Domain utama tanpa subdomain
 
     const spending = Number(row.spending || row.meta_spend || row.spend_idr || 0);
-    const earning = Number(row.earning || row.gam_revenue || row.raw_revenue || 0);
 
-    // Jangan catat snapshot jika campaign OFF (tidak ada belanja dan tidak ada pendapatan sama sekali, abaikan sisa klik organik/bot)
-    if (spending <= 0.01 && earning <= 0.01) {
+    // Jangan catat snapshot jika spending 0 (tidak ada campaign iklan aktif)
+    if (spending <= 0.01) {
       return false;
     }
 
@@ -283,6 +282,12 @@ export async function recordHourlyGamSnapshots(supabase, hourlyGamRows, subdomai
 
       // Pertahankan spending Meta yang sudah dicatat sebelumnya pada jam tersebut
       const spending = existing ? Number(existing.spending || existing.meta_spend || 0) : 0;
+      
+      // Jangan catat snapshot jika spending 0 (tidak ada campaign iklan aktif, abaikan sisa earning organik)
+      if (spending <= 0.01) {
+        continue;
+      }
+
       const metaSpend = existing ? Number(existing.meta_spend || spending) : 0;
       const adTax = existing ? Number(existing.ad_tax || Math.round(spending * 0.05)) : Math.round(spending * 0.05);
       const totalSpending = existing ? Number(existing.total_spending || (spending + adTax)) : (spending + adTax);

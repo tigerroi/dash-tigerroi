@@ -279,31 +279,26 @@ export function dedupeSnapshots(snapshots) {
 export function isCampaignOff(row) {
   if (!row) return true;
   const spend = Number(row.spending ?? row.totalSpending ?? row.metaSpend ?? row.spend_idr ?? 0);
-  const earn = Number(row.earning ?? row.gamRevenue ?? row.revenue ?? row.raw_revenue ?? 0);
 
-  // Jika ada aktivitas keuangan (belanja iklan > 0 atau pendapatan > 0), maka campaign sedang aktif
-  if (spend > 0.01 || earn > 0.01) {
-    return false;
-  }
-
-  // Jika baris membawa metrik belanja/pendapatan eksplisit dan keduanya bernilai 0 (meskipun ada sisa klik/impresi organik/bot),
-  // maka campaign tersebut sudah OFF / tidak ada belanja dan pendapatan, sehingga tidak perlu mengotori tabel Laporan ROI
-  const hasExplicitMetrics =
+  // Jika spending iklan bernilai 0 (tidak ada campaign iklan aktif), jangan tampilkan di Laporan ROI
+  // Sisa pendapatan organik/bot kecil (seperti Rp 31 pada guides.ziperto.org) tidak dihitung jika spending Rp 0
+  const hasExplicitSpendMetric =
     row.spending !== undefined ||
     row.meta_spend !== undefined ||
     row.total_spending !== undefined ||
     row.totalSpending !== undefined ||
-    row.spend_idr !== undefined ||
-    row.earning !== undefined ||
-    row.gam_revenue !== undefined ||
-    row.revenue !== undefined ||
-    row.raw_revenue !== undefined;
+    row.spend_idr !== undefined;
 
-  if (hasExplicitMetrics && spend <= 0.01 && earn <= 0.01) {
+  if (hasExplicitSpendMetric && spend <= 0.01) {
     return true;
   }
 
-  // Untuk baris tanpa metrik keuangan sama sekali (misal test mock kosong), jangan buang jika ada klik/impresi
+  // Jika spending > 0, baris aktif
+  if (spend > 0.01) {
+    return false;
+  }
+
+  // Untuk baris tanpa metrik keuangan eksplisit (misal test mock tanpa spending), pertahankan
   const clicks = Number(row.clicks || 0);
   const impressions = Number(row.impressions || 0);
   if (clicks > 0 || impressions > 0) {
