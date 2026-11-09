@@ -215,6 +215,20 @@ export async function runSyncMeta() {
     // Map agregasi: key `${date}_${site_code}` -> { date, site_code, spend, impressions, clicks, campaignCount }
     const dailyMap = new Map();
 
+    // Ambil daftar profil tim untuk penampungan campaign armada seluruh akun iklan
+    const { data: profilesList } = await supabase
+      .from("profiles")
+      .select("id, name, email, role, campaigns");
+
+    const allUserCampaignsMap = new Map();
+    for (const p of profilesList || []) {
+      allUserCampaignsMap.set(p.id, []);
+    }
+
+    const superadminProfile = (profilesList || []).find((p) => 
+      (p.role || "").includes("superadmin") || (p.email || "").includes("superadmin")
+    );
+
     for (const account of accounts) {
       // Prioritaskan token dari environment GitHub Secrets (GLOBAL_META_TOKEN) di atas database
       const token = GLOBAL_META_TOKEN || account.access_token;
@@ -383,22 +397,6 @@ export async function runSyncMeta() {
           // Daftar subdomain sudah dimuat di awal
           const dbSubdomains = subdomains;
 
-          // Ambil daftar profil tim
-          const { data: profilesList } = await supabase
-            .from("profiles")
-            .select("id, name, email, role, campaigns");
-
-          // Siapkan wadah campaign per profil ID
-          const userCampaignsMap = new Map();
-          for (const p of profilesList || []) {
-            userCampaignsMap.set(p.id, []);
-          }
-
-          // Cari profil Superadmin untuk menampung campaign tanpa PIC
-          const superadminProfile = (profilesList || []).find((p) => 
-            (p.role || "").includes("superadmin") || (p.email || "").includes("superadmin")
-          );
-
           for (const c of rawCampaigns) {
             const firstToken = c.campaign.split(/[\s_-]+/)[0] || "";
             const firstTokenLower = firstToken.toLowerCase();
@@ -479,22 +477,12 @@ export async function runSyncMeta() {
               targetUserId = superadminProfile.id;
             }
 
-            if (targetUserId && userCampaignsMap.has(targetUserId)) {
-              userCampaignsMap.get(targetUserId).push(enriched);
+            if (targetUserId && allUserCampaignsMap.has(targetUserId)) {
+              allUserCampaignsMap.get(targetUserId).push(enriched);
             }
           }
 
-          // Simpan pembagian campaign ke database Supabase
-          for (const [profId, camps] of userCampaignsMap.entries()) {
-            await supabase
-              .from("profiles")
-              .update({
-                campaigns: camps,
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", profId);
-          }
-          console.log(`    ✅ Berhasil mendistribusikan ${rawCampaigns.length} campaign ke profil PIC masing-masing.`);
+          console.log(`    ✅ Menambahkan ${rawCampaigns.length} campaign akun ${account.name} ke antrean armada.`);
         } catch (campErr) {
           console.warn(`    ⚠️ Gagal memperbarui daftar campaign armada: ${campErr.message}`);
         }
@@ -511,6 +499,18 @@ export async function runSyncMeta() {
         }
       }
     }
+
+    // Simpan seluruh pembagian campaign armada lintas semua akun iklan ke database Supabase
+    for (const [profId, camps] of allUserCampaignsMap.entries()) {
+      await supabase
+        .from("profiles")
+        .update({
+          campaigns: camps,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", profId);
+    }
+    console.log(`✅ Berhasil mendistribusikan seluruh campaign armada ke profil PIC.`);
 
     // 5. Upsert hasil agregasi ke tabel daily_stats
     const upsertRows = Array.from(dailyMap.values()).map((row) => ({

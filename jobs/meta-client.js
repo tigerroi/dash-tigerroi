@@ -331,22 +331,67 @@ function resolveCampaignStatus(c) {
 
 export async function fetchAccountCampaigns(actId, token) {
   const id = normalizeActId(actId);
-  const rows = await graphAll(`${id}/campaigns`, token, {
-    fields: "id,name,status,effective_status,daily_budget,lifetime_budget,start_time,stop_time,objective",
-    limit: "500",
-  });
+  const [campaignRows, adSetRows] = await Promise.all([
+    graphAll(`${id}/campaigns`, token, {
+      fields: "id,name,status,effective_status,daily_budget,lifetime_budget,start_time,stop_time,objective",
+      limit: "500",
+    }),
+    graphAll(`${id}/adsets`, token, {
+      fields: "id,name,campaign_id,status,effective_status,start_time,end_time",
+      limit: "500",
+    }).catch(() => []),
+  ]);
 
-  return rows.map((c) => ({
-    campaignId: String(c.id || ""),
-    campaign: c.name || "",
-    status: resolveCampaignStatus(c),
-    configuredStatus: c.status || "",
-    effectiveStatus: c.effective_status || "",
-    startTime: c.start_time || "",
-    dailyBudget: c.daily_budget ? toMajor(c.daily_budget) : null,
-    lifetimeBudget: c.lifetime_budget ? toMajor(c.lifetime_budget) : null,
-    objective: c.objective || "",
-  }));
+  // Petakan jadwal adset per campaign_id
+  const adSetsByCampaign = new Map();
+  for (const set of adSetRows || []) {
+    const cId = String(set.campaign_id || "");
+    if (!cId) continue;
+    if (!adSetsByCampaign.has(cId)) adSetsByCampaign.set(cId, []);
+    adSetsByCampaign.get(cId).push(set);
+  }
+
+  const nowMs = Date.now();
+
+  return campaignRows.map((c) => {
+    const cId = String(c.id || "");
+    const sets = adSetsByCampaign.get(cId) || [];
+
+    // Cari ad set yang terjadwal (effective_status = SCHEDULED atau start_time di masa depan)
+    let isScheduled = false;
+    let earliestStart = c.start_time || "";
+    let earliestStartMs = earliestStart ? Date.parse(earliestStart) : Infinity;
+
+    for (const s of sets) {
+      const sEff = String(s.effective_status || "").toUpperCase();
+      const sStart = s.start_time;
+      const sStartMs = sStart ? Date.parse(sStart) : null;
+      if (sEff === "SCHEDULED" || (Number.isFinite(sStartMs) && sStartMs > nowMs)) {
+        isScheduled = true;
+        if (Number.isFinite(sStartMs) && sStartMs < earliestStartMs) {
+          earliestStartMs = sStartMs;
+          earliestStart = sStart;
+        }
+      }
+    }
+
+    let status = resolveCampaignStatus(c);
+    if (isScheduled && status !== "Mati") {
+      status = "Terjadwal";
+    }
+
+    return {
+      campaignId: cId,
+      campaign: c.name || "",
+      status,
+      configuredStatus: c.status || "",
+      effectiveStatus: c.effective_status || "",
+      startTime: earliestStart || c.start_time || "",
+      dailyBudget: c.daily_budget ? toMajor(c.daily_budget) : null,
+      lifetimeBudget: c.lifetime_budget ? toMajor(c.lifetime_budget) : null,
+      objective: c.objective || "",
+    };
+  });
 }
 
 /**
