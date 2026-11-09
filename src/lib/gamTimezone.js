@@ -10,6 +10,8 @@ export const GAM_DEFAULT_TIMEZONES = {
   "tacobellmenuu.us": "GMT+5",
   "ihopmenuwithprices.us": "GMT-3",
   "uniqueinfo24.com": "GMT+6",
+  "ziperto.org": "GMT-5",
+  "23355757170": "GMT-5",
 };
 
 /**

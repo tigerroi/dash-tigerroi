@@ -454,18 +454,25 @@ export async function runSyncGam() {
         const formattedEarning = `Rp ${totalRevenueIdr.toLocaleString("id-ID")}`;
         const cleanReportDate = formatIsoDate(netLatestDate || dateRange.endDate);
 
-        await supabase
+        const updatePayload = {
+          sync_status: "ok",
+          status_detail: null,
+          sync_earning: formattedEarning,
+          last_sync_report_date: cleanReportDate,
+          updated_at: new Date().toISOString(),
+        };
+
+        const { error: updateAccErr } = await supabase
           .from("gam_accounts")
-          .update({
-            sync_status: "ok",
-            status_detail: null,
-            sync_earning: formattedEarning,
-            last_sync_report_date: cleanReportDate,
-            report_time_zone: networkTimeZone,
-            last_sync_time: gamLocalTime,
-            updated_at: new Date().toISOString(),
-          })
+          .update(updatePayload)
           .eq("network_code", net.networkCode);
+
+        if (updateAccErr) {
+          console.warn(
+            `    ⚠️ Gagal update gam_accounts (${net.domain}) lewat network_code: ${updateAccErr.message}. Mencoba fallback lewat nama domain...`,
+          );
+          await supabase.from("gam_accounts").update(updatePayload).eq("name", net.domain);
+        }
 
         console.log(
           `    ✅ Updated gam_accounts (${net.domain}): ${formattedEarning}, Tgl: ${cleanReportDate}, Waktu GAM: ${gamLocalTime} (${networkTimeZone})`,

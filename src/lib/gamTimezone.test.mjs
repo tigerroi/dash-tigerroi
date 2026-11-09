@@ -20,12 +20,14 @@ test("formatGamZoneWithTime memproses offset dengan spasi seperti 'GMT +5' dan '
   assert.equal(strMinus3, "GMT-3 · Jam 02:00");
 });
 
-test("GAM_DEFAULT_TIMEZONES memuat 6 domain resmi", () => {
+test("GAM_DEFAULT_TIMEZONES memuat domain-domain resmi", () => {
   assert.equal(GAM_DEFAULT_TIMEZONES["cmhhealths.com"], "GMT+1");
   assert.equal(GAM_DEFAULT_TIMEZONES["trayedit.com"], "GMT+6");
   assert.equal(GAM_DEFAULT_TIMEZONES["tiktokmodapk.net"], "GMT+5");
   assert.equal(GAM_DEFAULT_TIMEZONES["tacobellmenuu.us"], "GMT+5");
   assert.equal(GAM_DEFAULT_TIMEZONES["ihopmenuwithprices.us"], "GMT-3");
   assert.equal(GAM_DEFAULT_TIMEZONES["uniqueinfo24.com"], "GMT+6");
+  assert.equal(GAM_DEFAULT_TIMEZONES["ziperto.org"], "GMT-5");
+  assert.equal(GAM_DEFAULT_TIMEZONES["23355757170"], "GMT-5");
 });
 
