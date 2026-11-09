@@ -1348,7 +1348,7 @@ function FounderRoiPanel({ store }) {
     <section className="panel">
       <div className="panel-header">
         <div>
-          <h2>{t("overview.founder_roi_title", "ROI Founder (BD R 16)")}</h2>
+          <h2>{t("overview.founder_roi_title", "ROI Founder")}</h2>
           <p>
             {report.firstDay
               ? `${formatDate(report.firstDay)} – ${formatDate(report.lastDay)}`

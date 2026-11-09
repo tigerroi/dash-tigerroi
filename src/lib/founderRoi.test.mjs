@@ -111,3 +111,49 @@ test("mode default menghitung persentase roiFounder dengan angka riil topup dan 
   assert.equal(wl.profitFounder, 20148405);
   assert.equal(wl.roiFounder, 201.48); // +201.48%
 });
+
+test("mode default menampilkan semua akun whitelist saat ada beberapa akun (misal BD Q 07 dan BD R 16)", () => {
+  const report = buildFounderRoi({
+    roiReports: [
+      { date: "2026-11-02", subDomain: "freelance.workmoney24.com", earning: 0, spending: 0, totalSpending: 0 },
+      { date: "2026-11-02", subDomain: "trayedit.com", earning: 5000000, spending: 1000000, totalSpending: 1000000 },
+    ],
+    adAccounts: [
+      { name: "BD Q 07", balance: 8000000 },
+      { name: "BD R 16", balance: 2462000 },
+    ],
+    users: [
+      {
+        id: "u1",
+        name: "Sullivan",
+        campaigns: [
+          { subDomain: "freelance.workmoney24.com", account: "BD Q 07" },
+          { subDomain: "trayedit.com", account: "BD R 16" },
+        ],
+      },
+    ],
+    range: { from: "2026-11-01", to: "2026-11-09" },
+    whitelistTopup: [
+      { date: "2026-11-01", namaKode: "BD R 16", nominal: 20000000 },
+    ],
+  });
+
+  assert.equal(report.rows.length, 2);
+  const [q07, r16] = report.rows;
+  assert.equal(q07.name, "BD Q 07");
+  assert.equal(q07.balance, 8000000);
+  assert.equal(q07.topup, 0);
+  assert.equal(q07.totalSpending, 0);
+
+  assert.equal(r16.name, "BD R 16");
+  assert.equal(r16.balance, 2462000);
+  assert.equal(r16.topup, 20000000);
+  assert.equal(r16.totalSpending, 1000000);
+  assert.equal(r16.earning, 5000000);
+  assert.equal(r16.profitFounder, -15000000);
+
+  assert.equal(report.totals.topup, 20000000);
+  assert.equal(report.totals.totalSpending, 1000000);
+  assert.equal(report.totals.earning, 5000000);
+  assert.equal(report.totals.balance, 10462000);
+});

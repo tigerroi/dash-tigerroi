@@ -363,7 +363,7 @@ export const translations = {
     "overview.subtitle": "Ringkasan performa monitoring ROI, diperbarui tiap sync.",
     "overview.total_spend": "Total Keseluruhan Spend",
     "overview.balance_spend_title": "Saldo & Pengeluaran Akun Whitelist",
-    "overview.founder_roi_title": "ROI Founder (BD R 16)",
+    "overview.founder_roi_title": "ROI Founder",
     "overview.next_sync": "Sync berikutnya dalam",
     "overview.sync_running": "Sedang sync...",
 
@@ -474,7 +474,7 @@ export const translations = {
     "overview.subtitle": "ROI monitoring performance summary, updated every sync.",
     "overview.total_spend": "Total Spend",
     "overview.balance_spend_title": "Whitelist Account Balance & Spend",
-    "overview.founder_roi_title": "Founder ROI (BD R 16)",
+    "overview.founder_roi_title": "Founder ROI",
     "overview.next_sync": "Next sync in",
     "overview.sync_running": "Sync in progress...",
 
