@@ -9,21 +9,53 @@ import { CellPopover } from "./CellPopover";
 // membaca baris yang sama dari dashboard/roiReports, jadi keduanya punya rincian yang sama untuk
 // ditampilkan — di Profile User badge-nya dulu cuma label statis yang tidak menyebut apa-apa.
 export function MergedCampaignsBadge({ campaigns, spend, subDomain }) {
-  const total = campaigns.reduce((sum, entry) => sum + Number(entry.spend || 0), 0);
+  const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
+  const total = safeCampaigns.reduce((sum, entry) => sum + Number(entry?.spend || 0), 0);
+
+  // Hitung akumulasi belanja per akun Whitelist (jika terdapat beberapa akun iklan)
+  const accountSpendMap = new Map();
+  for (const entry of safeCampaigns) {
+    const acc = String(entry?.account || "").trim();
+    if (acc) {
+      accountSpendMap.set(acc, (accountSpendMap.get(acc) || 0) + Number(entry?.spend || 0));
+    }
+  }
+  const accountEntries = Array.from(accountSpendMap.entries());
 
   return (
     <CellPopover
       badgeClassName="merged-campaigns-badge"
-      label={`Campaign digabung${campaigns.length ? ` (${campaigns.length})` : ""}`}
+      label={`Campaign digabung${safeCampaigns.length ? ` (${safeCampaigns.length})` : ""}`}
     >
-      {campaigns.length > 0 ? (
+      {safeCampaigns.length > 0 ? (
         <>
           <strong>
-            {campaigns.length} campaign → {subDomain}
+            {safeCampaigns.length} campaign → {subDomain}
           </strong>
-          {campaigns.map((entry) => (
+
+          {/* Jika terdapat lebih dari 1 akun WL yang membiayai subdomain ini */}
+          {accountEntries.length > 1 && (
+            <div className="cell-popover-account-summary">
+              <span className="account-summary-title">Rincian per Akun Whitelist:</span>
+              {accountEntries.map(([acc, sp]) => (
+                <span className="cell-popover-row account-subtotal" key={acc}>
+                  <span>🏷️ {acc}</span>
+                  {renderCell(sp, "spending")}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {safeCampaigns.map((entry) => (
             <span className="cell-popover-row" key={entry.name}>
-              <span title={entry.name}>{entry.name}</span>
+              <span title={entry.name}>
+                {entry.account && (
+                  <span className="account-badge-pill campaign-acc-tag">
+                    {entry.account}
+                  </span>
+                )}
+                {entry.name}
+              </span>
               {renderCell(entry.spend, "spending")}
             </span>
           ))}

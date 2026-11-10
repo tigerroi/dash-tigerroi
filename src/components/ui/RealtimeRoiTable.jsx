@@ -81,6 +81,7 @@ export function RealtimeRoiTable({
                 name: c.name || c.campaign,
                 spend,
                 status: c.status || "ACTIVE",
+                account: c.account || c.adAccount || c.ad_account || "",
               };
             });
           } else {
@@ -228,15 +229,35 @@ function realtimeRoiColumns(earningSource) {
           row.original.displaySubDomain ||
           row.original.subDomain ||
           row.original.campaign;
+
+        const accounts = Array.from(
+          new Set(
+            (row.original.campaigns || [])
+              .map((c) => String(c?.account || "").trim())
+              .filter(Boolean),
+          ),
+        );
+
         return (
-          <>
-            <strong>{fullDomain}</strong>
+          <div className="master-campaign-cell-content">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <strong>{fullDomain}</strong>
+              {accounts.map((acc) => (
+                <span
+                  key={acc}
+                  className="account-badge-pill"
+                  title={`Akun Whitelist: ${acc}`}
+                >
+                  {acc}
+                </span>
+              ))}
+            </div>
             <MergedCampaignsBadge
               campaigns={row.original.campaigns}
               spend={row.original.metaSpend}
               subDomain={fullDomain}
             />
-          </>
+          </div>
         );
       },
       meta: { className: "master-campaign-cell" },

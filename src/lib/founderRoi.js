@@ -49,20 +49,6 @@ export function buildFounderRoi({
     // Urutkan akun berdasarkan nama (misal BD Q 07 dulu, lalu BD R 16)
     accounts.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
 
-    // Petakan campaign subdomain ke akun iklan berdasarkan users armada
-    const accountBySubdomain = new Map();
-    for (const u of Array.isArray(users) ? users : []) {
-      for (const c of Array.isArray(u?.campaigns) ? u.campaigns : []) {
-        const sub = String(c?.subDomain || c?.subdomain || "").trim().toLowerCase();
-        const accName = String(c?.account || c?.adAccount || "").trim();
-        if (sub && accName) {
-          accountBySubdomain.set(sub, accName);
-          const slug = sub.split(".")[0];
-          if (slug) accountBySubdomain.set(slug, accName);
-        }
-      }
-    }
-
     // Ambil topup dalam rentang
     const topupList = Array.isArray(whitelistTopup)
       ? whitelistTopup
@@ -196,6 +182,41 @@ export function buildFounderRoi({
       [...accountBuckets.keys()].find((k) => k.includes("r_16") || k.includes("r16")) ||
       [...accountBuckets.keys()][0];
 
+    // Petakan akun iklan & bobot belanja per subdomain dari users armada
+    // Mendukung skenario 1 subdomain didanai bersama oleh 2 akun WL (proporsional pro-rata)
+    const subDomainAccountWeights = new Map();
+
+    const recordSubWeight = (subStr, accKey, weight) => {
+      if (!subStr || !accKey) return;
+      const cleanSub = subStr.trim().toLowerCase();
+      if (!subDomainAccountWeights.has(cleanSub)) {
+        subDomainAccountWeights.set(cleanSub, new Map());
+      }
+      const accMap = subDomainAccountWeights.get(cleanSub);
+      accMap.set(accKey, (accMap.get(accKey) || 0) + Math.max(0.1, weight));
+
+      if (cleanSub.includes(".")) {
+        const slug = cleanSub.split(".")[0];
+        if (!subDomainAccountWeights.has(slug)) {
+          subDomainAccountWeights.set(slug, new Map());
+        }
+        const slugMap = subDomainAccountWeights.get(slug);
+        slugMap.set(accKey, (slugMap.get(accKey) || 0) + Math.max(0.1, weight));
+      }
+    };
+
+    for (const u of Array.isArray(users) ? users : []) {
+      for (const c of Array.isArray(u?.campaigns) ? u.campaigns : []) {
+        const sub = String(c?.subDomain || c?.subdomain || "").trim().toLowerCase();
+        const rawAcc = String(c?.account || c?.adAccount || "").trim();
+        const accKey = matchAccount(rawAcc);
+        if (sub && accKey) {
+          const weight = Number(c?.spendToday || c?.spend || c?.spending || c?.budget || c?.dailyBudget || 1);
+          recordSubWeight(sub, accKey, weight);
+        }
+      }
+    }
+
     // Distribusikan Top-Up
     for (const t of topupsInRange) {
       const rawAcc =
@@ -214,28 +235,42 @@ export function buildFounderRoi({
       }
     }
 
-    // Distribusikan Spending & Earning
+    // Distribusikan Spending & Earning (proporsional jika 1 subdomain menggunakan multi-akun)
     for (const r of reportsInRange) {
       const sub = String(r.subDomain || r.sub_domain || r.subdomain || r.site_code || "")
         .trim()
         .toLowerCase();
-      const rawAcc =
-        r.account ||
-        r.adAccount ||
-        accountBySubdomain.get(sub) ||
-        accountBySubdomain.get(sub.split(".")[0]) ||
-        "";
-      const matchedKey = matchAccount(rawAcc) || defaultAccKey;
-      const bucket = accountBuckets.get(matchedKey);
-      if (bucket) {
-        const money = withAdTax(r, rate);
+      const slug = sub.includes(".") ? sub.split(".")[0] : sub;
+
+      const directAccKey = matchAccount(r.account || r.adAccount);
+      let weights = null;
+
+      if (directAccKey) {
+        weights = new Map([[directAccKey, 1]]);
+      } else {
+        weights = subDomainAccountWeights.get(sub) || subDomainAccountWeights.get(slug);
+      }
+
+      if (!weights || weights.size === 0) {
+        weights = new Map([[defaultAccKey, 1]]);
+      }
+
+      const totalWeight = Array.from(weights.values()).reduce((sum, w) => sum + w, 0);
+      const money = withAdTax(r, rate);
+
+      for (const [accKey, weight] of weights.entries()) {
+        const bucket = accountBuckets.get(accKey);
+        if (!bucket) continue;
+
+        const ratio = totalWeight > 0 ? weight / totalWeight : 1;
+
         if (money.earningKnown) {
-          bucket.earning += toAmount(money.earning);
+          bucket.earning += toAmount(money.earning) * ratio;
           bucket.hasEarning = true;
         }
         if (money.spendingKnown) {
-          bucket.spending += toAmount(money.spending);
-          bucket.totalSpending += toAmount(money.totalSpending);
+          bucket.spending += toAmount(money.spending) * ratio;
+          bucket.totalSpending += toAmount(money.totalSpending) * ratio;
           bucket.hasSpending = true;
         }
       }
@@ -249,13 +284,13 @@ export function buildFounderRoi({
     let totBalance = 0;
 
     for (const b of accountBuckets.values()) {
-      const earnVal = b.hasEarning ? b.earning : b.hasSpending ? 0 : "";
-      const spendVal = b.hasSpending ? b.totalSpending : 0;
-      const topupVal = b.topup;
+      const earnVal = b.hasEarning ? round(b.earning) : b.hasSpending ? 0 : "";
+      const spendVal = b.hasSpending ? round(b.totalSpending) : 0;
+      const topupVal = round(b.topup);
 
       totTopup += topupVal;
       totSpending += spendVal;
-      if (b.hasEarning) totEarning += b.earning;
+      if (b.hasEarning) totEarning += Number(earnVal || 0);
       totBalance += b.balance;
 
       let roiFounder = "";

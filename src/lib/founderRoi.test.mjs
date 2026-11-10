@@ -157,3 +157,59 @@ test("mode default menampilkan semua akun whitelist saat ada beberapa akun (misa
   assert.equal(report.totals.earning, 5000000);
   assert.equal(report.totals.balance, 10462000);
 });
+
+test("mode default mendistribusikan spending & earning secara proporsional jika 1 subdomain menggunakan 2 akun WL", () => {
+  const report = buildFounderRoi({
+    roiReports: [
+      {
+        date: "2026-11-02",
+        subDomain: "freelance.workmoney24.com",
+        earning: 10000000,
+        spending: 5000000,
+        totalSpending: 5000000,
+      },
+    ],
+    adAccounts: [
+      { name: "BD Q 07", balance: 8000000 },
+      { name: "BD R 16", balance: 2462000 },
+    ],
+    users: [
+      {
+        id: "u1",
+        name: "Sullivan",
+        campaigns: [
+          // BD Q 07 spend 2.000.000 (40%), BD R 16 spend 3.000.000 (60%)
+          { subDomain: "freelance.workmoney24.com", account: "BD Q 07", spendToday: 2000000 },
+          { subDomain: "freelance.workmoney24.com", account: "BD R 16", spendToday: 3000000 },
+        ],
+      },
+    ],
+    range: { from: "2026-11-01", to: "2026-11-09" },
+    whitelistTopup: [
+      { date: "2026-11-01", namaKode: "BD Q 07", nominal: 5000000 },
+      { date: "2026-11-01", namaKode: "BD R 16", nominal: 10000000 },
+    ],
+  });
+
+  assert.equal(report.rows.length, 2);
+  const [q07, r16] = report.rows;
+
+  // BD Q 07 mendapat 40% (2/5)
+  assert.equal(q07.name, "BD Q 07");
+  assert.equal(q07.topup, 5000000);
+  assert.equal(q07.totalSpending, 2000000);
+  assert.equal(q07.earning, 4000000);
+  assert.equal(q07.profitFounder, -1000000); // 4jt - 5jt
+
+  // BD R 16 mendapat 60% (3/5)
+  assert.equal(r16.name, "BD R 16");
+  assert.equal(r16.topup, 10000000);
+  assert.equal(r16.totalSpending, 3000000);
+  assert.equal(r16.earning, 6000000);
+  assert.equal(r16.profitFounder, -4000000); // 6jt - 10jt
+
+  // Total terakumulasi utuh 100%
+  assert.equal(report.totals.topup, 15000000);
+  assert.equal(report.totals.totalSpending, 5000000);
+  assert.equal(report.totals.earning, 10000000);
+});

@@ -3670,6 +3670,47 @@ button.country-breakdown-badge:focus-visible {
   font-weight: 700;
 }
 
+.cell-popover-account-summary {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--border);
+}
+
+.account-summary-title {
+  color: var(--muted-foreground);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cell-popover-row.account-subtotal {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.account-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--info-bg);
+  color: var(--info-fg);
+  border: 1px solid var(--info-border);
+  letter-spacing: 0.02em;
+}
+
+.account-badge-pill.campaign-acc-tag {
+  font-size: 9px;
+  padding: 0 4px;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
 /* Empat kolom sekaligus, jadi grid-nya di wadahnya — baris demi baris yang masing-masing mengatur
    lebarnya sendiri tidak akan pernah lurus satu sama lain. */
 .country-breakdown-grid {

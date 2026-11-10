@@ -240,6 +240,7 @@ export function buildCampaignsBySubDomain(users) {
         budget: Number(c.dailyBudget || c.budget || 0),
         spendToday: Number(c.spendToday || 0),
         status: c.status || "ACTIVE",
+        account: c.account || c.adAccount || c.ad_account || c.accountName || c.actName || "",
       };
 
       const list = map.get(sub) || [];
