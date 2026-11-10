@@ -5,7 +5,7 @@ import {
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -30,8 +30,15 @@ import {
 import { formatDayMonth } from "../lib/formatDate";
 import { compactRupiah } from "../lib/money";
 import { renderCell } from "../lib/renderCell";
+import {
+  filterRowsByOwner,
+  ownerChoices,
+  subDomainOwnerIndex,
+} from "../lib/subDomainOwners";
 import { DataTable } from "./ui/DataTable";
 import { DateRangePicker } from "./ui/DateRangePicker";
+import { FilterDialog } from "./ui/FilterDialog";
+import { OwnerFilterFields } from "./ui/OwnerFilterFields";
 
 // Filter rentang tanggal default 14 hari terakhir
 function default14DaysRange() {
@@ -80,7 +87,7 @@ export function CountryFlag({ code, size = "sm" }) {
   );
 }
 
-export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains = [], users = [] }) {
+export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains = [], domains = [], users = [] }) {
   const { lang, t } = useLanguage();
   const [dateRange, setDateRange] = useState(default14DaysRange);
   const [minSpendThreshold, setMinSpendThreshold] = useState(100000);
@@ -89,27 +96,62 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
   const [selectedCurveCountries, setSelectedCurveCountries] = useState([]);
   const [hoveredCell, setHoveredCell] = useState(null);
 
+  // State Filter Kepemilikan (PIC, Domain, Subdomain)
+  const [pic, setPic] = useState("");
+  const [domain, setDomain] = useState("");
+  const [subDomain, setSubDomain] = useState("");
+
+  const owners = useMemo(
+    () => subDomainOwnerIndex(subDomains, domains),
+    [subDomains, domains],
+  );
+
+  const choices = useMemo(
+    () => ownerChoices(countryRoi, owners, { advertiser: pic, domain }),
+    [countryRoi, owners, pic, domain],
+  );
+
+  const changePic = useCallback(
+    (next) => {
+      setPic(next);
+      if (domain && !ownerChoices(countryRoi, owners, { advertiser: next }).domains.includes(domain)) {
+        setDomain("");
+      }
+    },
+    [countryRoi, owners, domain],
+  );
+
+  const filteredCountryRoi = useMemo(() => {
+    return filterRowsByOwner(countryRoi, owners, {
+      advertiser: pic,
+      domain,
+      subDomain,
+    });
+  }, [countryRoi, owners, pic, domain, subDomain]);
+
+  const filterCount = [pic, domain, subDomain].filter(Boolean).length;
+
   const chart = useChartPalette();
   const threshold = filterThresholdActive ? minSpendThreshold : 0;
 
   // 1. Data Klasemen Utama & 4 Kartu Sorotan
   const { items, allItems, hiddenCount, highlights } = useMemo(() => {
-    return buildCountryLeaderboard(countryRoi, {
+    return buildCountryLeaderboard(filteredCountryRoi, {
       adTaxRate,
       minSpendThreshold: threshold,
       dateWindow: dateRange,
     });
-  }, [countryRoi, adTaxRate, threshold, dateRange]);
+  }, [filteredCountryRoi, adTaxRate, threshold, dateRange]);
 
   const { best, lowest, fastestRising, steepestFalling } = highlights;
 
   // 2. Data Heatmap ROI Harian
   const heatmapData = useMemo(() => {
-    return buildCountryDailyHeatmap(countryRoi, {
+    return buildCountryDailyHeatmap(filteredCountryRoi, {
       adTaxRate,
       dateWindow: dateRange,
     });
-  }, [countryRoi, adTaxRate, dateRange]);
+  }, [filteredCountryRoi, adTaxRate, dateRange]);
 
   const visibleHeatmapCountries = useMemo(() => {
     if (showAllHeatmap) return heatmapData.countryRows;
@@ -118,11 +160,11 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
 
   // 3. Data Kurva ROI Harian
   const curveData = useMemo(() => {
-    return buildCountryRoiCurves(countryRoi, {
+    return buildCountryRoiCurves(filteredCountryRoi, {
       adTaxRate,
       dateWindow: dateRange,
     });
-  }, [countryRoi, adTaxRate, dateRange]);
+  }, [filteredCountryRoi, adTaxRate, dateRange]);
 
   // Inisialisasi negara terpilih di kurva jika belum ada (default 5 negara teratas)
   const activeCurveCountries = useMemo(() => {
@@ -145,12 +187,12 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
 
   // 4. Data Prioritas Penurunan Anggaran 3 Hari Terakhir
   const budgetCutPriorities = useMemo(() => {
-    return buildBudgetCutPriorities(countryRoi, {
+    return buildBudgetCutPriorities(filteredCountryRoi, {
       subDomains,
       adTaxRate,
       recentDays: 3,
     });
-  }, [countryRoi, subDomains, adTaxRate]);
+  }, [filteredCountryRoi, subDomains, adTaxRate]);
 
   // Kolom DataTable Klasemen Negara
   const leaderboardColumns = useMemo(
@@ -422,6 +464,30 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
             value={dateRange}
             onChange={setDateRange}
           />
+          <FilterDialog
+            activeCount={filterCount}
+            description={t("filter_negara_desc", "Menyaring seluruh klasemen, kartu sorotan, heatmap, dan tren ROI negara berdasarkan PIC, Domain, atau Subdomain.")}
+            onReset={() => {
+              setPic("");
+              setDomain("");
+              setSubDomain("");
+            }}
+            title={t("filter negara", "Filter Negara")}
+          >
+            <OwnerFilterFields
+              advertiser={pic}
+              advertiserLabel="PIC"
+              advertiserOptions={choices.advertisers}
+              domain={domain}
+              domainOptions={choices.domains}
+              formatSubDomain={owners.fullOf}
+              onAdvertiser={changePic}
+              onDomain={setDomain}
+              onSubDomain={setSubDomain}
+              subDomain={subDomain}
+              subDomainOptions={choices.subDomains}
+            />
+          </FilterDialog>
           <button
             type="button"
             className={`ghost-button ${!filterThresholdActive ? "active" : ""}`}
@@ -434,6 +500,56 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
           </button>
         </div>
       </div>
+
+      {/* Indikator Filter Aktif */}
+      {filterCount > 0 && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "0.5rem 0.85rem",
+            background: "rgba(56, 189, 248, 0.08)",
+            border: "1px solid rgba(56, 189, 248, 0.25)",
+            borderRadius: "6px",
+            fontSize: "0.85rem",
+            color: "#38bdf8",
+            marginTop: "-1rem",
+            marginBottom: "-0.5rem",
+          }}
+        >
+          <span>
+            <strong>Filter aktif:</strong>{" "}
+            {[
+              pic && `PIC: ${pic}`,
+              domain && `Domain: ${domain}`,
+              subDomain && `Subdomain: ${owners.fullOf(subDomain)}`,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setPic("");
+              setDomain("");
+              setSubDomain("");
+            }}
+            style={{
+              background: "none",
+              border: "none",
+              color: "#f87171",
+              cursor: "pointer",
+              padding: "0.1rem 0.4rem",
+              fontSize: "0.82rem",
+              fontWeight: 600,
+              textDecoration: "underline",
+            }}
+          >
+            Reset Filter
+          </button>
+        </div>
+      )}
 
       {/* ═══ 2. 4 KARTU SOROTAN DI ATAS ═══ */}
       <div
@@ -557,7 +673,18 @@ export function CountryLeaderboard({ countryRoi = [], adTaxRate = 0, subDomains 
             </p>
           )}
         </div>
-        <DataTable columns={leaderboardColumns} items={items} />
+        <DataTable
+          columns={leaderboardColumns}
+          items={items}
+          emptyText={
+            filterCount > 0
+              ? t(
+                  "tidak ada data negara cocok filter",
+                  "Tidak ada data negara yang cocok dengan filter PIC, Domain, atau Subdomain ini.",
+                )
+              : undefined
+          }
+        />
       </div>
 
       {/* ═══ 4. HEATMAP ROI HARIAN ═══ */}

@@ -1126,6 +1126,7 @@ export function Overview({ store, navigate, tab, role, viewer }) {
           countryRoi={store.countryRoi || []}
           adTaxRate={adTaxRate}
           subDomains={store.subDomains || []}
+          domains={store.domains || []}
           users={store.users || []}
         />
       )}

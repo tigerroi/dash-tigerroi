@@ -23,10 +23,10 @@ const cleanDomain = (value) =>
 export function subDomainOwnerIndex(subDomains, domains) {
   const byName = new Map();
   for (const sub of subDomains || []) {
-    const rawKey = normalize(sub?.name);
+    const rawKey = normalize(sub?.name || sub?.subdomain || sub?.sub_domain);
     if (!rawKey) continue;
-    const parent = cleanDomain(sub?.parentDomain);
-    const pic = clean(sub?.pic);
+    const parent = cleanDomain(sub?.parentDomain || sub?.parent_domain || sub?.domain);
+    const pic = clean(sub?.pic || sub?.user_name || sub?.advertiser);
 
     // Simpan key slug biasa (contoh "careers")
     byName.set(rawKey, { domain: parent, pic, name: clean(sub?.name) });
@@ -117,7 +117,7 @@ export function ownerFilterOptions(rows, owners) {
   const domains = new Set();
 
   for (const row of rows || []) {
-    const name = cellText(row?.subDomain);
+    const name = cellText(row?.subDomain || row?.sub_domain || row?.subdomain || row?.site_code);
     if (!name) continue;
 
     const pic = owners.picOf(name, row?.pic);
@@ -148,7 +148,7 @@ export function filterRowsByOwner(
   const targetSub = canonicalSubDomain(subDomain) || subDomain;
 
   return (rows || []).filter((row) => {
-    const rawName = cellText(row?.subDomain || row?.subdomain || row?.site_code);
+    const rawName = cellText(row?.subDomain || row?.sub_domain || row?.subdomain || row?.site_code);
     const name = canonicalSubDomain(rawName) || rawName;
 
     if (targetSub && name !== targetSub && rawName !== subDomain) return false;
@@ -175,7 +175,7 @@ export function filterRowsByOwner(
 export function subDomainNames(rows) {
   const names = new Set();
   for (const row of rows || []) {
-    const rawName = cellText(row?.subDomain || row?.subdomain || row?.site_code);
+    const rawName = cellText(row?.subDomain || row?.sub_domain || row?.subdomain || row?.site_code);
     if (!rawName) continue;
     const name = canonicalSubDomain(rawName) || rawName;
     names.add(name);
