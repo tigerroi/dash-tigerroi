@@ -611,6 +611,40 @@ export async function runSyncGam() {
       console.warn(`⚠️ Gagal mencatat roi_snapshots: ${snapErr.message}`);
     }
 
+    // 6d. Perbarui evaluasi Auto Safe CTR Governor per subdomain hari ini
+    try {
+      const todayDate = getJakartaDate(0);
+      const { data: todayGamStats } = await supabase
+        .from("daily_stats")
+        .select("subdomain,impressions,clicks")
+        .eq("date", todayDate)
+        .eq("source", "gam");
+
+      if (todayGamStats && todayGamStats.length > 0) {
+        for (const row of todayGamStats) {
+          if (!row.subdomain) continue;
+          const imp = Number(row.impressions) || 0;
+          const clk = Number(row.clicks) || 0;
+          const ctr = imp > 0 ? Number(((clk / imp) * 100).toFixed(2)) : 0;
+          let ctrStatus = "safe";
+          if (imp >= 50 && ctr >= 9.0) {
+            ctrStatus = "emergency";
+          }
+          await supabase
+            .from("subdomains")
+            .update({
+              ctr_today: ctr,
+              ctr_status: ctrStatus,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("name", row.subdomain);
+        }
+        console.log(`✅ Evaluasi Auto Safe CTR selesai untuk ${todayGamStats.length} subdomain.`);
+      }
+    } catch (ctrErr) {
+      console.warn(`[Auto Safe CTR] Catatan: ${ctrErr.message}`);
+    }
+
     // 7. Catat status akhir ke sync_runs
     const finishedAt = new Date().toISOString();
     const isSuccess = errors.length < activeNetworks.length;

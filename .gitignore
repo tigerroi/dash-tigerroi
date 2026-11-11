@@ -33,3 +33,11 @@ activity.sqlite-*
 *.sqlite-wal
 *.sqlite-shm
 .playwright-mcp/
+
+# Dump dan restore data SQL lokal (jangan push kredensial user & raw data dump ke git)
+scripts/*restore*.sql
+scripts/*backup*.sql
+scripts/part*.sql
+scripts/clean_restore_users.sql
+scripts/import_users_and_profiles.sql
+

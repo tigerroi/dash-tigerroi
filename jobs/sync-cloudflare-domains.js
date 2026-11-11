@@ -138,8 +138,13 @@ export async function run() {
       await supabase.from("subdomains").delete().ilike("name", "%tigerroi.com%");
       await supabase.from("subdomains").delete().ilike("parent_domain", "%tigerroi.com%");
       await supabase.from("domains").delete().ilike("domain_url", "%tigerroi.com%");
+
+      // Bersihkan juga DNS record email / DKIM non-iklan yang tidak sengaja masuk
+      console.log("   🧹 Membersihkan DNS record email & domainkey non-iklan dari subdomains...");
+      await supabase.from("subdomains").delete().ilike("name", "%domainkey%");
+      await supabase.from("subdomains").delete().ilike("name", "%hostingermail%");
     } catch (cleanErr) {
-      console.warn(`   ⚠️ Peringatan saat menghapus tigerroi.com: ${cleanErr.message}`);
+      console.warn(`   ⚠️ Peringatan saat pembersihan: ${cleanErr.message}`);
     }
 
     for (const d of existingDomains || []) {
@@ -264,8 +269,16 @@ export async function run() {
       if (!fullHost || fullHost === zoneHost || isIgnoredDomain(fullHost)) continue; // Abaikan domain root atau domain internal
       if (!fullHost.endsWith(`.${zoneHost}`)) continue; // Harus subdomain dari zona ini
 
-      const subPrefix = fullHost.slice(0, -(zoneHost.length + 1));
-      if (IGNORED_PREFIXES.has(subPrefix) || subPrefix.startsWith("_")) continue;
+      const subPrefix = fullHost.slice(0, -(zoneHost.length + 1)).toLowerCase();
+      if (
+        IGNORED_PREFIXES.has(subPrefix) ||
+        subPrefix.startsWith("_") ||
+        subPrefix.includes("domainkey") ||
+        subPrefix.includes("hostinger") ||
+        subPrefix.includes("email") ||
+        subPrefix.includes("autodiscover") ||
+        subPrefix.includes("autoconfig")
+      ) continue;
 
       // Cek apakah subdomain sudah terdaftar di Supabase
       if (!dbSubdomainsMap.has(fullHost)) {
