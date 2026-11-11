@@ -14,3 +14,4 @@ SELECT
 FROM public.roi_snapshots t
 WHERE date >= '2026-11-01'
 ORDER BY date ASC, time ASC;
+

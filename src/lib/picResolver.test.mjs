@@ -24,9 +24,21 @@ test("resolveRowPic mempertahankan PIC lain yang memang aktif di bulan Oktober",
   assert.equal(res, "Austin");
 });
 
-test("resolveRowPic memeriksa tanggal join user profil dinamis", () => {
+test("resolveRowPic TIDAK memblokir PIC berdasarkan created_at (tanggal DB), hanya join_date eksplisit", () => {
+  // created_at = tanggal row DB dibuat, BUKAN tanggal mulai kerja → tidak boleh memblokir
   const users = [
-    { name: "UserBaru", created_at: "2026-11-05T00:00:00Z" },
+    { name: "UserLama", created_at: "2026-11-05T00:00:00Z" },
+  ];
+  const rowOktober = { date: "2026-10-20", pic: "UserLama" };
+  const res = resolveRowPic(rowOktober, "sub.example.com", () => "UserLama", users);
+  // Harus mengembalikan "UserLama" — created_at tidak memblokir
+  assert.equal(res, "UserLama");
+});
+
+test("resolveRowPic memblokir PIC jika join_date eksplisit belum tercapai", () => {
+  // join_date yang diisi manual = tanggal mulai kerja → boleh memblokir
+  const users = [
+    { name: "UserBaru", join_date: "2026-11-01" },
   ];
   const rowOktober = { date: "2026-10-20", pic: "UserBaru" };
   const res = resolveRowPic(rowOktober, "sub.example.com", () => "UserBaru", users);

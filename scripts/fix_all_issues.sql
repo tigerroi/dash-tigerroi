@@ -13,18 +13,25 @@ WHERE s.parent_domain = d.domain_url
    OR s.name LIKE '%.' || d.domain_url;
 
 -- 2. Satukan nama PIC di subdomains HANYA ke 5 nama resmi:
-UPDATE public.subdomains SET pic = 'Sullivan' WHERE pic ILIKE 'Sul%' OR pic ILIKE 'Sullivan%';
-UPDATE public.subdomains SET pic = 'Moskov' WHERE pic ILIKE 'Mul%' OR pic ILIKE 'Amul%' OR pic ILIKE 'Moskov%';
-UPDATE public.subdomains SET pic = 'Austin' WHERE pic ILIKE 'Man%' OR pic ILIKE 'Austin%';
-UPDATE public.subdomains SET pic = 'New York City' WHERE pic ILIKE 'Nur%' OR pic ILIKE 'New York City%';
+UPDATE public.subdomains SET pic = 'Sullivan' WHERE pic ILIKE 'Sul%' OR pic ILIKE 'Sullivan%' OR pic ILIKE 'Zulfan%' OR pic ILIKE 'Sulfin%';
+UPDATE public.subdomains SET pic = 'Moskov' WHERE pic ILIKE 'Mul%' OR pic ILIKE 'Amul%' OR pic ILIKE 'Moskov%' OR pic ILIKE 'Mulyana%';
+UPDATE public.subdomains SET pic = 'Austin' WHERE pic ILIKE 'Man%' OR pic ILIKE 'Austin%' OR pic ILIKE '%Suparman%' OR pic ILIKE 'Ade%';
+UPDATE public.subdomains SET pic = 'New York City' WHERE pic ILIKE 'Nur%' OR pic ILIKE 'New York City%' OR pic ILIKE 'Nurjaman%';
 UPDATE public.subdomains SET pic = 'Crissthoper' WHERE pic ILIKE 'Cris%' OR pic ILIKE 'Crissthoper%';
 
 -- 3. Satukan nama PIC di tabel account_closes (jika ada data lama):
-UPDATE public.account_closes SET pic = 'Sullivan' WHERE pic ILIKE 'Sul%' OR pic ILIKE 'Sullivan%';
-UPDATE public.account_closes SET pic = 'Moskov' WHERE pic ILIKE 'Mul%' OR pic ILIKE 'Amul%' OR pic ILIKE 'Moskov%';
-UPDATE public.account_closes SET pic = 'Austin' WHERE pic ILIKE 'Man%' OR pic ILIKE 'Austin%';
-UPDATE public.account_closes SET pic = 'New York City' WHERE pic ILIKE 'Nur%' OR pic ILIKE 'New York City%';
+UPDATE public.account_closes SET pic = 'Sullivan' WHERE pic ILIKE 'Sul%' OR pic ILIKE 'Sullivan%' OR pic ILIKE 'Zulfan%' OR pic ILIKE 'Sulfin%';
+UPDATE public.account_closes SET pic = 'Moskov' WHERE pic ILIKE 'Mul%' OR pic ILIKE 'Amul%' OR pic ILIKE 'Moskov%' OR pic ILIKE 'Mulyana%';
+UPDATE public.account_closes SET pic = 'Austin' WHERE pic ILIKE 'Man%' OR pic ILIKE 'Austin%' OR pic ILIKE '%Suparman%' OR pic ILIKE 'Ade%';
+UPDATE public.account_closes SET pic = 'New York City' WHERE pic ILIKE 'Nur%' OR pic ILIKE 'New York City%' OR pic ILIKE 'Nurjaman%';
 UPDATE public.account_closes SET pic = 'Crissthoper' WHERE pic ILIKE 'Cris%' OR pic ILIKE 'Crissthoper%';
+
+-- 3b. Satukan nama PIC di tabel roi_snapshots:
+UPDATE public.roi_snapshots SET pic = 'Sullivan' WHERE pic ILIKE 'Sul%' OR pic ILIKE 'Sullivan%' OR pic ILIKE 'Zulfan%' OR pic ILIKE 'Sulfin%';
+UPDATE public.roi_snapshots SET pic = 'Moskov' WHERE pic ILIKE 'Mul%' OR pic ILIKE 'Amul%' OR pic ILIKE 'Moskov%' OR pic ILIKE 'Mulyana%';
+UPDATE public.roi_snapshots SET pic = 'Austin' WHERE pic ILIKE 'Man%' OR pic ILIKE 'Austin%' OR pic ILIKE '%Suparman%' OR pic ILIKE 'Ade%';
+UPDATE public.roi_snapshots SET pic = 'New York City' WHERE pic ILIKE 'Nur%' OR pic ILIKE 'New York City%' OR pic ILIKE 'Nurjaman%';
+UPDATE public.roi_snapshots SET pic = 'Crissthoper' WHERE pic ILIKE 'Cris%' OR pic ILIKE 'Crissthoper%';
 
 -- 4. Hubungkan pic_user_id di subdomains ke ID profil yang sesuai
 UPDATE public.subdomains s
@@ -56,3 +63,4 @@ UPDATE public.profiles SET name = 'New York City', username = 'New York City' WH
 UPDATE public.profiles SET name = 'Crissthoper', username = 'Crissthoper' WHERE email = 'cris@tigerroi.com';
 
 SET session_replication_role = 'origin'; -- Nyalakan kembali foreign key
+
