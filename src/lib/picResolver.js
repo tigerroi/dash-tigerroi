@@ -1,16 +1,32 @@
 /**
+ * Standarisasi nama PIC agar tidak ada duplikasi antara singkatan (Sul, Mul, Man, Nur, Cris)
+ * dengan nama resmi 5 orang tim TigerROI:
+ * 1. New York City
+ * 2. Sullivan
+ * 3. Crissthoper
+ * 4. Moskov
+ * 5. Austin
+ */
+export function canonicalizePic(raw) {
+  const norm = String(raw || "").trim().toLowerCase();
+  if (!norm || norm === "-" || norm === "tanpa pic" || norm === "(tanpa pic)") return "";
+  if (norm === "sul" || norm.includes("sullivan")) return "Sullivan";
+  if (norm === "mul" || norm === "amul" || norm.includes("moskov")) return "Moskov";
+  if (norm === "man" || norm.includes("austin")) return "Austin";
+  if (norm === "nur" || norm.includes("nurjaman") || norm.includes("new york")) return "New York City";
+  if (norm === "cris" || norm.includes("crissthoper")) return "Crissthoper";
+  return String(raw || "").trim();
+}
+
+/**
  * Menentukan PIC yang sah untuk suatu baris data berdasarkan tanggal transaksi dan masa aktif PIC.
  * Mencegah advertiser baru (seperti Crissthoper yang baru join di November 2026)
  * menanggung spending & performa lampau (misal bulan Oktober) ketika subdomain belum memiliki PIC.
  */
 export function resolveRowPic(row, subDomain, picOf, users = []) {
   let pic = String(row?.pic || (picOf ? picOf(subDomain) : "") || "").trim();
-  if (
-    !pic ||
-    pic === "-" ||
-    pic.toLowerCase() === "tanpa pic" ||
-    pic.toLowerCase() === "(tanpa pic)"
-  ) {
+  pic = canonicalizePic(pic);
+  if (!pic) {
     return "";
   }
 

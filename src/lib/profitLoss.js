@@ -26,7 +26,7 @@ import {
 import { ensure, hasAmount, round, sumBy } from "./numbers.js";
 import { bonusOperatingExpense, expenseTotal, spreadOperatingExpense } from "./operatingExpense.js";
 import { payoutCostMonth, payoutCostRows } from "./payouts.js";
-import { resolveRowPic } from "./picResolver.js";
+import { resolveRowPic, canonicalizePic } from "./picResolver.js";
 import { toAmount } from "./toAmount.js";
 
 /**
@@ -419,7 +419,7 @@ function splitByOwner({
   const subPic = new Map();
   for (const sub of subDomains || []) {
     const key = normalize(sub?.name);
-    if (key) subPic.set(key, sub.pic || "");
+    if (key) subPic.set(key, canonicalizePic(sub.pic) || "");
   }
 
   const bonusByUser = new Map();
