@@ -204,8 +204,17 @@ export function buildProfitLoss({
 
   // Pendapatan usaha, DITAMBAH earning akun yang sudah ditutup Google — yang tidak ada di
   // `weeklyFinancials` karena API-nya tidak menjawab lagi. Lihat catatan di kepala berkas.
-  const revenue = round(sumBy(points, (row) => toAmount(row.grossRevenue)) + split.closedEarning);
-  const adSpend = round(sumBy(points, (row) => toAmount(row.totalSpend)) + split.closedSpending);
+  const revenue = round(
+    sumBy(points, (row) => toAmount(row.grossRevenue ?? row.gross_revenue ?? row.revenue)) +
+      split.closedEarning,
+  );
+  const adSpend = round(
+    sumBy(points, (row) =>
+      toAmount(
+        row.totalSpend ?? row.total_spend ?? row.adSpend ?? row.ad_spend ?? row.spending,
+      ),
+    ) + split.closedSpending,
+  );
   // Pajak yang benar-benar tercatat di tiap hari, bukan hasil mengalikan total dengan tarif hari
   // ini: tiap titik membawa pajak dengan tarif yang berlaku saat ia ditulis, dan menghitung ulang
   // seluruh bulan dengan tarif terbaru akan mengubah laba bulan-bulan lampau tiap kali seseorang
@@ -217,13 +226,21 @@ export function buildProfitLoss({
   // dijumlahkan pembacanya. Pajaknya memang tidak diketahui untuk hari-hari itu, dan yang tidak
   // diketahui menambah nol, bukan mengurangi seluruh belanja hari itu.
   const adTax = sumBy(points, (row) => {
-    if (hasAmount(row.adTax)) return toAmount(row.adTax);
-    if (!hasAmount(row.totalSpending)) return 0;
-    return toAmount(row.totalSpending) - toAmount(row.totalSpend);
+    if (hasAmount(row.adTax ?? row.ad_tax)) return toAmount(row.adTax ?? row.ad_tax);
+    if (!hasAmount(row.totalSpending ?? row.total_spending)) return 0;
+    const total = toAmount(row.totalSpending ?? row.total_spending);
+    const spend = toAmount(
+      row.totalSpend ?? row.total_spend ?? row.adSpend ?? row.ad_spend ?? row.spending,
+    );
+    return total - spend;
   });
   const totalAdSpend = round(
     sumBy(points, (row) =>
-      hasAmount(row.totalSpending) ? toAmount(row.totalSpending) : toAmount(row.totalSpend),
+      hasAmount(row.totalSpending ?? row.total_spending)
+        ? toAmount(row.totalSpending ?? row.total_spending)
+        : toAmount(
+            row.totalSpend ?? row.total_spend ?? row.adSpend ?? row.ad_spend ?? row.spending,
+          ),
     ) + split.closedSpending,
   );
   const grossProfit = round(revenue - totalAdSpend);
