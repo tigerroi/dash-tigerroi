@@ -6,6 +6,15 @@ on:
     - cron: "0 * * * *"
   # Tombol pemicu manual dari tab Actions di GitHub
   workflow_dispatch:
+    inputs:
+      days_back:
+        description: "Jumlah hari ke belakang (isi 45 untuk tarik bulan Oktober)"
+        required: false
+        default: "45"
+      allow_past_months:
+        description: "Bolehkan tarik bulan lampau (Oktober)?"
+        type: boolean
+        default: true
   # Pemicu instan via GitHub API Webhook (tanpa antrean cron GitHub)
   repository_dispatch:
     types: [hourly-sync]
@@ -39,5 +48,7 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          DAYS_BACK: ${{ github.event.inputs.days_back || '7' }}
+          ALLOW_PAST_MONTHS: ${{ github.event.inputs.allow_past_months || 'false' }}
         run: node jobs/sync-meta.js
 
