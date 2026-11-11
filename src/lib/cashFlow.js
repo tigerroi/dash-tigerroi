@@ -19,6 +19,7 @@ import {
 import { hasAmount, round, sumBy } from "./numbers.js";
 import { bonusOperatingExpense, expenseTotal, spreadOperatingExpense } from "./operatingExpense.js";
 import { payoutCostRows, payoutRows } from "./payouts.js";
+import { resolveRowPic } from "./picResolver.js";
 import { toAmount } from "./toAmount.js";
 
 /**
@@ -613,7 +614,7 @@ function collectBuckets(store, period, months) {
     const spend = spendKnown ? toAmount(row.totalSpending) : 0;
     const split = sourceSplit(row, earning);
     const domain = domainOf(subDomain);
-    const pic = String(row?.pic || picOf(subDomain) || "").trim();
+    const pic = resolveRowPic(row, subDomain, picOf, store?.users);
     // Tarif dicari sekali per baris HARIAN, lalu dipakai kedua ember di bawahnya — yang kena cuma
     // ember Ad Exchange, tapi tanggalnya sama.
     const percent = rates.percentAt(domain, row?.date);

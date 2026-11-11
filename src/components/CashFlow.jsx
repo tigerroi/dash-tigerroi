@@ -74,7 +74,10 @@ export function CashFlow({ store }) {
   // Pilihan diambil dari baris yang BENAR-BENAR ada di bulan itu, bukan dari `store.users` dan
   // `store.domains` langsung: yang ditawarkan dropdown harus punya baris untuk dipilih, kalau tidak
   // memilihnya menghasilkan tabel kosong tanpa sebab yang terbaca.
-  const picOptions = useMemo(() => unique(report.rows.map((row) => row.pic)), [report]);
+  const picOptions = useMemo(
+    () => unique(report.rows.map((row) => row.pic).filter(Boolean)),
+    [report],
+  );
   const domainOptions = useMemo(() => unique(report.rows.map((row) => row.domain)), [report]);
 
   const filtered = Boolean(pic || accountType || domain);
@@ -306,7 +309,12 @@ export function CashFlow({ store }) {
  */
 function cashFlowColumns(totals) {
   return [
-    { accessorKey: "pic", header: "Advertiser", footer: "Total" },
+    {
+      accessorKey: "pic",
+      header: "Advertiser",
+      footer: "Total",
+      cell: ({ getValue }) => getValue() || "-",
+    },
     { accessorKey: "accountType", header: "Jenis" },
     {
       accessorKey: "subDomain",

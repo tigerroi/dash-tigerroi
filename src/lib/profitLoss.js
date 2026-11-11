@@ -26,6 +26,7 @@ import {
 import { ensure, hasAmount, round, sumBy } from "./numbers.js";
 import { bonusOperatingExpense, expenseTotal, spreadOperatingExpense } from "./operatingExpense.js";
 import { payoutCostMonth, payoutCostRows } from "./payouts.js";
+import { resolveRowPic } from "./picResolver.js";
 import { toAmount } from "./toAmount.js";
 
 /**
@@ -468,13 +469,14 @@ function splitByOwner({
     reported.add(accountCloseKey(row.subDomain));
 
     const domainKey = domainOf(row.subDomain);
-    const picKey = normalize(row.pic || subPic.get(subKey));
+    const resolvedPic = resolveRowPic(row, row.subDomain, (s) => subPic.get(normalize(s)), users);
+    const picKey = normalize(resolvedPic);
     // Satu kunci ember untuk PIC, dipakai di SELURUH peta di bawah. Sebelumnya dua peta memakai
     // kunci berbeda untuk ember yang sama ("(tanpa pic)" vs string kosongnya), jadi pembagian
     // invalid traffic untuk baris tanpa PIC mencari ember yang tidak pernah ada — jatahnya hilang
     // diam-diam alih-alih mengurangi dasar bonus ember itu.
     const picBucket = picKey || "(tanpa pic)";
-    const picLabel = bonusByUser.get(picKey)?.label || row.pic || "(tanpa PIC)";
+    const picLabel = bonusByUser.get(picKey)?.label || resolvedPic || "(tanpa PIC)";
     const target = {
       domainKey,
       picKey: picBucket,
