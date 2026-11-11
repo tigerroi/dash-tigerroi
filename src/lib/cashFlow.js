@@ -19,7 +19,7 @@ import {
 import { hasAmount, round, sumBy } from "./numbers.js";
 import { bonusOperatingExpense, expenseTotal, spreadOperatingExpense } from "./operatingExpense.js";
 import { payoutCostRows, payoutRows } from "./payouts.js";
-import { resolveRowPic, canonicalizePic } from "./picResolver.js";
+import { resolveRowPic } from "./picResolver.js";
 import { toAmount } from "./toAmount.js";
 
 /**
@@ -902,7 +902,7 @@ function subDomainPicIndex(subDomains) {
   const map = new Map();
   for (const sub of subDomains || []) {
     const key = normalize(sub?.name);
-    if (key) map.set(key, canonicalizePic(sub?.pic) || "");
+    if (key) map.set(key, sub?.pic || "");
   }
   return (name) => map.get(normalize(name)) || "";
 }

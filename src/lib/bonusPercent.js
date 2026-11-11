@@ -1,6 +1,5 @@
 import { companyPercentIndex, companyPercentRows } from "./companyPercent.js";
 import { toPercent } from "./numbers.js";
-import { canonicalizePic } from "./picResolver.js";
 
 /**
  * Tarif bonus advertiser, BERTANGGAL — pola yang sama persis dengan Potongan Company, dan alasan
@@ -21,17 +20,15 @@ export function bonusPercentIndex(bonusPercents = [], users = []) {
   const dated = companyPercentIndex(bonusPercents, "user");
   const legacy = new Map();
   for (const user of users || []) {
-    const canonicalUserName = canonicalizePic(user?.name);
-    const key = normalize(canonicalUserName || user?.name);
+    const key = normalize(user?.name);
     if (key) legacy.set(key, toPercent(user?.bonusPercent));
   }
 
   // Baris bertarif KOSONG menang atas `users.bonusPercent`: ia keputusan orang ("sejak bulan ini
   // tidak dapat bonus"), bukan ketiadaan data.
   return (name, date) => {
-    const canonicalName = canonicalizePic(name);
-    const entry = dated.entryAt(canonicalName, date) || dated.entryAt(name, date);
-    return entry ? entry.percent : (legacy.get(normalize(canonicalName)) ?? legacy.get(normalize(name)) ?? null);
+    const entry = dated.entryAt(name, date);
+    return entry ? entry.percent : (legacy.get(normalize(name)) ?? null);
   };
 }
 
