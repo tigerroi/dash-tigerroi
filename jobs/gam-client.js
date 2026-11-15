@@ -22,7 +22,7 @@ export async function getGoogleServiceAccountToken({ clientEmail, privateKey }) 
 
   const now = Math.floor(Date.now() / 1000);
   const jwt = await new SignJWT({
-    scope: "https://www.googleapis.com/auth/admanager",
+    scope: "https://www.googleapis.com/auth/admanager https://www.googleapis.com/auth/adsense.readonly",
   })
     .setProtectedHeader({ alg: "RS256", typ: "JWT" })
     .setIssuer(clientEmail)

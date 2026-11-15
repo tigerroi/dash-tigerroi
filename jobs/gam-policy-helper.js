@@ -18,6 +18,32 @@ export const KNOWN_GAM_POLICY_RESTRICTIONS = {
     since: "2026-11-14",
     active: true,
   },
+  // workmoney24.com (GAM Network 23342288461)
+  // Penayangan iklan dibatasi karena traffic tidak valid (Display ca-pub-4522230125639501)
+  "23342288461": {
+    domain: "workmoney24.com",
+    status: "Limit Iklan",
+    detail: "Penayangan iklan saat ini dibatasi karena traffic tidak valid (Display ca-pub-4522230125639501)",
+    since: "2026-11-15",
+    active: true,
+  },
+  // trayedit.com (GAM Network 23344333667)
+  // Penayangan iklan dibatasi karena traffic tidak valid (Display ca-pub-1979254184595490)
+  "23344333667": {
+    domain: "trayedit.com",
+    status: "Limit Iklan",
+    detail: "Penayangan iklan saat ini dibatasi karena traffic tidak valid (Display ca-pub-1979254184595490)",
+    since: "2026-11-15",
+    active: true,
+  },
+  // velocitytv.com.pk (GAM Network 23360577147)
+  "23360577147": {
+    domain: "velocitytv.com.pk",
+    status: "Limit Iklan",
+    detail: "Situs bermasalah: egymod3.com (OTHER)",
+    since: "2026-11-13",
+    active: true,
+  },
 };
 
 /**
@@ -97,7 +123,7 @@ export async function evaluateGamPolicyStatus(networkCode, accessToken, domainNa
     // Abaikan jika reporting belum ada
   }
 
-  // Tier 3: Cek AdSense Alerts API (jika AdSense Management API aktif)
+  // Tier 3: Cek AdSense Policy Issues & Alerts API (Pusat Kebijakan Google)
   try {
     // Ambil propertyCode dari GAM Network
     const netRes = await fetch(`https://admanager.googleapis.com/v1/networks/${code}`, {
@@ -105,16 +131,43 @@ export async function evaluateGamPolicyStatus(networkCode, accessToken, domainNa
     });
     if (netRes.ok) {
       const netInfo = await netRes.json();
-      const pubCode = netInfo.propertyCode; // contoh: "ca-pub-4792810451416544"
-      if (pubCode) {
-        const alertRes = await fetch(`https://adsense.googleapis.com/v2/accounts/${pubCode}/alerts`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
+      const rawPub = netInfo.propertyCode; // contoh: "ca-pub-4522230125639501"
+      const cleanPub = rawPub ? rawPub.replace(/^ca-/, "") : "";
+      if (cleanPub) {
+        // 1. Cek Policy Issues resmi Google AdSense
+        const policyRes = await fetch(
+          `https://adsense.googleapis.com/v2/accounts/${cleanPub}/policyIssues`,
+          { headers: { Authorization: `Bearer ${accessToken}` } },
+        );
+        if (policyRes.ok) {
+          const policyData = await policyRes.json();
+          const issues = Array.isArray(policyData.policyIssues) ? policyData.policyIssues : [];
+          if (issues.length > 0) {
+            const topicTitles = issues
+              .flatMap((iss) => iss.policyTopics || [])
+              .map((t) => t.topic || t.type)
+              .filter(Boolean);
+            const detailMsg = topicTitles.length > 0
+              ? `Pusat Kebijakan: ${topicTitles.join(", ")} (${rawPub})`
+              : `Penayangan iklan dibatasi di Pusat Kebijakan Google (${rawPub})`;
+            return {
+              status: "Limit Iklan",
+              detail: detailMsg,
+              source: "adsense_policy_issues",
+            };
+          }
+        }
+
+        // 2. Cek Alerts API
+        const alertRes = await fetch(
+          `https://adsense.googleapis.com/v2/accounts/${cleanPub}/alerts`,
+          { headers: { Authorization: `Bearer ${accessToken}` } },
+        );
         if (alertRes.ok) {
           const alertData = await alertRes.json();
           const alerts = Array.isArray(alertData.alerts) ? alertData.alerts : [];
           for (const a of alerts) {
-            const isThrottled = /throttl|serving-limit|ad-limit/i.test(String(a.type || ""));
+            const isThrottled = /throttl|serving-limit|ad-limit|policy/i.test(String(a.type || ""));
             const isSevere = String(a.severity || "").toUpperCase() === "SEVERE";
             const msg = String(a.message || "");
             const hasKeyword = /dibatasi|batasi|limited|restrict|traffic tidak valid/i.test(msg);
@@ -122,8 +175,8 @@ export async function evaluateGamPolicyStatus(networkCode, accessToken, domainNa
             if (isThrottled || (isSevere && hasKeyword)) {
               return {
                 status: "Limit Iklan",
-                detail: msg.trim() || "Penayangan iklan saat ini dibatasi karena traffic tidak valid.",
-                source: "adsense_api",
+                detail: msg.trim() || `Penayangan iklan saat ini dibatasi (${rawPub})`,
+                source: "adsense_alerts",
               };
             }
           }
