@@ -358,6 +358,7 @@ function App() {
         navigate={navigate}
         user={auth.user}
         onLogout={auth.logout}
+        store={dataStore.store}
         syncStatus={dataStore.store.syncStatus}
         syncIssues={dataStore.store.syncIssues}
         syncRetries={dataStore.store.syncRetries}
@@ -553,6 +554,7 @@ function App() {
               <Targets
                 store={dataStore.store}
                 navigate={navigate}
+                tab={route.tab}
                 readOnly={!canWriteTargets(role)}
               />
             )}

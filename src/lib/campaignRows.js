@@ -30,16 +30,30 @@ export function normalizeCampaignRows(items) {
     // mati dengan alasannya alih-alih menembakkan perintah yang pasti gagal.
     campaignId: String(item.campaignId || ""),
     status: (function () {
-      if (item.status === "Terjadwal") return "Terjadwal";
-      if (item.configuredStatus === "ACTIVE" || item.status === "Aktif") {
-        if (item.startTime) {
-          const startMs = Date.parse(item.startTime);
-          if (Number.isFinite(startMs) && startMs > Date.now()) {
+      const configured = String(item.configuredStatus || "").toUpperCase();
+      const rawStatus = String(item.status || "");
+
+      // 1. Jika campaign sedang dimatikan
+      if (configured === "PAUSED" || rawStatus === "Mati" || rawStatus === "Tidak aktif") {
+        return rawStatus || "Tidak aktif";
+      }
+
+      // 2. Evaluasi jadwal tayang dinamis terhadap waktu saat ini
+      if (item.startTime) {
+        const startMs = Date.parse(item.startTime);
+        if (Number.isFinite(startMs)) {
+          if (startMs > Date.now()) {
             return "Terjadwal";
+          }
+          // Jika jadwal tayang sudah tiba/lewat dan saklar aktif
+          if (rawStatus === "Terjadwal" || configured === "ACTIVE" || rawStatus === "Aktif") {
+            return "Aktif";
           }
         }
       }
-      return item.status || "";
+
+      if (rawStatus === "Terjadwal") return "Terjadwal";
+      return rawStatus || "";
     })(),
     // Posisi saklar apa adanya dari Meta (`status`). Label di kolom Status diturunkan dari field
     // yang sama plus `startTime`, tapi diturunkannya di sisi sync — bukan di sini.

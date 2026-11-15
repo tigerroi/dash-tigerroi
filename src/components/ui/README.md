@@ -60,6 +60,7 @@ dibutuhkan persis ini.
 | `ReminderAlert` | Ikon + dialog pengingat jatuh tempo di topbar |
 | `ThemeToggle` | Tombol tema terang/gelap di topbar |
 | `LanguageToggle` | Tombol ganti bahasa (ID / EN) di topbar |
+| `NotificationBell` | Lonceng pemberitahuan topbar (limit iklan, campaign, sync) |
 
 Di luar `ui/`, yang sering dicari: `campaigns/CountryPicker` (pemilih negara iklan),
 `campaigns/CampaignStatusCell` (sel status campaign).

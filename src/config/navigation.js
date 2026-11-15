@@ -185,7 +185,25 @@ export const navItems = [
     parent: "/profit-loss",
   },
   { path: "/reminders", label: "Reminder", key: "reminders", group: "Keuangan" },
-  { path: "/targets", label: "Target", key: "targets", group: "Keuangan" },
+  {
+    path: "/targets",
+    label: "Target",
+    key: "targets",
+    group: "Keuangan",
+    tab: "Semua Jenis",
+  },
+  {
+    path: "/targets/adsense",
+    label: "AdSense",
+    key: "targets",
+    parent: "/targets",
+  },
+  {
+    path: "/targets/ad-exchanger",
+    label: "Ad-Exchanger",
+    key: "targets",
+    parent: "/targets",
+  },
 
   // Barisnya sendiri, bukan tab di bawah Laba Rugi — walau keduanya sama-sama uang. Laba Rugi
   // menjawab "bulan kemarin menghasilkan berapa" dari satu bulan kalender; halaman ini menjawab

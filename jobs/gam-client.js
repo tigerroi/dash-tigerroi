@@ -52,6 +52,27 @@ export async function getGoogleServiceAccountToken({ clientEmail, privateKey }) 
 }
 
 /**
+ * Mengambil daftar situs dan status persetujuan/kebijakan dari Google Ad Manager v1 REST API.
+ */
+export async function fetchGamSites(networkCode, accessToken) {
+  const url = `${GAM_BASE}/networks/${networkCode}/sites`;
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`GAM Sites API Error (${res.status}): ${errorText || res.statusText}`);
+  }
+
+  const data = await res.json();
+  return Array.isArray(data.sites) ? data.sites : [];
+}
+
+/**
  * Mengambil informasi jaringan GAM (Network Info).
  */
 export async function getGamNetwork(networkCode, accessToken) {

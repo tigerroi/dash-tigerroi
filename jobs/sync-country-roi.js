@@ -100,12 +100,52 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
     }
   }
 
+  // 1b. Khusus Domain Tunggal Berbasis Path / URL Slug (misal: velocitytv.com.pk/news/ atau /finance/):
+  for (const sub of subdomainsList || []) {
+    if (!sub.name) continue;
+    const subName = sub.name.toLowerCase();
+    const slug = subName.split(".")[0];
+    if (slug && (unit.includes(`/${slug}/`) || unit.includes(`/${slug}`) || host.includes(`/${slug}`))) {
+      return {
+        siteCode: sub.site_code || defaultSiteCode,
+        subdomainName: sub.name,
+      };
+    }
+  }
+
   // 2. Prioritas 2: Cocokkan nama unit iklan ke subdomain
   for (const sub of subdomainsList || []) {
     if (!sub.name) continue;
     const subName = sub.name.toLowerCase();
-    const regex = new RegExp("(^|[^a-z0-9])" + subName + "([^a-z0-9]|$)", "i");
+    const slug = subName.split(".")[0];
+    const regex = new RegExp("(^|[^a-z0-9])(" + subName + "|" + slug + ")([^a-z0-9]|$)", "i");
     if (regex.test(unit)) {
+      return {
+        siteCode: sub.site_code || defaultSiteCode,
+        subdomainName: sub.name,
+      };
+    }
+
+    // Variasi penamaan unit iklan singkat di GAM:
+    if (slug === "news" && (/^new[0-9_]/.test(unit) || unit.startsWith("newanchor") || unit.startsWith("new_") || unit.startsWith("news"))) {
+      return {
+        siteCode: sub.site_code || defaultSiteCode,
+        subdomainName: sub.name,
+      };
+    }
+    if (slug === "insurance" && (/^ins[0-9_]/.test(unit) || unit.startsWith("insanchor") || unit.startsWith("ins_") || unit.startsWith("insurance"))) {
+      return {
+        siteCode: sub.site_code || defaultSiteCode,
+        subdomainName: sub.name,
+      };
+    }
+    if (slug === "finance" && (/^fin[0-9_]/.test(unit) || unit.startsWith("financhor") || unit.startsWith("fin_") || unit.startsWith("finance"))) {
+      return {
+        siteCode: sub.site_code || defaultSiteCode,
+        subdomainName: sub.name,
+      };
+    }
+    if (slug === "dollar" && (/^dol[0-9_]/.test(unit) || unit.startsWith("dolanchor") || unit.startsWith("dol_") || unit.startsWith("dollar"))) {
       return {
         siteCode: sub.site_code || defaultSiteCode,
         subdomainName: sub.name,

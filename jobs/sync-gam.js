@@ -5,9 +5,11 @@ import {
   fetchGamDailyRevenue,
   fetchGamHourlyFillRate,
   fetchGamHourlyRevenue,
+  fetchGamSites,
   getGamNetwork,
   getGoogleServiceAccountToken,
 } from "./gam-client.js";
+import { evaluateGamPolicyStatus } from "./gam-policy-helper.js";
 import { recordHourlyGamSnapshots, recordRoiSnapshot } from "./snapshot-helper.js";
 
 /**
@@ -46,10 +48,10 @@ function loadEnv() {
 
 loadEnv();
 
-const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/+$/, "");
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const SUPABASE_URL = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "").replace(/\/+$/, "");
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
 
-// Daftar 6 Network GAM beserta domain utamanya
+// Daftar Network GAM beserta domain utamanya
 const GAM_NETWORKS = [
   { domain: "trayedit.com", networkCode: "23344333667", defaultSiteCode: "tray-decor" },
   { domain: "tiktokmodapk.net", networkCode: "23367555867", defaultSiteCode: "tiktok-mod" },
@@ -58,6 +60,8 @@ const GAM_NETWORKS = [
   { domain: "cmhhealths.com", networkCode: "23350466753", defaultSiteCode: "cmhhealths" },
   { domain: "uniqueinfo24.com", networkCode: "23342288590", defaultSiteCode: "uniqueinfo24" },
   { domain: "ziperto.org", networkCode: "23355757170", defaultSiteCode: "ziperto" },
+  { domain: "workmoney24.com", networkCode: "23342288461", defaultSiteCode: "workmoney24" },
+  { domain: "velocitytv.com.pk", networkCode: "23360577147", defaultSiteCode: "velocitytv" },
 ];
 
 // Kurs resmi konversi mata uang GAM ke IDR
@@ -69,12 +73,14 @@ const GAM_FX_RATES = {
   "23350466753": 18155.28, // CMH Healths (USD)
   "23342288590": 18155.28, // UniqueInfo24 (USD)
   "23355757170": 18155.28, // Ziperto (USD)
+  "23342288461": 18155.28, // WorkMoney24 (USD)
+  "23360577147": 18155.28, // Velocity TV (USD)
 };
 
 // Zona waktu resmi untuk masing-masing network Google Ad Manager:
 // cmhhealths.com: GMT+1, trayedit.com: GMT+6, tiktokmodapk.net: GMT+5,
 // tacobellmenuu.us: GMT+5, ihopmenuwithprices.us: GMT-3, uniqueinfo24.com: GMT+6,
-// ziperto.org: America/New_York
+// ziperto.org: America/New_York, velocitytv.com.pk: Asia/Karachi, workmoney24.com: GMT+6
 const GAM_PRESET_TIMEZONES = {
   "cmhhealths.com": "GMT+1",
   "trayedit.com": "GMT+6",
@@ -83,6 +89,8 @@ const GAM_PRESET_TIMEZONES = {
   "ihopmenuwithprices.us": "GMT-3",
   "uniqueinfo24.com": "GMT+6",
   "ziperto.org": "America/New_York",
+  "velocitytv.com.pk": "Asia/Karachi",
+  "workmoney24.com": "GMT+6",
   "23350466753": "GMT+1",
   "23344333667": "GMT+6",
   "23367555867": "GMT+5",
@@ -90,6 +98,8 @@ const GAM_PRESET_TIMEZONES = {
   "23340206616": "GMT-3",
   "23342288590": "GMT+6",
   "23355757170": "America/New_York",
+  "23360577147": "Asia/Karachi",
+  "23342288461": "GMT+6",
 };
 
 function formatIsoDate(d) {
@@ -187,6 +197,20 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
     }
   }
 
+  // 1b. Khusus Domain Tunggal Berbasis Path / URL Slug (misal: velocitytv.com.pk/news/ atau /finance/):
+  // Jika adUnitName atau siteName memuat path landing page
+  for (const sub of subdomainsList || []) {
+    if (!sub.name) continue;
+    const subName = sub.name.toLowerCase();
+    const slug = subName.split(".")[0]; // "news", "dollar", "finance", "insurance"
+    if (slug && (unit.includes(`/${slug}/`) || unit.includes(`/${slug}`) || host.includes(`/${slug}`))) {
+      return {
+        siteCode: sub.site_code || defaultSiteCode,
+        subdomainName: sub.name,
+      };
+    }
+  }
+
   // 2. Prioritas 2: Cocokkan nama unit iklan ke subdomain (FQDN maupun slug depannya)
   for (const sub of subdomainsList || []) {
     if (!sub.name) continue;
@@ -194,6 +218,36 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
     const slug = subName.split(".")[0];
     const regex = new RegExp(`(^|[^a-z0-9])(${subName}|${slug})([^a-z0-9]|$)`, "i");
     if (regex.test(unit)) {
+      return {
+        siteCode: sub.site_code || defaultSiteCode,
+        subdomainName: sub.name,
+      };
+    }
+
+    // Variasi penamaan unit iklan singkat di GAM:
+    // Contoh untuk /news: 'new1', 'new2', 'newanchor', 'news_top', 'new_1'
+    if (slug === "news" && (/^new[0-9_]/.test(unit) || unit.startsWith("newanchor") || unit.startsWith("new_") || unit.startsWith("news"))) {
+      return {
+        siteCode: sub.site_code || defaultSiteCode,
+        subdomainName: sub.name,
+      };
+    }
+    // Contoh untuk /insurance: 'ins1', 'ins2', 'insanchor', 'ins_top', 'ins_1'
+    if (slug === "insurance" && (/^ins[0-9_]/.test(unit) || unit.startsWith("insanchor") || unit.startsWith("ins_") || unit.startsWith("insurance"))) {
+      return {
+        siteCode: sub.site_code || defaultSiteCode,
+        subdomainName: sub.name,
+      };
+    }
+    // Contoh untuk /finance: 'fin1', 'fin2', 'financhor', 'fin_top', 'fin_1'
+    if (slug === "finance" && (/^fin[0-9_]/.test(unit) || unit.startsWith("financhor") || unit.startsWith("fin_") || unit.startsWith("finance"))) {
+      return {
+        siteCode: sub.site_code || defaultSiteCode,
+        subdomainName: sub.name,
+      };
+    }
+    // Contoh untuk /dollar: 'dol1', 'dol2', 'dolanchor', 'dol_top', 'dol_1'
+    if (slug === "dollar" && (/^dol[0-9_]/.test(unit) || unit.startsWith("dolanchor") || unit.startsWith("dol_") || unit.startsWith("dollar"))) {
       return {
         siteCode: sub.site_code || defaultSiteCode,
         subdomainName: sub.name,
@@ -230,6 +284,27 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
 async function sendTelegramAlert(message) {
   // Telegram ditunda sesuai instruksi (docs/deferred-features.md)
   console.warn(`[Alert] ${message}`);
+}
+
+async function retrySupabaseOp(fn, label = "Operasi Supabase", maxRetries = 3, delayMs = 2000) {
+  let lastErr;
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const res = await fn();
+      if (res?.error) {
+        lastErr = res.error;
+        console.warn(`⚠️ ${label} percobaan ${i + 1}/${maxRetries} gagal: ${res.error.message}. Menunggu ${delayMs}ms...`);
+        await new Promise((r) => setTimeout(r, delayMs));
+        continue;
+      }
+      return res;
+    } catch (err) {
+      lastErr = err;
+      console.warn(`⚠️ ${label} percobaan ${i + 1}/${maxRetries} error: ${err.message}. Menunggu ${delayMs}ms...`);
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  throw lastErr;
 }
 
 export async function runSyncGam() {
@@ -454,24 +529,60 @@ export async function runSyncGam() {
         const formattedEarning = `Rp ${totalRevenueIdr.toLocaleString("id-ID")}`;
         const cleanReportDate = formatIsoDate(netLatestDate || dateRange.endDate);
 
+        // 5a. Cek Status Persetujuan & Pusat Kebijakan Situs dari Policy Helper
+        let googleStatus = "Ready";
+        let googleStatusDetail = "Tidak ada masalah saat ini";
+
+        try {
+          const policyResult = await evaluateGamPolicyStatus(net.networkCode, accessToken, net.domain);
+          if (policyResult.status === "Limit Iklan" || policyResult.status === "Perlu Review") {
+            googleStatus = policyResult.status;
+            googleStatusDetail = policyResult.detail;
+          } else if (netTotalRev <= 0 && (!rows || rows.length === 0)) {
+            googleStatus = "Iklan Belum Tayang";
+            googleStatusDetail = "Belum ada penayangan iklan hari ini";
+          } else {
+            googleStatus = policyResult.status || "Ready";
+            googleStatusDetail = policyResult.detail || "Tidak ada masalah saat ini";
+          }
+        } catch (siteErr) {
+          console.warn(`    ⚠️ Gagal cek sites approval (${net.domain}): ${siteErr.message}`);
+        }
+
         const updatePayload = {
           sync_status: "ok",
-          status_detail: null,
+          status: googleStatus === "Limit Iklan" ? "Limit Iklan" : undefined,
+          status_auto: googleStatus,
+          status_detail: googleStatusDetail,
           sync_earning: formattedEarning,
           last_sync_report_date: cleanReportDate,
           updated_at: new Date().toISOString(),
         };
+        if (updatePayload.status === undefined) delete updatePayload.status;
 
-        const { error: updateAccErr } = await supabase
+        const { data: updatedRows, error: updateAccErr } = await supabase
           .from("gam_accounts")
           .update(updatePayload)
-          .eq("network_code", net.networkCode);
+          .eq("network_code", net.networkCode)
+          .select("id");
 
-        if (updateAccErr) {
-          console.warn(
-            `    ⚠️ Gagal update gam_accounts (${net.domain}) lewat network_code: ${updateAccErr.message}. Mencoba fallback lewat nama domain...`,
-          );
-          await supabase.from("gam_accounts").update(updatePayload).eq("name", net.domain);
+        if (updateAccErr || !updatedRows || updatedRows.length === 0) {
+          const { data: nameUpdated } = await supabase
+            .from("gam_accounts")
+            .update(updatePayload)
+            .eq("name", net.domain)
+            .select("id");
+
+          if (!nameUpdated || nameUpdated.length === 0) {
+            // Jika belum ada di tabel gam_accounts sama sekali, insert akun baru
+            await supabase.from("gam_accounts").insert({
+              name: net.domain,
+              network_code: net.networkCode,
+              status: googleStatus,
+              ...updatePayload,
+            });
+            console.log(`    ✅ Inserted new gam_account (${net.domain}) ke database.`);
+          }
         }
 
         console.log(
@@ -584,9 +695,12 @@ export async function runSyncGam() {
 
     if (upsertRows.length > 0) {
       console.log(`\nMelakukan upsert ${upsertRows.length} baris per subdomain ke tabel daily_stats...`);
-      const { error: upsertError } = await supabase
-        .from("daily_stats")
-        .upsert(upsertRows, { onConflict: "date,site_code,subdomain,source" });
+      const { error: upsertError } = await retrySupabaseOp(
+        () => supabase.from("daily_stats").upsert(upsertRows, { onConflict: "date,site_code,subdomain,source" }),
+        "Upsert daily_stats",
+        5,
+        2500
+      );
 
       if (upsertError) {
         throw new Error(`Gagal upsert ke daily_stats: ${upsertError.message}`);

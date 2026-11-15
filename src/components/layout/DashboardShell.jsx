@@ -31,6 +31,7 @@ import { SyncIssuesAlert } from "../ui/SyncIssuesAlert";
 import { SyncStatus } from "../ui/SyncStatus";
 import { ThemeToggle } from "../ui/ThemeToggle";
 import { LanguageToggle } from "../ui/LanguageToggle";
+import { NotificationBell } from "../ui/NotificationBell";
 import { useLanguage } from "../../context/LanguageContext";
 
 // Satu ikon per baris sidebar, dan tidak boleh ada yang kembar. Saat rail menyempit ke 48px,
@@ -69,6 +70,7 @@ export function DashboardShell({
   onCompleteReminder,
   path,
   reminders,
+  store,
   syncIssues,
   syncRetries,
   syncRuns,
@@ -209,6 +211,12 @@ export function DashboardShell({
               sidebar), sementara ini kontrol — dan layar sempit adalah tempat orang paling sering
               berpindah antara siang dan malam. */}
           <div className="topbar-right" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <NotificationBell
+              store={store}
+              syncIssues={syncIssues}
+              syncRuns={syncRuns}
+              navigate={navigate}
+            />
             <LanguageToggle />
             <ThemeToggle />
             <div className="user-pill">

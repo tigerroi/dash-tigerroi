@@ -55,7 +55,10 @@ function describeCampaignStatus(item, state) {
   }
   // Pil "Terjadwal" yang tidak menyebut KAPAN cuma memindahkan pertanyaannya ke Ads Manager.
   if (item.status === "Terjadwal" && item.startTime) {
-    return `Mulai tayang ${formatDateTime(item.startTime)}.`;
+    const startMs = Date.parse(item.startTime);
+    if (!Number.isFinite(startMs) || startMs > Date.now()) {
+      return `Mulai tayang ${formatDateTime(item.startTime)}.`;
+    }
   }
   return "";
 }

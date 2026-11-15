@@ -12,6 +12,10 @@ export const GAM_DEFAULT_TIMEZONES = {
   "uniqueinfo24.com": "GMT+6",
   "ziperto.org": "GMT-5",
   "23355757170": "GMT-5",
+  "workmoney24.com": "GMT+6",
+  "23342288461": "GMT+6",
+  "velocitytv.com.pk": "GMT+5",
+  "23360577147": "GMT+5",
 };
 
 /**

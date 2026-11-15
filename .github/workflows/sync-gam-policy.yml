@@ -1,0 +1,43 @@
+name: TigerROI Sync GAM Policy & Limits
+
+on:
+  # Terjadwal setiap 30 menit sekali (00, 30 setiap jam)
+  schedule:
+    - cron: "*/30 * * * *"
+  # Tombol pemicu manual dari tab Actions di GitHub
+  workflow_dispatch:
+  # Pemicu instan via Webhook / Repository Dispatch
+  repository_dispatch:
+    types: [policy-sync]
+
+concurrency:
+  group: sync-gam-policy
+  cancel-in-progress: false
+
+jobs:
+  sync-gam-policy:
+    name: Sinkronisasi Status Kebijakan & Limit GAM (30 Menit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Kode Repositori
+        uses: actions/checkout@v4
+
+      - name: Siapkan Lingkungan Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Pasang Dependensi
+        run: npm ci --omit=dev || npm install --omit=dev
+
+      - name: Jalankan Sinkronisasi Status Kebijakan & Limit GAM
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GAM_CLIENT_EMAIL: ${{ secrets.GAM_CLIENT_EMAIL }}
+          GAM_PRIVATE_KEY: ${{ secrets.GAM_PRIVATE_KEY }}
+        run: node jobs/sync-gam-policy.js
+

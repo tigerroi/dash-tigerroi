@@ -402,6 +402,17 @@ export function subscribeResource(key, callback, onError) {
             callback(fallbackData.map(toCamelCaseRow));
             return;
           }
+        } else if (table === "view_daily_roi") {
+          // Fallback transparan ke roi_snapshots jika view_daily_roi gagal diakses
+          const { data: fallbackSnaps } = await supabase
+            .from("roi_snapshots")
+            .select("*")
+            .order("date", { ascending: false })
+            .limit(10000);
+          if (active && fallbackSnaps && fallbackSnaps.length > 0) {
+            callback(dedupeRoiReports(fallbackSnaps.map(toCamelCaseRow)));
+            return;
+          }
         }
         if (error.code === "42P01" || error.code === "PGRST205") {
           // Relasi tabel/view belum dibuat di Supabase, fallback aman tanpa toast merah
@@ -420,6 +431,17 @@ export function subscribeResource(key, callback, onError) {
             .order("date", { ascending: false });
           if (fallbackData && fallbackData.length > 0) {
             callback(fallbackData.map(toCamelCaseRow));
+            return;
+          }
+        } else if (table === "view_daily_roi" && (!data || data.length === 0)) {
+          // Fallback transparan ke roi_snapshots jika view_daily_roi kosong (misal data lampau diimpor ke snapshots)
+          const { data: fallbackSnaps } = await supabase
+            .from("roi_snapshots")
+            .select("*")
+            .order("date", { ascending: false })
+            .limit(10000);
+          if (fallbackSnaps && fallbackSnaps.length > 0) {
+            callback(dedupeRoiReports(fallbackSnaps.map(toCamelCaseRow)));
             return;
           }
         }

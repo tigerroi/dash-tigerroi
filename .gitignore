@@ -40,4 +40,6 @@ scripts/*backup*.sql
 scripts/part*.sql
 scripts/clean_restore_users.sql
 scripts/import_users_and_profiles.sql
+scripts/snapshots_*.sql
+*.csv
 

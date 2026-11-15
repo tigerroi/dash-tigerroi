@@ -366,7 +366,10 @@ export async function fetchAccountCampaigns(actId, token) {
       const sEff = String(s.effective_status || "").toUpperCase();
       const sStart = s.start_time;
       const sStartMs = sStart ? Date.parse(sStart) : null;
-      if (sEff === "SCHEDULED" || (Number.isFinite(sStartMs) && sStartMs > nowMs)) {
+      const isFutureStart = Number.isFinite(sStartMs) && sStartMs > nowMs;
+      const isScheduledEff = sEff === "SCHEDULED" && (!Number.isFinite(sStartMs) || sStartMs > nowMs);
+
+      if (isFutureStart || isScheduledEff) {
         isScheduled = true;
         if (Number.isFinite(sStartMs) && sStartMs < earliestStartMs) {
           earliestStartMs = sStartMs;

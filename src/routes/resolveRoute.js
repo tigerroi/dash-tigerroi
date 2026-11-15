@@ -232,7 +232,15 @@ export function resolveRoute(path, resources) {
   // `key` diisi dengan alasan yang sama seperti Settings: `navigation.js` menamainya "targets",
   // dan gerbang izin di App hanya bertanya kalau route-nya membawa key.
   if (path === "/targets") {
-    return { kind: "targets", key: "targets" };
+    return { kind: "targets", key: "targets", tab: "all" };
+  }
+
+  if (path === "/targets/adsense") {
+    return { kind: "targets", key: "targets", tab: "adsense" };
+  }
+
+  if (path === "/targets/ad-exchanger") {
+    return { kind: "targets", key: "targets", tab: "ad-exchanger" };
   }
 
   if (path === "/targets/new") {
