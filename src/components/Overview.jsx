@@ -575,8 +575,8 @@ export function Overview({ store, navigate, tab, role, viewer }) {
   // lewat masa simpan. Grafik di atas TETAP membaca `roiReports` — baris snapshot kumulatif sejak
   // tengah malam, jadi menjumlahkannya per hari akan melipatgandakan pendapatan.
   const realtimeRows = useMemo(
-    () => realtimeRoiRows(roiSnapshots, roiReports, store.domains),
-    [roiSnapshots, roiReports, store.domains],
+    () => realtimeRoiRows(roiSnapshots, roiReports, store.domains, subDomainOwners),
+    [roiSnapshots, roiReports, store.domains, subDomainOwners],
   );
   // Filter PIC/domain/subdomain tabel ROI memakai parameter yang SAMA dengan tab Grafik dan
   // Kalender (`?advertiser=`, `?domain=`, `?subdomain=`) lewat OwnerFilterFields: ketiganya tab

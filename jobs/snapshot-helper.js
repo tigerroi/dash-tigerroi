@@ -101,6 +101,12 @@ export async function recordRoiSnapshot(supabase, targetDate) {
       return false;
     }
 
+    // Jangan catat snapshot jika tidak ada PIC (sesuai instruksi: baris tanpa PIC jangan dimasukkan)
+    const pic = String(row.pic || "").trim();
+    if (!pic || pic === "-" || pic.toLowerCase().includes("belum") || pic.toLowerCase() === "unassigned") {
+      return false;
+    }
+
     return true;
   });
 
@@ -287,6 +293,12 @@ export async function recordHourlyGamSnapshots(supabase, hourlyGamRows, subdomai
       
       // Lewati hanya jika spending 0 dan earning 0 (sama sekali tidak ada aktivitas spend maupun earning)
       if (spending <= 0.01 && earning <= 0.01) {
+        continue;
+      }
+
+      // Jangan catat snapshot jika tidak ada PIC (sesuai instruksi: baris tanpa PIC jangan dimasukkan)
+      const finalPic = existing?.pic && existing.pic !== "-" ? existing.pic : pic;
+      if (!finalPic || finalPic === "-" || finalPic.toLowerCase().includes("belum") || finalPic.toLowerCase() === "unassigned") {
         continue;
       }
 

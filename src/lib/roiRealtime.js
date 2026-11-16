@@ -317,6 +317,38 @@ export function isCampaignOff(row) {
   return false;
 }
 
+export function hasValidPic(row, subDomainOwners = null) {
+  if (!row) return false;
+  // Jika row tidak mendefinisikan properti pic sama sekali dan tidak ada subDomainOwners (data fixture/mock pengujian deduplikasi), toleransi
+  if (row.pic === undefined && (!subDomainOwners || typeof subDomainOwners.picOf !== "function")) {
+    return true;
+  }
+
+  let pic = String(row.pic ?? "").trim();
+  if (subDomainOwners && typeof subDomainOwners.picOf === "function") {
+    const sub = row.subDomain || row.subdomain || row.sub_domain || "";
+    const resolved = subDomainOwners.picOf(sub, pic);
+    if (resolved) pic = String(resolved).trim();
+  }
+
+  if (!pic || pic === "-" || pic === "null" || pic === "undefined") {
+    return false;
+  }
+
+  const lower = pic.toLowerCase();
+  if (
+    lower === "belum ada pic" ||
+    lower === "tanpa pic" ||
+    lower === "unassigned" ||
+    lower === "unmapped" ||
+    lower === "none"
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
 /**
  * Snapshot per sync, ditambah baris harian untuk hari-hari yang tidak punya snapshot.
  *
@@ -327,13 +359,13 @@ export function isCampaignOff(row) {
  * Urut terbaru dulu, karena tabelnya dibaca sebagai catatan berjalan: yang dicari orang saat
  * membukanya adalah sync barusan, bukan sync pertama tiga hari lalu.
  */
-export function realtimeRoiRows(snapshots, dailyRows, domainsList = []) {
+export function realtimeRoiRows(snapshots, dailyRows, domainsList = [], subDomainOwners = null) {
   const dedupedSnaps = dedupeSnapshots(snapshots);
   const daily = (Array.isArray(dailyRows) ? dailyRows : []).map(normalizeRowSubDomain);
   const covered = new Set(dedupedSnaps.map(dayScopeOf));
   const rawRows = [...dedupedSnaps, ...daily.filter((row) => !covered.has(dayScopeOf(row)))];
 
-  // Saring keluar domain utama (root domain) dan baris ketika campaign sedang OFF (Rp 0 di semua metrik)
+  // Saring keluar domain utama (root domain), baris ketika campaign sedang OFF, dan baris TANPA PIC
   const rows = rawRows.filter((row) => {
     const rawSub = cellText(row?.subDomain || row?.subdomain || row?.sub_domain || row?.site_code);
     const sub = canonicalSubDomain(rawSub) || rawSub;
@@ -342,6 +374,10 @@ export function realtimeRoiRows(snapshots, dailyRows, domainsList = []) {
     }
 
     if (isCampaignOff(row)) {
+      return false;
+    }
+
+    if (!hasValidPic(row, subDomainOwners)) {
       return false;
     }
 

@@ -65,6 +65,18 @@ describe("realtimeRoiRows", () => {
     ]);
     assert.deepEqual(realtimeRoiRows(null, null), []);
   });
+
+  test("baris tanpa PIC tidak dimasukkan ke dalam realtimeRoiRows", () => {
+    const mixed = [
+      { id: "s1", date: "2026-11-16", time: "10:00", subDomain: "kids.ziperto.org", pic: "-", spending: 0, earning: 100 },
+      { id: "s2", date: "2026-11-16", time: "10:00", subDomain: "gaming.ziperto.org", pic: "Sullivan", spending: 0, earning: 500 },
+      { id: "s3", date: "2026-11-16", time: "10:00", subDomain: "other.ziperto.org", pic: "Belum ada PIC", spending: 10, earning: 0 },
+    ];
+    const rows = realtimeRoiRows(mixed, []);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].id, "s2");
+    assert.equal(rows[0].pic, "Sullivan");
+  });
 });
 
 describe("normalizeRealtimeRoiRow", () => {
