@@ -44,6 +44,15 @@ export const KNOWN_GAM_POLICY_RESTRICTIONS = {
     since: "2026-11-13",
     active: true,
   },
+  // ziperto.org (GAM Network 23355757170)
+  // Akun sedang dinilai: Penayangan iklan dibatasi sejak 15 Nov 2026 (Display ca-pub-1448877308578706)
+  "23355757170": {
+    domain: "ziperto.org",
+    status: "Limit Iklan",
+    detail: "Penayangan iklan dibatasi sejak 15 Nov 2026 (Akun sedang dinilai - Display ca-pub-1448877308578706)",
+    since: "2026-11-15",
+    active: true,
+  },
 };
 
 /**
