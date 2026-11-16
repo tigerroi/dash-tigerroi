@@ -160,6 +160,18 @@ describe("targets", () => {
     }
   });
 
+  test("status Ad-Exchanger otomatis diturunkan dari gamAccounts jika belum diisi manual", () => {
+    const storeWithGam = {
+      ...store,
+      gamAccounts: [
+        { name: "petcins.com", status: "Limit Iklan", statusAuto: "Limit Iklan" },
+      ],
+    };
+    const rows = buildTargetRows(storeWithGam, "2026-08");
+    const petcinsAdx = rows.find((r) => r.domain === "petcins.com" && r.slug === "ad-exchanger");
+    assert.equal(petcinsAdx.status, "Limit");
+  });
+
   test("riwayat memuat bulan bertarget DAN bulan berrealisasi, terbaru dulu", () => {
     const rows = targetHistoryRows(store, "d1", "Ad-Exchanger");
     assert.deepEqual(

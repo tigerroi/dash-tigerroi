@@ -147,13 +147,43 @@ export function buildTargetRows(store, month) {
     for (const accountType of ACCOUNT_TYPES) {
       const slug = ACCOUNT_TYPE_SLUGS[accountType];
       const values = record[slug] || {};
+      let currentStatus = String(values.status ?? "").trim();
+
+      // Jika belum diisi tangan secara manual, turunkan status dari akun GAM (Ad-Exchanger) atau AdSense
+      if (!currentStatus) {
+        const normDomain = normalize(name);
+        if (accountType === "Ad-Exchanger") {
+          const gamAcc = (store?.gamAccounts || []).find((g) => {
+            const gName = normalize(g.name || g.domain || "");
+            return gName === normDomain || normDomain.includes(gName) || gName.includes(normDomain);
+          });
+          if (gamAcc) {
+            const raw = String(gamAcc.statusAuto || gamAcc.status || "").toLowerCase();
+            if (raw.includes("limit")) currentStatus = "Limit";
+            else if (raw.includes("ready")) currentStatus = "Ready";
+            else if (raw.includes("review")) currentStatus = "Review";
+          }
+        } else if (accountType === "Adsense") {
+          const adsAcc = (store?.adsenseAccounts || []).find((a) => {
+            const aName = normalize(a.name || a.domain || "");
+            return aName === normDomain || normDomain.includes(aName) || aName.includes(normDomain);
+          });
+          if (adsAcc) {
+            const raw = String(adsAcc.statusAuto || adsAcc.status || "").toLowerCase();
+            if (raw.includes("limit")) currentStatus = "Limit";
+            else if (raw.includes("ready")) currentStatus = "Ready";
+            else if (raw.includes("review")) currentStatus = "Review";
+          }
+        }
+      }
+
       rows.push({
         id: `${domain.id}|${slug}`,
         domainId: domain.id,
         domain: name,
         accountType,
         slug,
-        status: String(values.status ?? "").trim(),
+        status: currentStatus,
         kendala: String(values.kendala ?? "").trim(),
         catatan: String(values.catatan ?? "").trim(),
         // Target yang belum pernah diisi KOSONG, bukan Rp 0: nol adalah pernyataan ("bulan ini

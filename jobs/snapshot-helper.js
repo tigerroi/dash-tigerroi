@@ -94,9 +94,10 @@ export async function recordRoiSnapshot(supabase, targetDate) {
     if (parts.length <= 2) return false; // Domain utama tanpa subdomain
 
     const spending = Number(row.spending || row.meta_spend || row.spend_idr || 0);
+    const earning = Number(row.earning || row.gam_revenue || row.revenue || 0);
 
-    // Jangan catat snapshot jika spending 0 (tidak ada campaign iklan aktif)
-    if (spending <= 0.01) {
+    // Jangan catat snapshot jika spending 0 dan earning 0 (tidak ada aktivitas iklan maupun pendapatan aktif)
+    if (spending <= 0.01 && earning <= 0.01) {
       return false;
     }
 
@@ -282,9 +283,10 @@ export async function recordHourlyGamSnapshots(supabase, hourlyGamRows, subdomai
 
       // Pertahankan spending Meta yang sudah dicatat sebelumnya pada jam tersebut
       const spending = existing ? Number(existing.spending || existing.meta_spend || 0) : 0;
+      const earning = cumulativeRev;
       
-      // Jangan catat snapshot jika spending 0 (tidak ada campaign iklan aktif, abaikan sisa earning organik)
-      if (spending <= 0.01) {
+      // Lewati hanya jika spending 0 dan earning 0 (sama sekali tidak ada aktivitas spend maupun earning)
+      if (spending <= 0.01 && earning <= 0.01) {
         continue;
       }
 
@@ -294,7 +296,6 @@ export async function recordHourlyGamSnapshots(supabase, hourlyGamRows, subdomai
       const metaClicks = existing ? Number(existing.meta_clicks || existing.clicks || 0) : 0;
       const cpr = existing && Number(existing.cpr) > 0 ? Number(existing.cpr) : (metaClicks > 0 ? Math.round((totalSpending / metaClicks) * 100) / 100 : 0);
 
-      const earning = cumulativeRev;
       const profit = Math.round(earning - totalSpending);
       const roi = totalSpending > 0 ? Math.round(((earning - totalSpending) / totalSpending) * 10000) / 100 : 0;
 
