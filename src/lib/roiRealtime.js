@@ -279,30 +279,39 @@ export function dedupeSnapshots(snapshots) {
 export function isCampaignOff(row) {
   if (!row) return true;
   const spend = Number(row.spending ?? row.totalSpending ?? row.metaSpend ?? row.spend_idr ?? 0);
+  const earn = Number(
+    row.earning ??
+      row.gamRevenue ??
+      row.gam_revenue ??
+      row.revenue ??
+      row.adsenseRevenue ??
+      row.adsense_revenue ??
+      0,
+  );
 
-  // Jika spending iklan bernilai 0 (tidak ada campaign iklan aktif), jangan tampilkan di Laporan ROI
-  // Sisa pendapatan organik/bot kecil (seperti Rp 31 pada guides.ziperto.org) tidak dihitung jika spending Rp 0
-  const hasExplicitSpendMetric =
+  // Jika ada belanja iklan (spend > 0) ATAU ada pendapatan (earn > 0), baris ini aktif dan wajib tampil
+  if (spend > 0.01 || earn > 0.01) {
+    return false;
+  }
+
+  const hasExplicitFinancialMetric =
     row.spending !== undefined ||
     row.meta_spend !== undefined ||
     row.total_spending !== undefined ||
     row.totalSpending !== undefined ||
-    row.spend_idr !== undefined;
+    row.spend_idr !== undefined ||
+    row.earning !== undefined ||
+    row.gam_revenue !== undefined ||
+    row.gamRevenue !== undefined;
 
-  if (hasExplicitSpendMetric && spend <= 0.01) {
+  // Jika secara eksplisit ada metrik keuangan tapi dua-duanya Rp 0 (tidak ada belanja dan tidak ada pendapatan)
+  if (hasExplicitFinancialMetric && spend <= 0.01 && earn <= 0.01) {
+    const clicks = Number(row.clicks || row.metaClicks || row.meta_clicks || row.gamClicks || row.gam_clicks || 0);
+    const impressions = Number(row.impressions || row.gamImpressions || row.gam_impressions || 0);
+    if (clicks > 0 || impressions > 0) {
+      return false;
+    }
     return true;
-  }
-
-  // Jika spending > 0, baris aktif
-  if (spend > 0.01) {
-    return false;
-  }
-
-  // Untuk baris tanpa metrik keuangan eksplisit (misal test mock tanpa spending), pertahankan
-  const clicks = Number(row.clicks || 0);
-  const impressions = Number(row.impressions || 0);
-  if (clicks > 0 || impressions > 0) {
-    return false;
   }
 
   return false;
