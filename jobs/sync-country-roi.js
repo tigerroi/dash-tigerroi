@@ -72,7 +72,7 @@ const GAM_FX_RATES = {
 };
 
 // Pencocokan baris GAM (siteName / URL / adUnitName) ke subdomain & site_code
-function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
+function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList, isShared = false) {
   const host = String(row.siteName || "")
     .trim()
     .toLowerCase()
@@ -95,6 +95,7 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
         return {
           siteCode: sub.site_code || defaultSiteCode,
           subdomainName: sub.name,
+          matched: true,
         };
       }
     }
@@ -109,6 +110,7 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
       return {
         siteCode: sub.site_code || defaultSiteCode,
         subdomainName: sub.name,
+        matched: true,
       };
     }
   }
@@ -123,6 +125,7 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
       return {
         siteCode: sub.site_code || defaultSiteCode,
         subdomainName: sub.name,
+        matched: true,
       };
     }
 
@@ -131,24 +134,28 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
       return {
         siteCode: sub.site_code || defaultSiteCode,
         subdomainName: sub.name,
+        matched: true,
       };
     }
     if (slug === "insurance" && (/^ins[0-9_]/.test(unit) || unit.startsWith("insanchor") || unit.startsWith("ins_") || unit.startsWith("insurance"))) {
       return {
         siteCode: sub.site_code || defaultSiteCode,
         subdomainName: sub.name,
+        matched: true,
       };
     }
     if (slug === "finance" && (/^fin[0-9_]/.test(unit) || unit.startsWith("financhor") || unit.startsWith("fin_") || unit.startsWith("finance"))) {
       return {
         siteCode: sub.site_code || defaultSiteCode,
         subdomainName: sub.name,
+        matched: true,
       };
     }
     if (slug === "dollar" && (/^dol[0-9_]/.test(unit) || unit.startsWith("dolanchor") || unit.startsWith("dol_") || unit.startsWith("dollar"))) {
       return {
         siteCode: sub.site_code || defaultSiteCode,
         subdomainName: sub.name,
+        matched: true,
       };
     }
   }
@@ -163,11 +170,21 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
       return {
         siteCode: s.site_code,
         subdomainName: defaultSub ? defaultSub.name : s.site_code,
+        matched: true,
       };
     }
   }
 
-  // 4. Fallback ke default site code network tersebut
+  // Khusus shared domain (seperti foodsfact.org): jika tidak cocok dengan 5 subdomain TigerROI, jangan fallback!
+  if (isShared) {
+    return {
+      siteCode: "unmapped",
+      subdomainName: "unmapped",
+      matched: false,
+    };
+  }
+
+  // 4. Fallback ke default site code network tersebut (hanya untuk non-shared)
   const matchingSubs = (subdomainsList || []).filter((sub) => sub.site_code === defaultSiteCode);
   const suffix = (defaultSiteCode || "").split("-").pop();
   const defaultSub = matchingSubs.find((sub) => sub.name === suffix) || matchingSubs[0];
@@ -175,6 +192,7 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
   return {
     siteCode: defaultSiteCode || "unmapped",
     subdomainName: defaultSub ? defaultSub.name : defaultSiteCode || "unmapped",
+    matched: true,
   };
 }
 
@@ -187,6 +205,7 @@ const GAM_NETWORKS = [
   { domain: "cmhhealths.com", networkCode: "23350466753", defaultSiteCode: "cmhhealths" },
   { domain: "uniqueinfo24.com", networkCode: "23342288590", defaultSiteCode: "uniqueinfo24" },
   { domain: "ziperto.org", networkCode: "23355757170", defaultSiteCode: "ziperto" },
+  { domain: "foodsfact.org", networkCode: "21869641910", defaultSiteCode: "foodsfact", isShared: true },
 ];
 
 function matchSubDomain(campaignName, subdomains, defaultSubDomain = "") {
@@ -557,7 +576,14 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
                 net.defaultSiteCode,
                 subdomains,
                 sites,
+                net.isShared,
               );
+
+              // Jika shared domain dan bukan salah satu 5 subdomain resmi TigerROI, abaikan baris ini!
+              if (net.isShared && !mapped.matched) {
+                continue;
+              }
+
               const subDomain = resolveCanonicalSubDomain(
                 mapped.subdomainName || gr.siteName || net.domain,
                 subdomains,

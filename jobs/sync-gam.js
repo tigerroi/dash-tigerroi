@@ -62,6 +62,8 @@ const GAM_NETWORKS = [
   { domain: "ziperto.org", networkCode: "23355757170", defaultSiteCode: "ziperto" },
   { domain: "workmoney24.com", networkCode: "23342288461", defaultSiteCode: "workmoney24" },
   { domain: "velocitytv.com.pk", networkCode: "23360577147", defaultSiteCode: "velocitytv" },
+  // foodsfact.org adalah shared domain (hanya 5 subdomain resmi yang disinkronkan ke TigerROI)
+  { domain: "foodsfact.org", networkCode: "21869641910", defaultSiteCode: "foodsfact", isShared: true },
 ];
 
 // Kurs resmi konversi mata uang GAM ke IDR
@@ -75,12 +77,10 @@ const GAM_FX_RATES = {
   "23355757170": 18155.28, // Ziperto (USD)
   "23342288461": 18155.28, // WorkMoney24 (USD)
   "23360577147": 18155.28, // Velocity TV (USD)
+  "21869641910": 18155.28, // FoodsFact (USD)
 };
 
 // Zona waktu resmi untuk masing-masing network Google Ad Manager:
-// cmhhealths.com: GMT+1, trayedit.com: GMT+6, tiktokmodapk.net: GMT+5,
-// tacobellmenuu.us: GMT+5, ihopmenuwithprices.us: GMT-3, uniqueinfo24.com: GMT+6,
-// ziperto.org: America/New_York, velocitytv.com.pk: Asia/Karachi, workmoney24.com: GMT+6
 const GAM_PRESET_TIMEZONES = {
   "cmhhealths.com": "GMT+1",
   "trayedit.com": "GMT+6",
@@ -91,6 +91,7 @@ const GAM_PRESET_TIMEZONES = {
   "ziperto.org": "America/New_York",
   "velocitytv.com.pk": "Asia/Karachi",
   "workmoney24.com": "GMT+6",
+  "foodsfact.org": "America/New_York",
   "23350466753": "GMT+1",
   "23344333667": "GMT+6",
   "23367555867": "GMT+5",
@@ -100,6 +101,7 @@ const GAM_PRESET_TIMEZONES = {
   "23355757170": "America/New_York",
   "23360577147": "Asia/Karachi",
   "23342288461": "GMT+6",
+  "21869641910": "America/New_York",
 };
 
 function formatIsoDate(d) {
@@ -168,7 +170,7 @@ function loadServiceAccountCredentials() {
 }
 
 // Pencocokan baris GAM (siteName / URL / adUnitName) ke subdomain & site_code
-function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
+function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList, isShared = false) {
   const host = String(row.siteName || "")
     .trim()
     .toLowerCase()
@@ -192,6 +194,7 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
         return {
           siteCode: sub.site_code || defaultSiteCode,
           subdomainName: sub.name,
+          matched: true,
         };
       }
     }
@@ -207,6 +210,7 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
       return {
         siteCode: sub.site_code || defaultSiteCode,
         subdomainName: sub.name,
+        matched: true,
       };
     }
   }
@@ -221,6 +225,7 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
       return {
         siteCode: sub.site_code || defaultSiteCode,
         subdomainName: sub.name,
+        matched: true,
       };
     }
 
@@ -230,6 +235,7 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
       return {
         siteCode: sub.site_code || defaultSiteCode,
         subdomainName: sub.name,
+        matched: true,
       };
     }
     // Contoh untuk /insurance: 'ins1', 'ins2', 'insanchor', 'ins_top', 'ins_1'
@@ -237,6 +243,7 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
       return {
         siteCode: sub.site_code || defaultSiteCode,
         subdomainName: sub.name,
+        matched: true,
       };
     }
     // Contoh untuk /finance: 'fin1', 'fin2', 'financhor', 'fin_top', 'fin_1'
@@ -244,6 +251,7 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
       return {
         siteCode: sub.site_code || defaultSiteCode,
         subdomainName: sub.name,
+        matched: true,
       };
     }
     // Contoh untuk /dollar: 'dol1', 'dol2', 'dolanchor', 'dol_top', 'dol_1'
@@ -251,6 +259,7 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
       return {
         siteCode: sub.site_code || defaultSiteCode,
         subdomainName: sub.name,
+        matched: true,
       };
     }
   }
@@ -266,11 +275,23 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
       return {
         siteCode: s.site_code,
         subdomainName: defaultSub ? defaultSub.name : s.site_code,
+        matched: true,
       };
     }
   }
 
-  // 4. Fallback ke default site code network tersebut
+  // KHUSUS SHARED DOMAIN (seperti foodsfact.org):
+  // Jika tidak cocok dengan 5 subdomain resmi TigerROI, JANGAN PERNAH FALLBACK!
+  // Abaikan/skip baris ini agar pendapatan milik orang lain tidak masuk ke dashboard.
+  if (isShared) {
+    return {
+      siteCode: "unmapped",
+      subdomainName: "unmapped",
+      matched: false,
+    };
+  }
+
+  // 4. Fallback ke default site code network tersebut (hanya untuk non-shared domain)
   const matchingSubs = (subdomainsList || []).filter((sub) => sub.site_code === defaultSiteCode);
   const suffix = (defaultSiteCode || "").split("-").pop();
   const defaultSub = matchingSubs.find((sub) => sub.name === suffix) || matchingSubs[0];
@@ -278,6 +299,7 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList) {
   return {
     siteCode: defaultSiteCode || "unmapped",
     subdomainName: defaultSub ? defaultSub.name : defaultSiteCode || "unmapped",
+    matched: true,
   };
 }
 
@@ -368,6 +390,7 @@ export async function runSyncGam() {
           domain: acc.name || preset?.domain || "unknown",
           networkCode: code,
           defaultSiteCode: preset?.defaultSiteCode || (acc.name || "").split(".")[0] || "unmapped",
+          isShared: preset?.isShared || false,
         });
       }
     }
@@ -385,6 +408,7 @@ export async function runSyncGam() {
           domain: dom.domain_url || preset?.domain || "unknown",
           networkCode: code,
           defaultSiteCode: preset?.defaultSiteCode || (dom.domain_url || "").split(".")[0] || "unmapped",
+          isShared: preset?.isShared || false,
         });
       }
     }
@@ -426,8 +450,21 @@ export async function runSyncGam() {
         const rows = await fetchGamDailyRevenue(net.networkCode, accessToken, dateRange);
         console.log(`    Ditemukan ${rows.length} baris unit iklan.`);
 
+        let netTotalRev = 0;
+        let netLatestDate = "";
+
         for (const row of rows) {
-          const mapped = mapGamRowToSite(row, net.defaultSiteCode, subdomains, sites);
+          const mapped = mapGamRowToSite(row, net.defaultSiteCode, subdomains, sites, net.isShared);
+          // Jika shared domain dan bukan salah satu subdomain resmi TigerROI, abaikan baris ini!
+          if (net.isShared && !mapped.matched) {
+            continue;
+          }
+
+          netTotalRev += row.totalRevenue;
+          if (!netLatestDate || row.date > netLatestDate) {
+            netLatestDate = row.date;
+          }
+
           const siteCode = mapped.siteCode;
           const subName = (mapped.subdomainName || "").toLowerCase().trim();
           const rowDate = formatIsoDate(row.date);
@@ -514,16 +551,6 @@ export async function runSyncGam() {
           }
         }
 
-        // Hitung total pendapatan dan tanggal laporan terbaru untuk tabel gam_accounts
-        let netTotalRev = 0;
-        let netLatestDate = "";
-        for (const row of rows) {
-          netTotalRev += row.totalRevenue;
-          if (!netLatestDate || row.date > netLatestDate) {
-            netLatestDate = row.date;
-          }
-        }
-
         // Pendapatan GAM ditarik langsung dalam mata uang IDR murni
         const totalRevenueIdr = Math.round(netTotalRev);
         const formattedEarning = `Rp ${totalRevenueIdr.toLocaleString("id-ID")}`;
@@ -595,7 +622,11 @@ export async function runSyncGam() {
           const fillRateRows = await fetchGamHourlyFillRate(net.networkCode, accessToken, dateRange);
           console.log(`    Ditemukan ${fillRateRows.length} baris rasio penayangan per jam.`);
           for (const fRow of fillRateRows) {
-            const mapped = mapGamRowToSite({ siteName: fRow.siteName }, net.defaultSiteCode, subdomains, sites);
+            const mapped = mapGamRowToSite({ siteName: fRow.siteName }, net.defaultSiteCode, subdomains, sites, net.isShared);
+            if (net.isShared && !mapped.matched) {
+              continue;
+            }
+
             const siteCode = mapped.siteCode;
             const subName = (mapped.subdomainName || "").toLowerCase().trim();
             const fRowDate = formatIsoDate(fRow.date);
@@ -644,7 +675,11 @@ export async function runSyncGam() {
           const hourlyRevRows = await fetchGamHourlyRevenue(net.networkCode, accessToken, dateRange);
           console.log(`    Ditemukan ${hourlyRevRows.length} baris pendapatan per jam.`);
           for (const hRow of hourlyRevRows) {
-            const mapped = mapGamRowToSite(hRow, net.defaultSiteCode, subdomains, sites);
+            const mapped = mapGamRowToSite(hRow, net.defaultSiteCode, subdomains, sites, net.isShared);
+            if (net.isShared && !mapped.matched) {
+              continue;
+            }
+
             allHourlyGamRows.push({
               ...hRow,
               siteCode: mapped.siteCode,

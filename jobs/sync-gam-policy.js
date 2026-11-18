@@ -60,7 +60,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-// Daftar 9 Network GAM resmi TigerROI
+// Daftar Network GAM resmi TigerROI
 const GAM_NETWORKS = [
   { domain: "ihopmenuwithprices.us", networkCode: "23340206616" },
   { domain: "tacobellmenuu.us", networkCode: "23380486168" },
@@ -71,6 +71,7 @@ const GAM_NETWORKS = [
   { domain: "ziperto.org", networkCode: "23355757170" },
   { domain: "workmoney24.com", networkCode: "23342288461" },
   { domain: "velocitytv.com.pk", networkCode: "23360577147" },
+  { domain: "foodsfact.org", networkCode: "21869641910" },
 ];
 
 function loadServiceAccountCredentials() {
