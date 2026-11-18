@@ -10,10 +10,10 @@ const mockEnv = {
 
 test("Gateway konsisten dengan 4 domain & site_code tabel public.sites", () => {
   const routes = [
-    { slug: "ihop-menu", expectedSite: "ihop-menu", expectedAlias: "pBRw" },
-    { slug: "tray-decor", expectedSite: "tray-decor", expectedAlias: "TvH1" },
-    { slug: "taco-fries", expectedSite: "taco-fries", expectedAlias: "taco" },
-    { slug: "tiktok-mod", expectedSite: "tiktok-mod", expectedAlias: "tiktok" },
+    { slug: "ihop-menu", expectedSite: "ihop-menu", expectedAlias: "tJWYJ7" },
+    { slug: "tray-decor", expectedSite: "tray-decor", expectedAlias: "rWbj4QcP" },
+    { slug: "taco-fries", expectedSite: "taco-fries", expectedAlias: "WMP6ZVgM" },
+    { slug: "tiktok-mod", expectedSite: "tiktok-mod", expectedAlias: "dnR9Ts9S" },
   ];
 
   for (const r of routes) {
@@ -27,29 +27,29 @@ test("Gateway konsisten dengan 4 domain & site_code tabel public.sites", () => {
 test("Semua 17 Subdomain Asli Terdaftar Lengkap dan Tepat di Gateway", () => {
   const all17Subdomains = [
     // TikTok (4 subdomain)
-    { slug: "insurance", site: "tiktok-mod", domain: "insurance.tiktokmodapk.net", alias: "tiktok" },
-    { slug: "careers", site: "tiktok-mod", domain: "careers.tiktokmodapk.net", alias: "tiktok" },
-    { slug: "rewards", site: "tiktok-mod", domain: "rewards.tiktokmodapk.net", alias: "tiktok" },
-    { slug: "mod", site: "tiktok-mod", domain: "mod.tiktokmodapk.net", alias: "tiktok" },
+    { slug: "insurance", site: "tiktok-mod", domain: "insurance.tiktokmodapk.net", alias: "k3wbXNZp" },
+    { slug: "careers", site: "tiktok-mod", domain: "careers.tiktokmodapk.net", alias: "TMkPrHGK" },
+    { slug: "rewards", site: "tiktok-mod", domain: "rewards.tiktokmodapk.net", alias: "nGpHD6R9" },
+    { slug: "mod", site: "tiktok-mod", domain: "mod.tiktokmodapk.net", alias: "dnR9Ts9S" },
 
     // Taco Bell (3 subdomain)
-    { slug: "cantina", site: "taco-fries", domain: "cantina.tacobellmenuu.us", alias: "taco" },
-    { slug: "burrito", site: "taco-fries", domain: "burrito.tacobellmenuu.us", alias: "taco" },
-    { slug: "fries", site: "taco-fries", domain: "fries.tacobellmenuu.us", alias: "taco" },
+    { slug: "cantina", site: "taco-fries", domain: "cantina.tacobellmenuu.us", alias: "76LxZPMh" },
+    { slug: "burrito", site: "taco-fries", domain: "burrito.tacobellmenuu.us", alias: "FF8hRWLb" },
+    { slug: "fries", site: "taco-fries", domain: "fries.tacobellmenuu.us", alias: "WMP6ZVgM" },
 
     // Tray Decor (5 subdomain)
-    { slug: "decor", site: "tray-decor", domain: "decor.trayedit.com", alias: "TvH1" },
-    { slug: "materials", site: "tray-decor", domain: "materials.trayedit.com", alias: "TvH1" },
-    { slug: "cabinets", site: "tray-decor", domain: "cabinets.trayedit.com", alias: "TvH1" },
-    { slug: "guides", site: "tray-decor", domain: "guides.trayedit.com", alias: "TvH1" },
-    { slug: "styling", site: "tray-decor", domain: "styling.trayedit.com", alias: "TvH1" },
+    { slug: "decor", site: "tray-decor", domain: "decor.trayedit.com", alias: "rWbj4QcP" },
+    { slug: "materials", site: "tray-decor", domain: "materials.trayedit.com", alias: "qVjXBWDv" },
+    { slug: "cabinets", site: "tray-decor", domain: "cabinets.trayedit.com", alias: "Dyv6Zgfr" },
+    { slug: "guides", site: "tray-decor", domain: "guides.trayedit.com", alias: "Wq2f2yVL" },
+    { slug: "styling", site: "tray-decor", domain: "styling.trayedit.com", alias: "kbRf43tW" },
 
     // IHOP (5 subdomain)
-    { slug: "menu", site: "ihop-menu", domain: "menu.ihopmenuwithprices.us", alias: "pBRw" },
-    { slug: "deals", site: "ihop-menu", domain: "deals.ihopmenuwithprices.us", alias: "pBRw" },
-    { slug: "keto", site: "ihop-menu", domain: "keto.ihopmenuwithprices.us", alias: "pBRw" },
-    { slug: "hacks", site: "ihop-menu", domain: "hacks.ihopmenuwithprices.us", alias: "pBRw" },
-    { slug: "news", site: "ihop-menu", domain: "news.ihopmenuwithprices.us", alias: "pBRw" },
+    { slug: "menu", site: "ihop-menu", domain: "menu.ihopmenuwithprices.us", alias: "tJWYJ7" },
+    { slug: "deals", site: "ihop-menu", domain: "deals.ihopmenuwithprices.us", alias: "t66q2g" },
+    { slug: "keto", site: "ihop-menu", domain: "keto.ihopmenuwithprices.us", alias: "rSXvdv" },
+    { slug: "hacks", site: "ihop-menu", domain: "hacks.ihopmenuwithprices.us", alias: "rHTfWG" },
+    { slug: "news", site: "ihop-menu", domain: "news.ihopmenuwithprices.us", alias: "9gPxZ2" },
   ];
 
   assert.equal(all17Subdomains.length, 17, "Harus ada tepat 17 subdomain");
@@ -75,7 +75,7 @@ test("Parameter fbclid tetap utuh 100% pada Location redirect", async () => {
 
   const targetUrl = new URL(location);
   assert.equal(targetUrl.origin, "https://appscity.tech");
-  assert.equal(targetUrl.pathname, "/tiktok");
+  assert.equal(targetUrl.pathname, "/k3wbXNZp");
   assert.equal(
     targetUrl.searchParams.get("fbclid"),
     "IwAR1234567890abcdef_fbclid_test_value"
@@ -94,7 +94,7 @@ test("Parameter UTM (source, medium, campaign, content, term) diteruskan utuh", 
   const location = res.headers.get("Location");
   const targetUrl = new URL(location);
 
-  assert.equal(targetUrl.pathname, "/pBRw");
+  assert.equal(targetUrl.pathname, "/tJWYJ7");
   assert.equal(targetUrl.searchParams.get("utm_source"), "facebook");
   assert.equal(targetUrl.searchParams.get("utm_medium"), "cpc");
   assert.equal(targetUrl.searchParams.get("utm_campaign"), "ihop_q4");
