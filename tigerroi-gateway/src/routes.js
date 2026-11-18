@@ -304,6 +304,70 @@ export const GATEWAY_ROUTES = {
     target_domain: "news.ihopmenuwithprices.us",
     description: "IHOP News Full Slug",
   },
+
+  // ============================================================================
+  // 5. FOODSFACT SHARED DOMAIN (foodsfact.org) - 5 Subdomain Resmi
+  // ============================================================================
+  eat: {
+    site_code: "DWDM",
+    keitaro_alias: "DWDM",
+    target_domain: "eat.foodsfact.org",
+    description: "Eat FoodsFact Subdomain",
+  },
+  "food-eat": {
+    site_code: "DWDM",
+    keitaro_alias: "DWDM",
+    target_domain: "eat.foodsfact.org",
+    description: "Food Eat Full Slug",
+  },
+  "ff-guides": {
+    site_code: "TG1D",
+    keitaro_alias: "TG1D",
+    target_domain: "guides.foodsfact.org",
+    description: "Guides FoodsFact Subdomain",
+  },
+  "food-guides": {
+    site_code: "TG1D",
+    keitaro_alias: "TG1D",
+    target_domain: "guides.foodsfact.org",
+    description: "Food Guides Full Slug",
+  },
+  property: {
+    site_code: "WMYN",
+    keitaro_alias: "WMYN",
+    target_domain: "property.foodsfact.org",
+    description: "Property FoodsFact Subdomain",
+  },
+  "food-property": {
+    site_code: "WMYN",
+    keitaro_alias: "WMYN",
+    target_domain: "property.foodsfact.org",
+    description: "Food Property Full Slug",
+  },
+  finance: {
+    site_code: "TX5X",
+    keitaro_alias: "TX5X",
+    target_domain: "finance.foodsfact.org",
+    description: "Finance FoodsFact Subdomain",
+  },
+  "food-finance": {
+    site_code: "TX5X",
+    keitaro_alias: "TX5X",
+    target_domain: "finance.foodsfact.org",
+    description: "Food Finance Full Slug",
+  },
+  "insurance-food": {
+    site_code: "4SVN",
+    keitaro_alias: "4SVN",
+    target_domain: "insurance.foodsfact.org",
+    description: "Insurance FoodsFact Subdomain",
+  },
+  "food-insurance": {
+    site_code: "4SVN",
+    keitaro_alias: "4SVN",
+    target_domain: "insurance.foodsfact.org",
+    description: "Food Insurance Full Slug",
+  },
 };
 
 /**

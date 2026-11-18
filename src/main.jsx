@@ -21,6 +21,7 @@ import { Targets } from "./components/Targets";
 import { UserDetail } from "./components/UserDetail";
 import { EmptyMessage } from "./components/ui/EmptyMessage";
 import { ViControl } from "./components/ViControl";
+import { CloudflareGateway } from "./components/CloudflareGateway";
 import {
   accessDeniedReason,
   canEditCampaignCodes,
@@ -486,6 +487,9 @@ function App() {
                 onGate={dataStore.setCampaignGate}
                 onRefresh={dataStore.refreshGating}
               />
+            )}
+            {!forbidden && route.kind === "cloudflareGateway" && (
+              <CloudflareGateway />
             )}
             {/* Superadmin saja, dan `forbidden` di atas yang menegakkannya lewat canReadResource —
                 `canManage` di bawah cuma menentukan tombolnya digambar atau tidak. Yang benar-benar

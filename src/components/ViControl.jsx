@@ -1,4 +1,4 @@
-import { ShieldCheck, ShieldOff, TriangleAlert } from "lucide-react";
+import { ExternalLink, ShieldCheck, ShieldOff, TriangleAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useUrlState } from "../hooks/useUrlState";
 import { CONTROL_API_ENABLED, fetchPreview } from "../lib/controlApi";
@@ -95,9 +95,23 @@ export function ViControl({ store, canGate, onGate, onRefresh }) {
   return (
     <div className="page-stack">
       <PageHeader
-        title="VI Control"
-        description="Arahkan trafik campaign Keitaro lewat gate kita, atau kembalikan ke URL langsungnya."
-        action={<RefreshButton busy={refreshing} onClick={refresh} />}
+        title="Keitaro Tracker"
+        description="Pusat integrasi Keitaro Tracker (appscity.tech), pemantauan alias kampanye, dan proteksi alur trafik iklan."
+        action={
+          <div style={{ display: "flex", gap: "8px" }}>
+            <a
+              href="https://appscity.tech/admin"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="button secondary"
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px", textDecoration: "none" }}
+            >
+              <ExternalLink size={16} />
+              <span>Buka Keitaro Admin</span>
+            </a>
+            <RefreshButton busy={refreshing} onClick={refresh} />
+          </div>
+        }
       />
 
       <section className="stats-grid">

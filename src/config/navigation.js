@@ -268,7 +268,8 @@ export const navItems = [
     key: "dnsRecords",
     parent: "/domains",
   },
-  { path: "/vi-control", label: "VI Control", key: "gating", group: "Aset" },
+  { path: "/vi-control", label: "Keitaro Tracker", key: "gating", group: "Aset", tab: "Keitaro Tracker" },
+  { path: "/cloudflare-gateway", label: "Cloudflare Gateway", key: "cloudflareGateway", parent: "/vi-control" },
   // Tiga tab, sepola Campaign: "situs mana saja yang terhubung dan bagaimana keadaannya" (daftar
   // armada), lalu inject kode iklan AdX dan AdSense. Ketiganya tidak pernah ditanyakan bersamaan —
   // dan generator yang berdiri di atas daftar mendorong tabel armada keluar layar pertama, padahal

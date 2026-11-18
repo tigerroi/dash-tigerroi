@@ -120,8 +120,12 @@ export function resolveRoute(path, resources) {
   // yang tidak memberi tahu ke mana halamannya pindah. App menulis ulang alamatnya ke yang kanonik
   // (replace, bukan push — lihat main.jsx); `kind`/`key` sengaja tetap "gating" karena keduanya
   // menamai node RTDB dan aturan database yang tidak ikut berganti nama.
-  if (path === "/vi-control" || path === "/gating") {
+  if (path === "/vi-control" || path === "/gating" || path === "/keitaro") {
     return { kind: "gating", key: "gating" };
+  }
+
+  if (path === "/cloudflare-gateway") {
+    return { kind: "cloudflareGateway", key: "cloudflareGateway" };
   }
 
   // Bukan salah satu `resources`, alasan yang sama dengan gating: tidak ada baris untuk di-CRUD di

@@ -212,6 +212,7 @@ export function homePath(role) {
 // menegakkannya gerbang `requireSuperAdmin` di server/campaign-manage.js.
 export const SUPERADMIN_PAGES = [
   "gating",
+  "cloudflareGateway",
   "plugin",
   "otp",
   "activityLogs",

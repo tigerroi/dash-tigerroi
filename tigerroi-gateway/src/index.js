@@ -16,13 +16,14 @@ export default {
     const pathParts = url.pathname.replace(/^\/+|\/+$/g, "").split("/");
     const slug = pathParts[0] || "";
 
-    // 1. Endpoint Health Check
-    if (slug === "health" || slug === "_health") {
+    // 1. Endpoint Health Check & Status Monitoring
+    if (slug === "health" || slug === "_health" || slug === "api/status") {
       return new Response(
         JSON.stringify({
           status: "ok",
           service: "tigerroi-gateway",
-          version: "1.0.0",
+          worker: "visint-gating",
+          version: "1.2.0",
           timestamp: new Date().toISOString(),
         }),
         {
@@ -30,6 +31,8 @@ export default {
           headers: {
             "Content-Type": "application/json",
             "Cache-Control": "no-store",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
           },
         },
       );
@@ -60,16 +63,35 @@ export default {
       return Response.redirect(fallbackUrl, 302);
     }
 
-    // 5. Bangun URL Tujuan di Keitaro Tracker
+    // 5. Proteksi Bot Liar (Traffic Quality Filter Anti-Limit GAM)
+    const userAgent = request.headers.get("user-agent") || "";
+    const isOfficialCrawler = /facebookexternalhit|Facebot|Googlebot|AdsBot-Google/i.test(userAgent);
+    const hasAdClickId =
+      url.searchParams.has("fbclid") ||
+      url.searchParams.has("gclid") ||
+      url.searchParams.has("utm_source") ||
+      url.searchParams.has("pixel_id") ||
+      url.searchParams.has("ad_id") ||
+      url.searchParams.has("custom_ref") ||
+      url.searchParams.has("sub_id") ||
+      url.searchParams.has("preview");
+
+    // Jika bot/scraper liar tanpa parameter iklan resmi dan bukan crawler resmi Meta/Google:
+    // Lempar ke fallback aman agar tidak memicu impresi palsu/invalid traffic di Google Ad Manager
+    if (!isOfficialCrawler && !hasAdClickId) {
+      return Response.redirect(fallbackUrl, 302);
+    }
+
+    // 6. Bangun URL Tujuan di Keitaro Tracker
     const keitaroBase = (env.KEITARO_BASE_URL || "https://appscity.tech").replace(/\/+$/, "");
     const targetUrl = new URL(`${keitaroBase}/${route.keitaro_alias}`);
 
-    // 6. Teruskan SELURUH Query Parameter asli (fbclid, UTM, dll) secara utuh
+    // 7. Teruskan SELURUH Query Parameter asli (fbclid, UTM, dll) secara utuh
     for (const [key, val] of url.searchParams.entries()) {
       targetUrl.searchParams.append(key, val);
     }
 
-    // 7. Pastikan parameter site_code dan sub_id ada jika belum didefinisikan
+    // 8. Pastikan parameter site_code dan sub_id ada jika belum didefinisikan
     if (!targetUrl.searchParams.has("site") && !targetUrl.searchParams.has("sub_id")) {
       targetUrl.searchParams.set("site", route.site_code);
     }
@@ -77,8 +99,7 @@ export default {
       targetUrl.searchParams.set("sub_id_1", route.site_code);
     }
 
-    // 8. Kirim HTTP 302 Redirect
-    // TANPA pemeriksaan User-Agent, TANPA pemeriksaan IP, perlakuan 100% IDENTIK untuk semua pengunjung.
+    // 9. Kirim HTTP 302 Redirect ke Keitaro Tracker
     return new Response(null, {
       status: 302,
       headers: {
