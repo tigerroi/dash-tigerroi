@@ -10,13 +10,13 @@ import { fetchGamHourlyFillRate, fetchGamSites } from "./gam-client.js";
  */
 export const KNOWN_GAM_POLICY_RESTRICTIONS = {
   // cmhhealths.com (GAM Network 23350466753)
-  // Akun sedang dinilai: Penayangan iklan dibatasi sejak 14 Nov 2026 (Display ca-pub-3885553227294332)
+  // Sudah lepas limit per 18 Nov 2026 (Pusat Kebijakan: Tidak ada masalah saat ini)
   "23350466753": {
     domain: "cmhhealths.com",
-    status: "Limit Iklan",
-    detail: "Penayangan iklan dibatasi sejak 14 Nov 2026 (Akun sedang dinilai - Display ca-pub-3885553227294332)",
+    status: "Ready",
+    detail: "Tidak ada masalah saat ini (Limit telah dicabut Google)",
     since: "2026-11-14",
-    active: true,
+    active: false,
   },
   // workmoney24.com (GAM Network 23342288461)
   // Penayangan iklan dibatasi karena traffic tidak valid (Display ca-pub-4522230125639501)
@@ -28,21 +28,22 @@ export const KNOWN_GAM_POLICY_RESTRICTIONS = {
     active: true,
   },
   // trayedit.com (GAM Network 23344333667)
-  // Penayangan iklan dibatasi karena traffic tidak valid (Display ca-pub-1979254184595490)
+  // Sudah lepas limit per 18 Nov 2026 (Pusat Kebijakan: Tidak ada masalah saat ini)
   "23344333667": {
     domain: "trayedit.com",
-    status: "Limit Iklan",
-    detail: "Penayangan iklan saat ini dibatasi karena traffic tidak valid (Display ca-pub-1979254184595490)",
+    status: "Ready",
+    detail: "Tidak ada masalah saat ini (Limit telah dicabut Google)",
     since: "2026-11-15",
-    active: true,
+    active: false,
   },
   // velocitytv.com.pk (GAM Network 23360577147)
+  // Sudah lepas limit per 18 Nov 2026 (Pusat Kebijakan: Tidak ada masalah saat ini)
   "23360577147": {
     domain: "velocitytv.com.pk",
-    status: "Limit Iklan",
-    detail: "Situs bermasalah: egymod3.com (OTHER)",
+    status: "Ready",
+    detail: "Tidak ada masalah saat ini (Limit telah dicabut Google)",
     since: "2026-11-13",
-    active: true,
+    active: false,
   },
   // ziperto.org (GAM Network 23355757170)
   // Akun sedang dinilai: Penayangan iklan dibatasi sejak 15 Nov 2026 (Display ca-pub-1448877308578706)
