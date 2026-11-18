@@ -82,7 +82,7 @@ export function buildDomainProfit(store = {}, range = {}, filters = {}) {
         expenseRows: rowsInRange(store?.expenses, report.range),
         adxRows: rowsInRange(store?.adxCosts, report.range),
       });
-  const netIncomeOwner = round(rawTotals.netProfit - rawTotals.bonus - opex);
+  const netIncomeOwner = round(rawTotals.netProfit - rawTotals.bonus - opex - (rawTotals.payoutCost || 0));
 
   return {
     range: report.range,

@@ -663,14 +663,13 @@ function splitByOwner({
 
   const bonusBreakdown = [...byPic.values()]
     .map((entry) => {
-      // Kebijakan Founder: Advertiser tidak menanggung biaya operasional (BOP).
-      // Dasar bonus dihitung murni dari: Earning − Spend − Company Cut − Invalid Traffic − Potongan Pencairan.
+      // Kebijakan Founder: Advertiser tidak menanggung biaya operasional (BOP) dan tidak menanggung Potongan Pencairan.
+      // Dasar bonus dihitung murni dari: Earning − Spend − Company Cut − Invalid Traffic.
       const base = round(
         entry.earning -
           entry.spend -
           entry.company -
-          entry.invalidTraffic -
-          entry.payoutCost,
+          entry.invalidTraffic,
       );
       return {
         label: entry.label,

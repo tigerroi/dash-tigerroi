@@ -368,21 +368,25 @@ function cashFlowColumns(totals) {
         hint: "Invalid traffic domain ini bulan ini, dibagi menurut porsi Earning tiap subdomain",
       },
     },
-    moneyColumn("payoutCost", "Potongan Pencairan", "nominal", {
-      hint: "Fee rekening perantara + konversi mata uang + pajak negara asal (Real Masuk − Saldo Akhir di tab Pencairan), dibagi menurut porsi Earning tiap subdomain",
-      total: totals.payoutCost,
-    }),
     moneyColumn("netProfit", "Net Profit", "profit", {
-      hint: "Earning Bruto − Company − Invalid Traffic − Potongan Pencairan",
+      hint: "Earning Bruto − Company − Invalid Traffic (Gross Profit Advertiser)",
       total: totals.netProfit,
     }),
     roiColumn("netRoi", "Net ROI %", {
       hint: "Net Profit ÷ Total Spend × 100%",
       total: totals.netRoi,
     }),
+    moneyColumn("bonus", "Bonus", "nominal", {
+      hint: "Bonus % × Net Profit",
+      total: totals.bonus,
+    }),
     moneyColumn("operatingExpense", "Biaya Operasional", "nominal", {
-      hint: "Porsi biaya operasional bulan ini (sewa server, lisensi, Cost Ad Exchange) menurut porsi Earning baris ini. Mengurangi dasar bonus, TIDAK masuk Net Profit. Rp 0 untuk biaya bertanggal sebelum Juli 2026.",
+      hint: "Biaya operasional bulan ini (BOP Founder). Beban Founder / Owner.",
       total: totals.operatingExpense,
+    }),
+    moneyColumn("payoutCost", "Potongan Pencairan", "nominal", {
+      hint: "Fee rekening perantara + konversi mata uang + pajak negara asal (Real Masuk − Saldo Akhir di tab Pencairan). Beban Founder / Owner.",
+      total: totals.payoutCost,
     }),
     {
       accessorKey: "bonusPercent",
@@ -391,10 +395,6 @@ function cashFlowColumns(totals) {
       footer: "-",
       meta: { align: "right", hint: "Tarif bonus advertiser, dari halaman Team" },
     },
-    moneyColumn("bonus", "Bonus", "nominal", {
-      hint: "Bonus % × (Net Profit − Biaya Operasional)",
-      total: totals.bonus,
-    }),
   ];
 }
 

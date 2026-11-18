@@ -76,13 +76,13 @@ export function DomainProfit({ store }) {
     { key: "totalSpending", label: "Belanja iklan + pajak", flow: "out" },
     { key: "company", label: "Potongan Company Ad Exchange", flow: "out" },
     { key: "invalidTraffic", label: "Invalid Traffic", flow: "out" },
-    { key: "payoutCost", label: "Potongan Pencairan", flow: "out" },
     { key: "netProfit", label: "Gross Profit Advertiser", flow: "net" },
     { key: "bonus", label: "Bonus advertiser", flow: "out" },
-    // Biaya operasional adalah beban Founder / Owner: hanya muncul saat melihat semua advertiser
+    // Biaya operasional dan Potongan Pencairan adalah beban Founder / Owner: hanya muncul saat melihat semua advertiser
     ...(!pic
       ? [
           { key: "operatingExpense", label: "Biaya Operasional (BOP Founder)", flow: "out" },
+          { key: "payoutCost", label: "Potongan Pencairan", flow: "out" },
           { key: "netIncomeOwner", label: "Net Income Owner", flow: "net" },
         ]
       : []),
@@ -287,13 +287,6 @@ function domainColumns(totals, isPicFiltered = false) {
     },
     moneyColumn("company", "Company", "nominal", { total: totals.company }),
     moneyColumn("invalidTraffic", "Invalid Traffic", "nominal", { total: totals.invalidTraffic }),
-    // Yang menerangkan SIAPA yang kena tinggal di hint, bukan di nama kolomnya: aturannya tidak
-    // menanyakan negara, jadi nama yang menyebut satu negara akan jadi salah tanpa satu baris kode
-    // pun berubah.
-    moneyColumn("payoutCost", "Potongan Pencairan", "nominal", {
-      hint: "Fee rekening perantara + konversi mata uang + pajak negara asal (Real Masuk − Saldo Akhir di tab Pencairan), per domain. Hanya domain yang dibayar lewat rantai rekening asing; yang dibayar ke bank lokal kehilangan nol dan tidak dipotong apa pun.",
-      total: totals.payoutCost,
-    }),
     moneyColumn("netProfit", "Gross Profit Advertiser", "profit", { total: totals.netProfit }),
     roiColumn("netRoi", "Net ROI", { total: totals.netRoi }),
     {
@@ -313,6 +306,10 @@ function domainColumns(totals, isPicFiltered = false) {
       ? [
           moneyColumn("operatingExpense", "Biaya Operasional", "nominal", {
             total: totals.operatingExpense,
+          }),
+          moneyColumn("payoutCost", "Potongan Pencairan", "nominal", {
+            hint: "Fee rekening perantara + konversi mata uang + pajak negara asal (Real Masuk − Saldo Akhir di tab Pencairan), per domain. Beban Founder / Owner.",
+            total: totals.payoutCost,
           }),
           moneyColumn("netIncomeOwner", "Net Income Owner", "profit", { total: totals.netIncomeOwner }),
         ]

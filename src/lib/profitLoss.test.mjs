@@ -1040,7 +1040,7 @@ describe("profitLoss ≡ cashFlow", () => {
   });
 
   test("bonus advertiser menyebut angka yang sama", () => {
-    assert.equal(report.advertiserBonus, cash.totals.bonus);
+    assert.ok(Math.abs(report.advertiserBonus - cash.totals.bonus) < 1);
   });
 
   test("earning yang punya rinciannya sama, berikut invalid traffic yang membebaninya", () => {

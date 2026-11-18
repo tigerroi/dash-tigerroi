@@ -147,7 +147,7 @@ export function buildCashFlow(store = {}, range = {}) {
     totals: {
       ...rawTotals,
       operatingExpense: totalOpex,
-      netIncomeOwner: round(rawTotals.netProfit - rawTotals.bonus - totalOpex),
+      netIncomeOwner: round(rawTotals.netProfit - rawTotals.bonus - totalOpex - (rawTotals.payoutCost || 0)),
       invalidTrafficUnspread: unspread,
       payoutCostUnspread: payoutUnspread,
       // Biaya operasional bulan ini yang tidak punya satu ember pun untuk dibagi: bulan yang punya
@@ -747,7 +747,9 @@ function baseRow(entry) {
   const invalidTraffic = round(entry.invalidTraffic);
   const payoutCost = round(entry.payoutCost);
   const grossProfit = round(earning - spending);
-  const netProfit = round(grossProfit - company - invalidTraffic - payoutCost);
+  // Net profit (Gross Profit Advertiser): murni Pendapatan − Belanja Iklan − Potongan Company − Invalid Traffic.
+  // Potongan Pencairan dan Biaya Operasional (BOP) adalah tanggungan Founder / Owner dan TIDAK membebani advertiser.
+  const netProfit = round(grossProfit - company - invalidTraffic);
 
   return {
     id: entry.key,
@@ -813,7 +815,7 @@ function withBonus(row, bonusOf, bonusBase) {
     // nol: barisnya menyebutkan sebabnya alih-alih menampilkan tarif yang tidak menghasilkan apa-apa.
     bonusHeld: held,
     bonus,
-    netIncomeOwner: round(row.netProfit - bonus),
+    netIncomeOwner: round(row.netProfit - bonus - (row.payoutCost || 0)),
   };
 }
 
