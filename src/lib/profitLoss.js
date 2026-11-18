@@ -825,6 +825,7 @@ export function profitLossMonths({
   invalidTraffic = [],
   adxCosts = [],
   accountCloses = [],
+  payouts = [],
 }) {
   const months = new Set();
   for (const rows of [financials, expenses, whitelistTopup, adxCosts]) {
@@ -841,6 +842,10 @@ export function profitLossMonths({
   }
   for (const row of accountCloses || []) {
     const key = accountCloseMonth(row);
+    if (/^\d{4}-\d{2}$/.test(key)) months.add(key);
+  }
+  for (const row of payouts || []) {
+    const key = payoutCostMonth(row);
     if (/^\d{4}-\d{2}$/.test(key)) months.add(key);
   }
   return [...months].sort().reverse();

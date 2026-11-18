@@ -117,7 +117,7 @@ function derive(row, earnings, traffic) {
   // pernah dicek memang tidak kehilangan apa-apa — itu jawaban yang sama dengan `buildProfitLoss`,
   // yang menjumlahkan `nominal` seluruh baris yang ada.
   const invalidTraffic = round(traffic.get(key) || 0);
-  const saldoSebelumnya = toAmount(row?.saldoSebelumnya);
+  const saldoSebelumnya = toAmount(row?.saldoSebelumnya ?? row?.saldo_sebelumnya);
 
   const earningFinal =
     earning === "" ? "" : round(earning - company - invalidTraffic + saldoSebelumnya);
@@ -134,7 +134,9 @@ function derive(row, earnings, traffic) {
 
   // Angka notifikasi pembayaran, kalau sudah diketik; kalau belum, yang seharusnya datang. Yang
   // membedakan keduanya di layar adalah kolom Sunat Google — kosong selama belum ada yang diadu.
-  const typed = hasAmount(row?.realMasuk) ? toAmount(row.realMasuk) : null;
+  const typed = hasAmount(row?.realMasuk ?? row?.real_masuk)
+    ? toAmount(row?.realMasuk ?? row?.real_masuk)
+    : null;
   const realMasuk = typed ?? expected;
   const sunatGoogle = typed === null || expected === "" ? "" : round(typed - expected);
 
@@ -142,15 +144,15 @@ function derive(row, earnings, traffic) {
   // dan itulah seluruh gunanya berdiri sebagai langkah tersendiri: fee perantara dihitung dari
   // SISANYA, bukan dari yang dibayarkan Google. Baris tanpa tarif (kosong, bukan 0%) menghasilkan
   // rantai yang identik dengan sebelum kolom ini ada — pajak nol, pembagi fee tetap Real Masuk.
-  const govTaxPercent = toPercent(row?.govTaxPercent);
+  const govTaxPercent = toPercent(row?.govTaxPercent ?? row?.gov_tax_percent);
   const govTaxNominal =
     govTaxPercent === null || realMasuk === "" ? "" : round((realMasuk * govTaxPercent) / 100);
   const afterTax = realMasuk === "" ? "" : round(realMasuk - (govTaxNominal || 0));
 
-  const feePercent = toPercent(row?.feePercent);
+  const feePercent = toPercent(row?.feePercent ?? row?.fee_percent);
   const feeNominal =
     feePercent === null || afterTax === "" ? "" : round((afterTax * feePercent) / 100);
-  const potonganKonversi = toAmount(row?.potonganKonversi);
+  const potonganKonversi = toAmount(row?.potonganKonversi ?? row?.potongan_konversi);
   const saldoAkhir = afterTax === "" ? "" : round(afterTax - (feeNominal || 0) - potonganKonversi);
 
   return {
@@ -360,11 +362,7 @@ export function payoutCostRows(store = {}) {
   const costs = [];
 
   for (const [index, row] of derived.entries()) {
-    // Diperiksa pada baris ASLINYA, bukan pada yang sudah diturunkan: `payoutRows` menimpa
-    // `realMasuk` dengan angka turunannya begitu kotaknya kosong, jadi baris yang belum mendarat
-    // tidak bisa lagi dibedakan dari yang sudah mendarat setelah lewat sana.
-    if (!hasAmount(items[index]?.realMasuk)) continue;
-    if (!row?.month || row.saldoAkhir === "") continue;
+    if (!row?.month || row.saldoAkhir === "" || row.realMasuk === "") continue;
 
     const cost = round(toAmount(row.realMasuk) - toAmount(row.saldoAkhir));
     // Nol dilewati diam-diam — rekening lokal, tidak ada yang hilang di jalan. Minus tidak bisa

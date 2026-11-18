@@ -23,7 +23,11 @@ import { supabase } from "../config/supabase.js";
 // `VITE_GATING_API_URL` masih dibaca sebagai nama lama supaya konfigurasi yang sudah dipasang tidak
 // mati diam-diam saat namanya berubah.
 const BASE = String(
-  import.meta.env.VITE_CONTROL_API_URL || import.meta.env.VITE_GATING_API_URL || "",
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_CONTROL_API_URL) ||
+    (typeof import.meta !== "undefined" && import.meta.env?.VITE_GATING_API_URL) ||
+    process.env.VITE_CONTROL_API_URL ||
+    process.env.VITE_GATING_API_URL ||
+    "",
 ).replace(/\/+$/, "");
 
 export const CONTROL_API_ENABLED = Boolean(BASE);

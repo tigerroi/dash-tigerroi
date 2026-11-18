@@ -50,8 +50,9 @@ export function ProfitLoss({ store }) {
         invalidTraffic,
         adxCosts,
         accountCloses,
+        payouts,
       }),
-    [financials, expenses, whitelistTopup, invalidTraffic, adxCosts, accountCloses],
+    [financials, expenses, whitelistTopup, invalidTraffic, adxCosts, accountCloses, payouts],
   );
   // Bawaannya BULAN PENUH terbaru yang punya data — bukan "hari ini", dan bukan "sampai hari ini".
   // Dua sebabnya: pada tanggal 1 bulan berjalan masih kosong dan halaman yang membuka diri dalam
