@@ -354,6 +354,8 @@ export async function runSyncMeta() {
             "ihopmenuwithprices.us",
             "cmhhealths.com",
             "uniqueinfo24.com",
+            "ziperto.org",
+            "foodsfact.org",
             "trayedit.com",
           ]);
           if (matchedSubName && ROOT_DOMAINS.has(matchedSubName.toLowerCase())) {
