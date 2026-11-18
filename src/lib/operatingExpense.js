@@ -1,5 +1,5 @@
 import { dateKeyOf, monthKey } from "./dateRange.js";
-import { hasAmount, round } from "./numbers.js";
+import { hasAmount, round, sumBy } from "./numbers.js";
 import { toAmount } from "./toAmount.js";
 
 /**
@@ -46,16 +46,22 @@ export function expenseTotal(row) {
 /**
  * Bagian pengeluaran operasional periode ini yang IKUT mengurangi dasar bonus.
  *
- * Dipanggil dua modul dengan baris yang sudah disaring rentangnya masing-masing — Laba Rugi dan
- * Cash Flow — dan keduanya WAJIB mendapat angka yang sama: kolom Bonus di tab yang satu berjumlah
- * persis sebesar baris "Bonus advertiser" di tab sebelahnya, dan itu dijaga tes. Ditulis dua kali,
- * satu tab akan membebankan biaya yang tab lainnya tidak, dan tidak ada apa pun di layar yang bisa
- * menjelaskan selisihnya.
+ * Sesuai kebijakan Founder TigerROI: Advertiser TIDAK menanggung Biaya Operasional (BOP).
+ * Seluruh biaya operasional (sewa server, lisensi Keitaro, domain, dan biaya sistem lainnya)
+ * adalah 100% tanggungan Founder / Owner dan dikurangkan dari Net Income Owner,
+ * sehingga BOP yang mengurangi dasar bonus advertiser adalah Rp 0.
  */
 export function bonusOperatingExpense({ expenseRows = [], adxRows = [] } = {}) {
-  return round(
-    chargedSum(expenseRows, expenseTotal) + chargedSum(adxRows, (row) => toAmount(row?.nominal)),
-  );
+  return 0;
+}
+
+/**
+ * Menghitung total seluruh pengeluaran operasional periode ini (beban Founder).
+ */
+export function totalOperatingExpense({ expenseRows = [], adxRows = [] } = {}) {
+  const expenseTotalSum = sumBy(expenseRows, expenseTotal);
+  const adxTotalSum = sumBy(adxRows, (row) => toAmount(row?.nominal));
+  return round(expenseTotalSum + adxTotalSum);
 }
 
 /**

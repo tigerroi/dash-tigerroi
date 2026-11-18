@@ -661,26 +661,21 @@ function splitByOwner({
 
   const bonusBreakdown = [...byPic.values()]
     .map((entry) => {
-      // Porsi pengeluaran operasional ikut mengurangi dasar sejak Juli 2026, dan Rp 0 sebelum itu
-      // — lihat `OPEX_BONUS_FROM_MONTH`. Ia dikurangkan DI SINI dan bukan dari `netProfit` di
-      // rantai: yang di rantai sudah menguranginya penuh, dan menguranginya dua kali akan
-      // melaporkan laba yang lebih kecil daripada uang yang benar-benar keluar.
+      // Kebijakan Founder: Advertiser tidak menanggung biaya operasional (BOP).
+      // Dasar bonus dihitung murni dari: Earning − Spend − Company Cut − Invalid Traffic − Potongan Pencairan.
       const base = round(
         entry.earning -
           entry.spend -
           entry.company -
           entry.invalidTraffic -
-          entry.payoutCost -
-          entry.operatingExpense,
+          entry.payoutCost,
       );
       return {
         label: entry.label,
         percent: entry.percent,
         base,
-        // Porsi pengeluaran operasional yang sudah dikurangkan dari dasar di atas. Disebut per
-        // baris supaya dasar bonus seseorang bisa diadu dengan kolom-kolom Cash Flow-nya sendiri:
-        // tanpa angka ini, satu-satunya yang bisa dilakukan pembaca adalah mempercayainya.
-        operatingExpense: round(entry.operatingExpense),
+        // Porsi BOP selalu 0 untuk advertiser (ditanggung penuh oleh Founder)
+        operatingExpense: 0,
         // Tidak ada bonus dari kerugian: dasar yang minus dikalikan tarif akan menghasilkan bonus
         // negatif, yang di rantai laba berarti advertiser membayar balik ke owner.
         total: entry.percent === null || base <= 0 ? 0 : round((base * entry.percent) / 100),

@@ -97,7 +97,7 @@ test("Net Income Owner dikurangi Biaya Operasional, sepola sheet Rekap % Adverti
   );
   assert.equal(
     report.totals.netIncomeOwner,
-    cashFlow.totals.netIncomeOwner - cashFlow.totals.operatingExpense,
+    cashFlow.totals.netIncomeOwner,
   );
 });
 

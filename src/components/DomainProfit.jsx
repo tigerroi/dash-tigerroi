@@ -78,11 +78,14 @@ export function DomainProfit({ store }) {
     { key: "invalidTraffic", label: "Invalid Traffic", flow: "out" },
     { key: "payoutCost", label: "Potongan Pencairan", flow: "out" },
     { key: "netProfit", label: "Gross Profit Advertiser", flow: "net" },
-    // Porsi biaya operasional menurut earning (sejak Juli 2026), mengikuti sheet "Rekap %
-    // Advertiser": ia mengurangi Net Income Owner di bawahnya, sama dengan Laba Rugi.
-    { key: "operatingExpense", label: "Biaya Operasional", flow: "out" },
     { key: "bonus", label: "Bonus advertiser", flow: "out" },
-    { key: "netIncomeOwner", label: "Net Income Owner", flow: "net" },
+    // Biaya operasional adalah beban Founder / Owner: hanya muncul saat melihat semua advertiser
+    ...(!pic
+      ? [
+          { key: "operatingExpense", label: "Biaya Operasional (BOP Founder)", flow: "out" },
+          { key: "netIncomeOwner", label: "Net Income Owner", flow: "net" },
+        ]
+      : []),
   ];
 
   const scope = pic || "semua advertiser";
@@ -202,6 +205,7 @@ export function DomainProfit({ store }) {
             ? "Advertiser ini tidak punya baris pada periode itu."
             : "Tidak ada baris ROI pada periode ini."
         }
+        isPicFiltered={Boolean(pic)}
       />
 
       {/* Tabelnya sendiri, bukan baris bertanda di tabel yang sama: pendapatan domain yang akunnya
@@ -215,6 +219,7 @@ export function DomainProfit({ store }) {
           rows={report.closedRows}
           totals={report.closedTotals}
           empty=""
+          isPicFiltered={Boolean(pic)}
         />
       )}
     </div>
@@ -229,7 +234,7 @@ export function DomainProfit({ store }) {
  */
 const MONEY_KEY = { in: "earning", out: "cashOut", net: "profit" };
 
-function DomainTable({ title, description, rows, totals, empty }) {
+function DomainTable({ title, description, rows, totals, empty, isPicFiltered }) {
   return (
     <section className="panel">
       <div className="panel-header">
@@ -239,12 +244,12 @@ function DomainTable({ title, description, rows, totals, empty }) {
         </div>
       </div>
 
-      <DataTable columns={domainColumns(totals)} emptyText={empty} items={rows} />
+      <DataTable columns={domainColumns(totals, isPicFiltered)} emptyText={empty} items={rows} />
     </section>
   );
 }
 
-function domainColumns(totals) {
+function domainColumns(totals, isPicFiltered = false) {
   return [
     {
       accessorKey: "domain",
@@ -291,9 +296,6 @@ function domainColumns(totals) {
     }),
     moneyColumn("netProfit", "Gross Profit Advertiser", "profit", { total: totals.netProfit }),
     roiColumn("netRoi", "Net ROI", { total: totals.netRoi }),
-    moneyColumn("operatingExpense", "Biaya Operasional", "nominal", {
-      total: totals.operatingExpense,
-    }),
     {
       id: "bonusPercents",
       header: "Bonus %",
@@ -307,7 +309,14 @@ function domainColumns(totals) {
       meta: { align: "right", sortValue: (row) => row.bonusPercents?.at(-1) },
     },
     moneyColumn("bonus", "Bonus", "nominal", { total: totals.bonus }),
-    moneyColumn("netIncomeOwner", "Net Income Owner", "profit", { total: totals.netIncomeOwner }),
+    ...(!isPicFiltered
+      ? [
+          moneyColumn("operatingExpense", "Biaya Operasional", "nominal", {
+            total: totals.operatingExpense,
+          }),
+          moneyColumn("netIncomeOwner", "Net Income Owner", "profit", { total: totals.netIncomeOwner }),
+        ]
+      : []),
   ];
 }
 

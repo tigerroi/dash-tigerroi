@@ -17,7 +17,7 @@ import {
   spreadInvalidTraffic,
 } from "./invalidTraffic.js";
 import { hasAmount, round, sumBy } from "./numbers.js";
-import { bonusOperatingExpense, expenseTotal, spreadOperatingExpense } from "./operatingExpense.js";
+import { bonusOperatingExpense, expenseTotal, spreadOperatingExpense, totalOperatingExpense } from "./operatingExpense.js";
 import { payoutCostRows, payoutRows } from "./payouts.js";
 import { resolveRowPic } from "./picResolver.js";
 import { toAmount } from "./toAmount.js";
@@ -134,12 +134,20 @@ export function buildCashFlow(store = {}, range = {}) {
         b.earning - a.earning,
     );
 
+  const totalOpex = totalOperatingExpense({
+    expenseRows: rowsInRange(store?.expenses, period),
+    adxRows: rowsInRange(store?.adxCosts, period),
+  });
+  const rawTotals = cashFlowTotals(rows);
+
   return {
     range: period,
     months,
     rows,
     totals: {
-      ...cashFlowTotals(rows),
+      ...rawTotals,
+      operatingExpense: totalOpex,
+      netIncomeOwner: round(rawTotals.netProfit - rawTotals.bonus - totalOpex),
       invalidTrafficUnspread: unspread,
       payoutCostUnspread: payoutUnspread,
       // Biaya operasional bulan ini yang tidak punya satu ember pun untuk dibagi: bulan yang punya
@@ -783,15 +791,11 @@ function baseRow(entry) {
 }
 
 /**
- * Dasar bonus sebuah baris: Net Profit dikurangi porsi biaya operasionalnya.
- *
- * Ditulis sebagai fungsi dan bukan diketik di dua tempat karena ia dipakai dua kali — sekali untuk
- * dasar SEBULAN milik tiap PIC (yang memutuskan bonus ditahan atau tidak), sekali untuk bonus
- * baris ini. Kedua tempat yang berselisih berarti kolom Bonus yang tidak berjumlah sebesar
- * dasarnya sendiri.
+ * Dasar bonus sebuah baris: Net Profit murni advertiser (Pendapatan − Belanja Iklan − Potongan Company − Invalid Traffic).
+ * Biaya operasional (BOP) adalah tanggungan Founder / Owner dan tidak mengurangi dasar bonus ini.
  */
 function bonusBaseOf(row) {
-  return round(row.netProfit - row.operatingExpense);
+  return round(row.netProfit);
 }
 
 function withBonus(row, bonusOf, bonusBase) {

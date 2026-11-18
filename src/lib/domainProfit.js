@@ -1,9 +1,12 @@
 import { accountCloseMonth } from "./accountClose.js";
 import { buildCashFlow, cashFlowTotals } from "./cashFlow.js";
-import { partialMonthsIn } from "./dateRange.js";
+import { partialMonthsIn, rowsInRange } from "./dateRange.js";
 import { normalize } from "./earningByAccountType.js";
 import { invalidTrafficMonth } from "./invalidTraffic.js";
+import { round } from "./numbers.js";
+import { expenseTotal, totalOperatingExpense } from "./operatingExpense.js";
 import { isAccountClose, payoutRows } from "./payouts.js";
+import { toAmount } from "./toAmount.js";
 
 /**
  * Laba per Domain — rantai Laba Rugi yang sama, dikelompokkan per DOMAIN dan disaring per
@@ -59,10 +62,9 @@ export function buildDomainProfit(store = {}, range = {}, filters = {}) {
 
   // Disaring SEBELUM dikelompokkan: memilih seorang advertiser berarti "domain ini menghasilkan
   // berapa dari tangan dia", bukan "domain yang kebetulan dipegangnya, seluruh isinya".
-  const rows = (pic ? report.rows.filter((row) => row.pic === pic) : report.rows).map((row) => ({
-    ...row,
-    netIncomeOwner: row.netIncomeOwner - row.operatingExpense,
-  }));
+  // Advertiser tidak menanggung biaya operasional (BOP), sehingga netIncomeOwner baris per-domain
+  // tidak dikurangkan BOP per-subdomain.
+  const rows = pic ? report.rows.filter((row) => row.pic === pic) : report.rows;
 
   const closed = closedDomainsIn(store, report.months);
   const open = [];
@@ -70,6 +72,17 @@ export function buildDomainProfit(store = {}, range = {}, filters = {}) {
   for (const row of groupByDomain(rows)) {
     (closed.has(normalize(row.domain)) ? shut : open).push(row);
   }
+
+  const rawTotals = cashFlowTotals(open);
+  // Biaya operasional adalah beban Founder / Owner: jika pic kosong (Semua advertiser),
+  // total BOP diambil dari seluruh expenses & adxCosts periode itu. Jika pic terisi, BOP = 0.
+  const opex = pic
+    ? 0
+    : totalOperatingExpense({
+        expenseRows: rowsInRange(store?.expenses, report.range),
+        adxRows: rowsInRange(store?.adxCosts, report.range),
+      });
+  const netIncomeOwner = round(rawTotals.netProfit - rawTotals.bonus - opex);
 
   return {
     range: report.range,
@@ -90,7 +103,9 @@ export function buildDomainProfit(store = {}, range = {}, filters = {}) {
     // `buildCashFlow`. Ia milik BULAN, bukan milik baris mana pun, jadi ia tidak ikut menyempit
     // saat seorang advertiser dipilih; yang menyebutkannya adalah keterangan di bawah tabel.
     totals: {
-      ...cashFlowTotals(open),
+      ...rawTotals,
+      operatingExpense: opex,
+      netIncomeOwner,
       invalidTrafficUnspread: report.totals.invalidTrafficUnspread,
     },
     closedRows: shut,

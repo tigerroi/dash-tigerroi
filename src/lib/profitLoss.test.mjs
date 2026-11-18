@@ -348,12 +348,11 @@ describe("profitLoss: potongan per pemilik", () => {
     assert.equal(report.companyDeduction, 250000, "20% dari 1jt + 10% dari 500rb");
     assert.equal(report.invalidTraffic, 10000);
     assert.equal(report.netProfit, 790000, "1.100.000 − 250.000 − 10.000 − 50.000");
-    // Beban Rp 50.000 dibagi menurut porsi earning — Nur 2/3 (33.333,33), Aca 1/3 (16.666,67) —
-    // lalu bonus dihitung dari sisanya. Nur: (1jt − 300rb − 200rb − 10rb − 33.333,33) × 15%;
-    // Aca: (500rb − 100rb − 50rb − 16.666,67) × 10%.
-    assert.equal(report.bonusOperatingExpense, 50000);
-    assert.equal(report.advertiserBonus, 101833.33);
-    assert.equal(report.netIncomeOwner, 688166.67);
+    // Advertiser tidak menanggung BOP
+    assert.equal(report.bonusOperatingExpense, 0);
+    // Nur: (1jt − 300rb − 200rb − 10rb) × 15% = 73.500; Aca: (500rb − 100rb − 50rb) × 10% = 35.000
+    assert.equal(report.advertiserBonus, 108500);
+    assert.equal(report.netIncomeOwner, 681500, "790.000 − 108.500");
   });
 
   /**
@@ -379,14 +378,14 @@ describe("profitLoss: potongan per pemilik", () => {
     assert.equal(dengan.adxCosts, 200000);
     assert.equal(dengan.operatingExpenses, 250000);
     assert.equal(dengan.expenseCosts + dengan.adxCosts, dengan.operatingExpenses);
-    assert.equal(dengan.bonusOperatingExpense, 250000, "keduanya masuk dasar bonus, bukan salah satu");
+    assert.equal(dengan.bonusOperatingExpense, 0, "BOP tidak memotong bonus advertiser");
 
     assert.equal(dengan.netProfit, tanpa.netProfit - 200000);
-    // Rp 200.000 tambahan dibagi 2/3 : 1/3, jadi bonus turun 133.333,33 × 15% + 66.666,67 × 10%.
-    assert.equal(dengan.advertiserBonus, 75166.67);
+    // Bonus advertiser murni dari laba iklan tanpa dipotong BOP
+    assert.equal(dengan.advertiserBonus, tanpa.advertiserBonus);
     assert.equal(
       dengan.netIncomeOwner,
-      round2(tanpa.netIncomeOwner - 200000 + (tanpa.advertiserBonus - dengan.advertiserBonus)),
+      round2(tanpa.netIncomeOwner - 200000),
     );
 
     // Rinciannya per DOMAIN — pertanyaan yang dibawa orang saat baris ini naik adalah "domain mana
@@ -471,7 +470,7 @@ describe("profitLoss: potongan per pemilik", () => {
     });
 
     assert.equal(report.operatingExpenses, 100000, "kedua tagihan tetap keluar dari kantong");
-    assert.equal(report.bonusOperatingExpense, 50000, "yang masuk dasar bonus cuma yang Juli");
+    assert.equal(report.bonusOperatingExpense, 0, "BOP tidak memotong dasar bonus advertiser");
   });
 
   test("rinciannya menyebut tarif tiap domain dan tiap PIC", () => {
@@ -481,12 +480,9 @@ describe("profitLoss: potongan per pemilik", () => {
       { label: "alpha.com", percents: [20], earning: 1000000, base: 1000000, total: 200000 },
       { label: "beta.com", percents: [10], earning: 500000, base: 500000, total: 50000 },
     ]);
-    // Dasar tiap orang sudah dikurangi porsi biaya operasionalnya, dan porsi itu DISEBUT di baris
-    // yang sama: dasar yang mengecil tanpa satu angka pun yang menerangkannya adalah persis yang
-    // membuat orang berhenti mempercayai kolomnya.
     assert.deepEqual(report.bonusBreakdown, [
-      { label: "Nur", percent: 15, base: 456666.67, operatingExpense: 33333.33, total: 68500 },
-      { label: "Aca", percent: 10, base: 333333.33, operatingExpense: 16666.67, total: 33333.33 },
+      { label: "Nur", percent: 15, base: 490000, operatingExpense: 0, total: 73500 },
+      { label: "Aca", percent: 10, base: 350000, operatingExpense: 0, total: 35000 },
     ]);
   });
 
@@ -542,14 +538,14 @@ describe("profitLoss: potongan per pemilik", () => {
   test("PIC tanpa tarif bonus tidak dihitungi bonus, tapi tetap muncul", () => {
     const report = buildProfitLoss({ ...sumber, users: [{ name: "Nur", bonusPercent: 15 }] });
 
-    assert.equal(report.advertiserBonus, 68500, "Aca tidak punya tarif");
+    assert.equal(report.advertiserBonus, 73500, "Aca tidak punya tarif");
     const aca = report.bonusBreakdown.find((row) => row.label === "Aca");
     assert.equal(aca.percent, null);
     assert.equal(aca.total, 0);
     assert.equal(
       aca.base,
-      333333.33,
-      "dasarnya tetap dihitung, berikut porsi bebannya, supaya tarifnya bisa diisi belakangan",
+      350000,
+      "dasarnya tetap dihitung tanpa potongan BOP, supaya tarifnya bisa diisi belakangan",
     );
   });
 
@@ -1084,14 +1080,10 @@ describe("profitLoss ≡ cashFlow", () => {
     });
     const kas = buildCashFlow({ ...store, expenses, adxCosts }, bulan("2026-08"));
 
-    assert.equal(laba.bonusOperatingExpense, 1_200_000, "keduanya masuk kantong yang dibagi");
-    // Sampai RUPIAH, bukan sampai sen — alasan yang sama dengan potongan pencairan di atas: Cash
-    // Flow membulatkan porsi tiap baris lalu menjumlahkannya.
+    assert.equal(laba.bonusOperatingExpense, 0, "BOP tidak memotong bonus advertiser");
+    assert.equal(laba.operatingExpenses, 1_200_000, "kedua tagihan tetap masuk pengeluaran operasional");
+    assert.equal(kas.totals.operatingExpense, 1_200_000, "total BOP sama di kas");
     assert.ok(Math.abs(laba.advertiserBonus - kas.totals.bonus) < 1);
-    assert.ok(Math.abs(laba.bonusOperatingExpense - kas.totals.operatingExpense) < 1);
-    // Dan bonusnya memang BERGESER — tanpa ini tes di atas juga lulus untuk dua modul yang
-    // sama-sama mengabaikan aturan ini.
-    assert.ok(kas.totals.bonus < buildCashFlow(store, bulan("2026-08")).totals.bonus);
   });
 
   test("potongan pencairan menyebut angka yang sama", () => {

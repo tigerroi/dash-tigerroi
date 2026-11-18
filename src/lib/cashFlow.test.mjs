@@ -79,7 +79,7 @@ test("rantainya: bruto, ROI, potongan Company, invalid traffic, net profit, bonu
  *      sendiri. Bonus yang tidak bisa dihitung ulang dari kolom-kolom yang terlihat adalah kolom
  *      yang cuma bisa dipercaya.
  */
-test("porsi biaya operasional mengurangi dasar bonus tanpa menyentuh Net Profit", () => {
+test("biaya operasional adalah beban Founder dan tidak mengurangi dasar bonus advertiser", () => {
   const store = {
     domains: DOMAINS,
     subDomains: [
@@ -100,17 +100,17 @@ test("porsi biaya operasional mengurangi dasar bonus tanpa menyentuh Net Profit"
   const flash = rowOf(report, "flash.xiaomidriversdownload.com", "Ad-Exchanger");
   const tools = rowOf(report, "tools.designingaround.com", "Ad-Exchanger");
 
-  // 900rb : 300rb dari 1,2jt → 3/4 dan 1/4 dari Rp 300.000.
-  assert.equal(flash.operatingExpense, 225_000);
-  assert.equal(tools.operatingExpense, 75_000);
-  assert.equal(report.totals.operatingExpense, 300_000);
+  // Biaya operasional tidak membebani baris advertiser/subdomain
+  assert.equal(flash.operatingExpense, 0);
+  assert.equal(tools.operatingExpense, 0);
+  assert.equal(report.totals.operatingExpense, 300_000, "tetap dicatat penuh di total beban Founder");
 
   assert.equal(flash.netProfit, 500_000, "kolom Net Profit berhenti di potongan pencairan");
-  assert.equal(flash.bonus, 27_500, "10% dari 500.000 − 225.000");
+  assert.equal(flash.bonus, 50_000, "10% dari 500.000 murni tanpa potongan operasional");
   assert.equal(tools.netProfit, 200_000);
-  assert.equal(tools.bonus, 12_500, "10% dari 200.000 − 75.000");
-  // Net Income Owner tetap Net Profit dikurangi bonus — dua kolom yang berdiri di sebelahnya.
-  assert.equal(flash.netIncomeOwner, 472_500);
+  assert.equal(tools.bonus, 20_000, "10% dari 200.000 murni tanpa potongan operasional");
+  // Net Income Owner baris tetap Net Profit dikurangi bonus
+  assert.equal(flash.netIncomeOwner, 450_000);
 });
 
 test("biaya bertanggal sebelum Juli 2026 tidak menyentuh dasar bonus satu baris pun", () => {
