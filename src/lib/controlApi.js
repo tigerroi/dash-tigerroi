@@ -1,4 +1,4 @@
-import { supabase } from "../config/supabase";
+import { supabase } from "../config/supabase.js";
 
 /**
  * Klien server kontrol (Bun + Elysia, lihat server/).

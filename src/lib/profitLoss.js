@@ -264,9 +264,11 @@ export function buildProfitLoss({
   const payoutCost = round(payoutCosts.reduce((total, row) => total + row.cost, 0));
 
   const netProfit = round(
-    grossProfit - split.companyDeduction - invalidTrafficSum - payoutCost - operatingExpenses,
+    grossProfit - split.companyDeduction - invalidTrafficSum,
   );
-  const netIncomeOwner = round(netProfit - split.advertiserBonus);
+  const netIncomeOwner = round(
+    netProfit - split.advertiserBonus - operatingExpenses - payoutCost,
+  );
 
   return {
     range: period,
@@ -765,9 +767,16 @@ export function profitLossLines(report) {
       flow: "out",
     },
     {
-      key: "payoutCost",
-      label: "Potongan pencairan",
-      value: report.payoutCost,
+      key: "netProfit",
+      label: "Net profit",
+      value: report.netProfit,
+      kind: "total",
+      flow: "net",
+    },
+    {
+      key: "advertiserBonus",
+      label: "Bonus advertiser",
+      value: report.advertiserBonus,
       kind: "out",
       flow: "out",
     },
@@ -779,16 +788,9 @@ export function profitLossLines(report) {
       flow: "out",
     },
     {
-      key: "netProfit",
-      label: "Net profit",
-      value: report.netProfit,
-      kind: "subtotal",
-      flow: "net",
-    },
-    {
-      key: "advertiserBonus",
-      label: "Bonus advertiser",
-      value: report.advertiserBonus,
+      key: "payoutCost",
+      label: "Potongan pencairan",
+      value: report.payoutCost,
       kind: "out",
       flow: "out",
     },

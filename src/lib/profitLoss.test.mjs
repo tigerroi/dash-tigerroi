@@ -55,8 +55,8 @@ describe("profitLoss", () => {
     assert.equal(report.totalAdSpend, 1050);
     assert.equal(report.grossProfit, 1450, "2500 − 1050");
     assert.equal(report.operatingExpenses, 550, "300 + 200 + 50");
-    assert.equal(report.netProfit, 900, "1450 − 550, tanpa potongan lain");
-    assert.equal(report.netIncomeOwner, 900, "tanpa bonus advertiser");
+    assert.equal(report.netProfit, 1450, "1450 sebelum potongan di bawah net profit");
+    assert.equal(report.netIncomeOwner, 900, "1450 - 550 BOP");
   });
 
   test("fee top-up tidak dikurangkan — rantainya tidak menghitungnya sebagai biaya", () => {
@@ -69,7 +69,7 @@ describe("profitLoss", () => {
     });
 
     assert.equal(report.topupFees, 25000, "tetap dilaporkan sebagai catatan");
-    assert.equal(report.netProfit, 900, "dan tetap di luar laba");
+    assert.equal(report.netProfit, 1450, "dan tetap di luar laba");
   });
 
   test("nominal top-up tidak ikut dikurangkan — ia sudah terhitung sebagai belanja iklan", () => {
@@ -273,10 +273,10 @@ describe("profitLoss", () => {
         "grossProfit",
         "companyDeduction",
         "invalidTraffic",
-        "payoutCost",
-        "operatingExpenses",
         "netProfit",
         "advertiserBonus",
+        "operatingExpenses",
+        "payoutCost",
         "netIncomeOwner",
       ],
     );
@@ -285,7 +285,7 @@ describe("profitLoss", () => {
     // kotor" subtotal yang boleh MINUS.
     assert.deepEqual(
       lines.map((line) => line.flow),
-      ["in", "out", "out", "out", "net", "out", "out", "out", "out", "net", "out", "net"],
+      ["in", "out", "out", "out", "net", "out", "out", "net", "out", "out", "out", "net"],
     );
     assert.deepEqual(
       lines.filter((line) => line.flow === "net").map((line) => line.key),
@@ -347,12 +347,12 @@ describe("profitLoss: potongan per pemilik", () => {
     assert.equal(report.grossProfit, 1100000, "1.500.000 − 400.000");
     assert.equal(report.companyDeduction, 250000, "20% dari 1jt + 10% dari 500rb");
     assert.equal(report.invalidTraffic, 10000);
-    assert.equal(report.netProfit, 790000, "1.100.000 − 250.000 − 10.000 − 50.000");
+    assert.equal(report.netProfit, 840000, "1.100.000 − 250.000 − 10.000");
     // Advertiser tidak menanggung BOP
     assert.equal(report.bonusOperatingExpense, 0);
     // Nur: (1jt − 300rb − 200rb − 10rb) × 15% = 73.500; Aca: (500rb − 100rb − 50rb) × 10% = 35.000
     assert.equal(report.advertiserBonus, 108500);
-    assert.equal(report.netIncomeOwner, 681500, "790.000 − 108.500");
+    assert.equal(report.netIncomeOwner, 681500, "840.000 − 108.500 − 50.000");
   });
 
   /**
@@ -380,7 +380,7 @@ describe("profitLoss: potongan per pemilik", () => {
     assert.equal(dengan.expenseCosts + dengan.adxCosts, dengan.operatingExpenses);
     assert.equal(dengan.bonusOperatingExpense, 0, "BOP tidak memotong bonus advertiser");
 
-    assert.equal(dengan.netProfit, tanpa.netProfit - 200000);
+    assert.equal(dengan.netProfit, tanpa.netProfit);
     // Bonus advertiser murni dari laba iklan tanpa dipotong BOP
     assert.equal(dengan.advertiserBonus, tanpa.advertiserBonus);
     assert.equal(
@@ -449,7 +449,7 @@ describe("profitLoss: potongan per pemilik", () => {
     assert.equal(report.operatingExpenses, 50000, "tetap dikurangkan penuh di rantai");
     assert.equal(report.bonusOperatingExpense, 0, "tapi tidak masuk dasar bonus siapa pun");
     assert.equal(report.advertiserBonus, 108500, "sama persis dengan sebelum aturan ini ada");
-    assert.equal(report.netProfit, 790000);
+    assert.equal(report.netProfit, 840000);
     assert.equal(report.netIncomeOwner, 681500);
   });
 

@@ -7,11 +7,13 @@ import {
   formatBonusPercentPayload,
   formatExpensePayload,
   formatInvalidTrafficPayload,
+  formatPayoutPayload,
   formatWhitelistTopupPayload,
   normalizeAdxCostRow,
   normalizeBonusPercentRow,
   normalizeExpenseRow,
   normalizeInvalidTrafficRow,
+  normalizePayoutRow,
   normalizeWhitelistTopupRow,
 } from "./accountingAdapter.js";
 
@@ -255,6 +257,9 @@ function prepareResourcePayload(key, values) {
   }
   if (key === "whitelistTopup") {
     return formatWhitelistTopupPayload(values);
+  }
+  if (key === "payouts") {
+    return formatPayoutPayload(values);
   }
 
   const payload = toSnakeCasePayload(values);
@@ -503,6 +508,8 @@ export function subscribeResource(key, callback, onError) {
           rows = rows.map(normalizeExpenseRow);
         } else if (key === "whitelistTopup") {
           rows = rows.map(normalizeWhitelistTopupRow);
+        } else if (key === "payouts") {
+          rows = rows.map(normalizePayoutRow);
         } else if (key === "roiReports") {
           rows = dedupeRoiReports(rows);
         }

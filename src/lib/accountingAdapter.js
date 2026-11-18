@@ -221,4 +221,58 @@ export function normalizeWhitelistTopupRow(row = {}) {
   };
 }
 
+/**
+ * Menyiapkan payload untuk Pencairan Rekening (payouts) agar kompatibel dengan PostgreSQL
+ */
+export function formatPayoutPayload(values = {}) {
+  const parseNum = (val) => {
+    if (val === "" || val === null || val === undefined) return null;
+    const num = Number(val);
+    return isNaN(num) ? null : num;
+  };
+
+  const domain = String(values.domain || "").trim();
+  const month = String(values.month || "").trim();
+  const date = values.date || (month ? `${month}-01` : null);
+
+  return {
+    domain,
+    month,
+    date,
+    status: values.status || "Pending Payment",
+    real_masuk: parseNum(values.realMasuk ?? values.real_masuk),
+    nominal_pencairan: parseNum(values.nominalPencairan ?? values.nominal_pencairan),
+    fee_nominal: parseNum(values.feeNominal ?? values.fee_nominal),
+    saldo_sebelumnya: parseNum(values.saldoSebelumnya ?? values.saldo_sebelumnya),
+    gov_tax_percent: parseNum(values.govTaxPercent ?? values.gov_tax_percent),
+    fee_percent: parseNum(values.feePercent ?? values.fee_percent),
+    potongan_konversi: parseNum(values.potonganKonversi ?? values.potongan_konversi),
+    bank: values.bank ? String(values.bank).trim() : null,
+    nama_rekening: values.namaRekening || values.nama_rekening ? String(values.namaRekening || values.nama_rekening).trim() : null,
+    no_rekening: values.noRekening || values.no_rekening ? String(values.noRekening || values.no_rekening).trim() : null,
+    kode_pip: values.kodePip || values.kode_pip ? String(values.kodePip || values.kode_pip).trim() : null,
+    note: values.note ? String(values.note).trim() : null,
+  };
+}
+
+/**
+ * Normalisasi baris Pencairan Rekening saat dibaca dari database
+ */
+export function normalizePayoutRow(row = {}) {
+  if (!row || typeof row !== "object") return row;
+  return {
+    ...row,
+    realMasuk: row.realMasuk ?? row.real_masuk ?? null,
+    nominalPencairan: row.nominalPencairan ?? row.nominal_pencairan ?? null,
+    feeNominal: row.feeNominal ?? row.fee_nominal ?? null,
+    saldoSebelumnya: row.saldoSebelumnya ?? row.saldo_sebelumnya ?? null,
+    govTaxPercent: row.govTaxPercent ?? row.gov_tax_percent ?? null,
+    feePercent: row.feePercent ?? row.fee_percent ?? null,
+    potonganKonversi: row.potonganKonversi ?? row.potongan_konversi ?? null,
+    namaRekening: row.namaRekening || row.nama_rekening || "",
+    noRekening: row.noRekening || row.no_rekening || "",
+    kodePip: row.kodePip || row.kode_pip || "",
+  };
+}
+
 

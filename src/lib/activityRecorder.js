@@ -7,7 +7,7 @@ import {
   nextBatch,
   readBuffer,
 } from "./activityLog.js";
-import { CONTROL_API_ENABLED, observeControlRequests, sendActivityLogs } from "./controlApi";
+import { CONTROL_API_ENABLED, observeControlRequests, sendActivityLogs } from "./controlApi.js";
 import { localStore } from "./localStore.js";
 
 /**
