@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import { PageHeader } from "./ui/PageHeader";
 import { DataTable } from "./ui/DataTable";
 import { CopyButton } from "./ui/CopyButton";
+import { DEFAULT_BLOCKED_LOGS, fetchLiveBlockedLogs } from "../lib/blockedLogs";
 
 // Daftar 12 Domain yang terdaftar di Akun Cloudflare Masdef
 const CLOUDFLARE_DOMAINS = [
@@ -42,48 +43,7 @@ const GATEWAY_SLUGS = [
 export function CloudflareGateway() {
   const [workerStatus, setWorkerStatus] = useState("checking");
   const [search, setSearch] = useState("");
-  const [blockedIps, setBlockedIps] = useState([
-    {
-      id: "b1",
-      time: "Baru saja",
-      ip: "114.122.14.88",
-      country: "ID",
-      slug: "/eat",
-      reason: "Buka Langsung Tanpa Iklan (Direct Access)",
-      action: "Dilempar ke YouTube ➔",
-      youtube: "https://youtu.be/EQGSwZDZ3Ts?si=_xINNlx6i7fQAXJK",
-    },
-    {
-      id: "b2",
-      time: "5 menit lalu",
-      ip: "52.167.144.92",
-      country: "US",
-      slug: "/eat",
-      reason: "Bot Scraper / Headless Crawler",
-      action: "Dilempar ke YouTube ➔",
-      youtube: "https://youtu.be/AUgL4y3G9Vg?si=zRrgx3zPre7vEVVA",
-    },
-    {
-      id: "b3",
-      time: "14 menit lalu",
-      ip: "198.235.24.12",
-      country: "US",
-      slug: "/guides",
-      reason: "Python Request / Non-Browser Agent",
-      action: "Dilempar ke YouTube ➔",
-      youtube: "https://youtu.be/lb7ctVNBRV0?si=ug4KsEXFLHBFs-zM",
-    },
-    {
-      id: "b4",
-      time: "28 menit lalu",
-      ip: "172.56.21.90",
-      country: "US",
-      slug: "/property",
-      reason: "Bot Scraper Tanpa Parameter Iklan",
-      action: "Dilempar ke YouTube ➔",
-      youtube: "https://youtu.be/7Z1bEhzIxFc?si=_duj16uN0QPoMCfT",
-    },
-  ]);
+  const [blockedIps, setBlockedIps] = useState(DEFAULT_BLOCKED_LOGS);
   const [loadingBlocked, setLoadingBlocked] = useState(false);
 
   const workerUrl = "https://visint-gating.tiger-roiunlimited.workers.dev";
@@ -105,26 +65,8 @@ export function CloudflareGateway() {
   const fetchBlocked = async () => {
     setLoadingBlocked(true);
     try {
-      const res = await fetch(`${workerUrl}/api/blocked`, { mode: "cors" });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.items && data.items.length > 0) {
-          setBlockedIps(
-            data.items.map((it) => ({
-              id: it.id,
-              time: new Date(it.time).toLocaleTimeString("id-ID"),
-              ip: it.ip,
-              country: it.country,
-              slug: it.slug,
-              reason: it.reason,
-              action: "Dilempar ke YouTube ➔",
-              youtube: it.redirectedTo,
-            }))
-          );
-        }
-      }
-    } catch {
-      // Fallback tetap tampilkan log
+      const items = await fetchLiveBlockedLogs(workerUrl);
+      if (items && items.length > 0) setBlockedIps(items);
     } finally {
       setLoadingBlocked(false);
     }

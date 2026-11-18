@@ -1,6 +1,7 @@
 import { ExternalLink, ShieldCheck, ShieldOff, TriangleAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useUrlState } from "../hooks/useUrlState";
+import { DEFAULT_BLOCKED_LOGS, fetchLiveBlockedLogs } from "../lib/blockedLogs";
 import { CONTROL_API_ENABLED, fetchPreview } from "../lib/controlApi";
 import { formatDateTime } from "../lib/formatDate";
 import { MASTER_KEITARO_CAMPAIGNS } from "../lib/keitaroMaster";
@@ -54,6 +55,22 @@ export function ViControl({ store, canGate, onGate, onRefresh }) {
   const [filter, setFilter] = useUrlState("status", "all");
   const [search, setSearch] = useUrlState("q", "");
   const [confirm, setConfirm] = useState(null);
+  const [blockedLogs, setBlockedLogs] = useState(DEFAULT_BLOCKED_LOGS);
+  const [loadingBlocked, setLoadingBlocked] = useState(false);
+
+  const reloadBlocked = async () => {
+    setLoadingBlocked(true);
+    try {
+      const items = await fetchLiveBlockedLogs();
+      if (items && items.length > 0) setBlockedLogs(items);
+    } finally {
+      setLoadingBlocked(false);
+    }
+  };
+
+  useEffect(() => {
+    reloadBlocked();
+  }, []);
   // Segarkan memanggil vi-control lewat server kontrol dan menunggu jawabannya — beberapa detik
   // untuk 89 campaign yang stream-nya dibaca satu per satu di sisi Keitaro. Tanpa tanda apa pun,
   // tombol yang tidak berubah setelah ditekan terbaca sebagai tombol yang tidak bekerja, dan yang
@@ -146,6 +163,13 @@ export function ViControl({ store, canGate, onGate, onRefresh }) {
                 panelId: "gating-panel-campaigns",
               },
               {
+                id: "blocked",
+                label: "IP Terblokir (Bot Trapped)",
+                count: blockedLogs.length,
+                tabId: "gating-tab-blocked",
+                panelId: "gating-panel-blocked",
+              },
+              {
                 id: "runs",
                 label: "Riwayat",
                 count: runs.length,
@@ -210,6 +234,28 @@ export function ViControl({ store, canGate, onGate, onRefresh }) {
               />
             </div>
           </>
+        ) : tab === "blocked" ? (
+          <div aria-labelledby="gating-tab-blocked" id="gating-panel-blocked" role="tabpanel">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <p className="tab-note" style={{ margin: 0 }}>
+                Daftar IP scraper, crawler otomatis, dan akses langsung tanpa parameter iklan Meta yang otomatis dicegat dan dibuang ke YouTube agar akun GAM aman dari ad limit.
+              </p>
+              <button
+                className="button secondary small"
+                onClick={reloadBlocked}
+                disabled={loadingBlocked}
+                type="button"
+              >
+                <span>{loadingBlocked ? "Menyegarkan..." : "Segarkan IP"}</span>
+              </button>
+            </div>
+            <DataTable
+              className="gating-table"
+              columns={blockedColumns()}
+              emptyText="Belum ada IP yang terblokir."
+              items={blockedLogs}
+            />
+          </div>
         ) : (
           <GateRuns runs={runs} />
         )}
@@ -313,6 +359,55 @@ function gateColumns(canGate, onAsk) {
           </div>
         );
       },
+    },
+  ];
+}
+
+function blockedColumns() {
+  return [
+    {
+      accessorKey: "time",
+      header: "Waktu",
+      cell: ({ getValue }) => <small className="muted-line">{getValue()}</small>,
+    },
+    {
+      accessorKey: "ip",
+      header: "Alamat IP",
+      cell: ({ row }) => (
+        <span style={{ fontFamily: "monospace", fontWeight: 600 }}>
+          {row.original.ip}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "country",
+      header: "Negara",
+      cell: ({ getValue }) => <span className="badge">{getValue()}</span>,
+    },
+    {
+      accessorKey: "target",
+      header: "Target / Slug",
+      cell: ({ getValue }) => <strong>{getValue()}</strong>,
+    },
+    {
+      accessorKey: "reason",
+      header: "Alasan Blokir",
+      cell: ({ getValue }) => <span className="badge negative">{getValue()}</span>,
+    },
+    {
+      accessorKey: "action",
+      header: "Tindakan",
+      cell: ({ row }) => (
+        <a
+          href={row.original.youtube}
+          target="_blank"
+          rel="noreferrer"
+          className="button small ghost"
+          style={{ textDecoration: "none" }}
+        >
+          <span>{row.original.action}</span>
+        </a>
+      ),
     },
   ];
 }
