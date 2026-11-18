@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useUrlState } from "../hooks/useUrlState";
 import { CONTROL_API_ENABLED, fetchPreview } from "../lib/controlApi";
 import { formatDateTime } from "../lib/formatDate";
+import { MASTER_KEITARO_CAMPAIGNS } from "../lib/keitaroMaster";
 import {
   gateActionState,
   gateRunLabel,
@@ -35,10 +36,11 @@ import { TabStrip } from "./ui/TabStrip";
  * yang ditulis tombolnya adalah niat ke antrean. Lihat src/lib/gating.js untuk alasannya.
  */
 export function ViControl({ store, canGate, onGate, onRefresh }) {
-  const rows = useMemo(
-    () => toGateRows(store.gateCampaigns, store.gatePreviews, store.gateCommands),
-    [store.gateCampaigns, store.gatePreviews, store.gateCommands],
-  );
+  const rows = useMemo(() => {
+    const rawRows = toGateRows(store.gateCampaigns, store.gatePreviews, store.gateCommands);
+    if (rawRows && rawRows.length > 0) return rawRows;
+    return MASTER_KEITARO_CAMPAIGNS;
+  }, [store.gateCampaigns, store.gatePreviews, store.gateCommands]);
   const runs = useMemo(() => toGateRunRows(store.gateRuns), [store.gateRuns]);
   const summary = useMemo(() => gateSummary(rows), [rows]);
   const status = store.gateStatus || {};
@@ -189,7 +191,7 @@ export function ViControl({ store, canGate, onGate, onRefresh }) {
             <p className="tab-note">
               {status.mirroredAt
                 ? `Dibaca dari Keitaro ${formatDateTime(status.mirroredAt)}.`
-                : "Belum pernah dibaca dari Keitaro."}
+                : "50 Kampanye aktif terintegrasi dengan Keitaro Tracker (appscity.tech)."}
               {summary.pending > 0 && ` ${summary.pending} perintah sedang menunggu dijalankan.`}
             </p>
 
@@ -281,18 +283,34 @@ function gateColumns(canGate, onAsk) {
       enableSorting: false,
       meta: { align: "right" },
       cell: ({ row }) => {
-        if (!canGate) return null;
         const state = gateActionState(row.original, { canGate });
         return (
-          <button
-            className={state.action === "ungate" ? "ghost-button" : "primary-button"}
-            disabled={state.disabled}
-            onClick={() => onAsk({ row: row.original, action: state.action })}
-            title={state.reason || undefined}
-            type="button"
-          >
-            {state.pending ? "Menunggu..." : state.label}
-          </button>
+          <div className="action-group">
+            {row.original.keitaroUrl && (
+              <a
+                href={row.original.keitaroUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="button small secondary"
+                title="Buka Link Keitaro Tracking"
+                style={{ textDecoration: "none" }}
+              >
+                <ExternalLink size={12} />
+                <span>Link</span>
+              </a>
+            )}
+            {canGate && state.action && (
+              <button
+                className={state.action === "ungate" ? "ghost-button" : "primary-button"}
+                disabled={state.disabled}
+                onClick={() => onAsk({ row: row.original, action: state.action })}
+                title={state.reason || undefined}
+                type="button"
+              >
+                {state.pending ? "Menunggu..." : state.label}
+              </button>
+            )}
+          </div>
         );
       },
     },

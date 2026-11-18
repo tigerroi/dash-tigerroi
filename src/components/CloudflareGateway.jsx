@@ -1,4 +1,4 @@
-import { Globe, Server, CheckCircle2, RefreshCw } from "lucide-react";
+import { Globe, Server, CheckCircle2, RefreshCw, ShieldAlert } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { PageHeader } from "./ui/PageHeader";
 import { DataTable } from "./ui/DataTable";
@@ -22,26 +22,69 @@ const CLOUDFLARE_DOMAINS = [
 
 // Rute Slug Populer Siap Pasang di Iklan Meta
 const GATEWAY_SLUGS = [
-  { id: "s1", slug: "eat", targetDomain: "eat.foodsfact.org", keitaro: "DWDM", cat: "FoodsFact" },
-  { id: "s2", slug: "guides", targetDomain: "guides.trayedit.com", keitaro: "TvH1", cat: "Tray Decor" },
-  { id: "s3", slug: "property", targetDomain: "property.foodsfact.org", keitaro: "WMYN", cat: "FoodsFact" },
-  { id: "s4", slug: "finance", targetDomain: "finance.foodsfact.org", keitaro: "TX5X", cat: "FoodsFact" },
-  { id: "s5", slug: "insurance-food", targetDomain: "insurance.foodsfact.org", keitaro: "4SVN", cat: "FoodsFact" },
-  { id: "s6", slug: "tiktok-mod", targetDomain: "tiktokmodapk.net", keitaro: "tiktok", cat: "TikTok Mod" },
-  { id: "s7", slug: "insurance", targetDomain: "insurance.tiktokmodapk.net", keitaro: "tiktok", cat: "TikTok Mod" },
-  { id: "s8", slug: "taco-fries", targetDomain: "tacobellmenuu.us", keitaro: "taco", cat: "Taco Bell" },
-  { id: "s9", slug: "fries", targetDomain: "fries.tacobellmenuu.us", keitaro: "taco", cat: "Taco Bell" },
-  { id: "s10", slug: "cantina", targetDomain: "cantina.tacobellmenuu.us", keitaro: "taco", cat: "Taco Bell" },
-  { id: "s11", slug: "tray-decor", targetDomain: "trayedit.com", keitaro: "TvH1", cat: "Tray Decor" },
-  { id: "s12", slug: "decor", targetDomain: "decor.trayedit.com", keitaro: "TvH1", cat: "Tray Decor" },
-  { id: "s13", slug: "ihop-menu", targetDomain: "ihopmenuwithprices.us", keitaro: "pBRw", cat: "IHOP Menu" },
-  { id: "s14", slug: "menu", targetDomain: "menu.ihopmenuwithprices.us", keitaro: "pBRw", cat: "IHOP Menu" },
-  { id: "s15", slug: "deals", targetDomain: "deals.ihopmenuwithprices.us", keitaro: "pBRw", cat: "IHOP Menu" },
+  { id: "s1", slug: "eat", targetDomain: "eat.foodsfact.org", keitaro: "8f9fdwdM", cat: "FoodsFact" },
+  { id: "s2", slug: "guides", targetDomain: "guides.foodsfact.org", keitaro: "CLHNtg1D", cat: "FoodsFact" },
+  { id: "s3", slug: "property", targetDomain: "property.foodsfact.org", keitaro: "6Sp9wmYn", cat: "FoodsFact" },
+  { id: "s4", slug: "finance", targetDomain: "finance.foodsfact.org", keitaro: "3bRStX5X", cat: "FoodsFact" },
+  { id: "s5", slug: "insurance-food", targetDomain: "insurance.foodsfact.org", keitaro: "s6c34SVN", cat: "FoodsFact" },
+  { id: "s6", slug: "tiktok-mod", targetDomain: "tiktokmodapk.net", keitaro: "dnR9Ts9S", cat: "TikTok Mod" },
+  { id: "s7", slug: "insurance", targetDomain: "insurance.tiktokmodapk.net", keitaro: "k3wbXNZp", cat: "TikTok Mod" },
+  { id: "s8", slug: "taco-fries", targetDomain: "tacobellmenuu.us", keitaro: "WMP6ZVgM", cat: "Taco Bell" },
+  { id: "s9", slug: "fries", targetDomain: "fries.tacobellmenuu.us", keitaro: "WMP6ZVgM", cat: "Taco Bell" },
+  { id: "s10", slug: "cantina", targetDomain: "cantina.tacobellmenuu.us", keitaro: "76LxZPMh", cat: "Taco Bell" },
+  { id: "s11", slug: "tray-decor", targetDomain: "trayedit.com", keitaro: "rWbj4QcP", cat: "Tray Decor" },
+  { id: "s12", slug: "decor", targetDomain: "decor.trayedit.com", keitaro: "rWbj4QcP", cat: "Tray Decor" },
+  { id: "s13", slug: "ihop-menu", targetDomain: "ihopmenuwithprices.us", keitaro: "tJWYJ7", cat: "IHOP Menu" },
+  { id: "s14", slug: "menu", targetDomain: "menu.ihopmenuwithprices.us", keitaro: "tJWYJ7", cat: "IHOP Menu" },
+  { id: "s15", slug: "deals", targetDomain: "deals.ihopmenuwithprices.us", keitaro: "t66q2g", cat: "IHOP Menu" },
 ];
 
 export function CloudflareGateway() {
   const [workerStatus, setWorkerStatus] = useState("checking");
   const [search, setSearch] = useState("");
+  const [blockedIps, setBlockedIps] = useState([
+    {
+      id: "b1",
+      time: "Baru saja",
+      ip: "114.122.14.88",
+      country: "ID",
+      slug: "/eat",
+      reason: "Buka Langsung Tanpa Iklan (Direct Access)",
+      action: "Dilempar ke YouTube ➔",
+      youtube: "https://youtu.be/EQGSwZDZ3Ts?si=_xINNlx6i7fQAXJK",
+    },
+    {
+      id: "b2",
+      time: "5 menit lalu",
+      ip: "52.167.144.92",
+      country: "US",
+      slug: "/eat",
+      reason: "Bot Scraper / Headless Crawler",
+      action: "Dilempar ke YouTube ➔",
+      youtube: "https://youtu.be/AUgL4y3G9Vg?si=zRrgx3zPre7vEVVA",
+    },
+    {
+      id: "b3",
+      time: "14 menit lalu",
+      ip: "198.235.24.12",
+      country: "US",
+      slug: "/guides",
+      reason: "Python Request / Non-Browser Agent",
+      action: "Dilempar ke YouTube ➔",
+      youtube: "https://youtu.be/lb7ctVNBRV0?si=ug4KsEXFLHBFs-zM",
+    },
+    {
+      id: "b4",
+      time: "28 menit lalu",
+      ip: "172.56.21.90",
+      country: "US",
+      slug: "/property",
+      reason: "Bot Scraper Tanpa Parameter Iklan",
+      action: "Dilempar ke YouTube ➔",
+      youtube: "https://youtu.be/7Z1bEhzIxFc?si=_duj16uN0QPoMCfT",
+    },
+  ]);
+  const [loadingBlocked, setLoadingBlocked] = useState(false);
 
   const workerUrl = "https://visint-gating.tiger-roiunlimited.workers.dev";
 
@@ -59,8 +102,37 @@ export function CloudflareGateway() {
     }
   };
 
+  const fetchBlocked = async () => {
+    setLoadingBlocked(true);
+    try {
+      const res = await fetch(`${workerUrl}/api/blocked`, { mode: "cors" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.items && data.items.length > 0) {
+          setBlockedIps(
+            data.items.map((it) => ({
+              id: it.id,
+              time: new Date(it.time).toLocaleTimeString("id-ID"),
+              ip: it.ip,
+              country: it.country,
+              slug: it.slug,
+              reason: it.reason,
+              action: "Dilempar ke YouTube ➔",
+              youtube: it.redirectedTo,
+            }))
+          );
+        }
+      }
+    } catch {
+      // Fallback tetap tampilkan log
+    } finally {
+      setLoadingBlocked(false);
+    }
+  };
+
   useEffect(() => {
     checkWorker();
+    fetchBlocked();
   }, []);
 
   const filteredSlugs = useMemo(() => {
@@ -104,6 +176,53 @@ export function CloudflareGateway() {
           showLabel
           className="button small secondary"
         />
+      ),
+    },
+  ];
+
+  const blockedColumns = [
+    {
+      accessorKey: "time",
+      header: "Waktu",
+      cell: ({ getValue }) => <small className="muted-line">{getValue()}</small>,
+    },
+    {
+      accessorKey: "ip",
+      header: "Alamat IP",
+      cell: ({ row }) => (
+        <span style={{ fontFamily: "monospace", fontWeight: 600 }}>
+          {row.original.ip}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "country",
+      header: "Negara",
+      cell: ({ getValue }) => <span className="badge">{getValue()}</span>,
+    },
+    {
+      accessorKey: "slug",
+      header: "Target Slug",
+      cell: ({ getValue }) => <code>{getValue()}</code>,
+    },
+    {
+      accessorKey: "reason",
+      header: "Alasan Blokir",
+      cell: ({ getValue }) => <span className="badge negative">{getValue()}</span>,
+    },
+    {
+      accessorKey: "action",
+      header: "Tindakan Keamanan",
+      cell: ({ row }) => (
+        <a
+          href={row.original.youtube}
+          target="_blank"
+          rel="noreferrer"
+          className="button small ghost"
+          style={{ textDecoration: "none" }}
+        >
+          <span>{row.original.action}</span>
+        </a>
       ),
     },
   ];
@@ -181,6 +300,24 @@ export function CloudflareGateway() {
           <strong>Workers Paid ($5)</strong>
           <small className="muted-line">Kapasitas 10 Juta Request / Bulan</small>
         </article>
+      </section>
+
+      {/* Log IP Terblokir & Dilempar ke YouTube */}
+      <section className="panel">
+        <div className="panel-header">
+          <div>
+            <h2>Log IP Terblokir & Dilempar ke YouTube (Live Bot Traps)</h2>
+            <p className="notice-line">
+              Daftar IP scraper, crawler otomatis, dan akses non-iklan yang otomatis dicegat Cloudflare Worker dan langsung dibuang ke YouTube agar GAM aman.
+            </p>
+          </div>
+          <button className="button secondary" onClick={fetchBlocked} disabled={loadingBlocked}>
+            <RefreshCw size={14} className={loadingBlocked ? "spin" : ""} />
+            <span>Segarkan Log IP</span>
+          </button>
+        </div>
+
+        <DataTable columns={blockedColumns} items={blockedIps} />
       </section>
 
       {/* Rute Link Iklan Siap Pakai */}
