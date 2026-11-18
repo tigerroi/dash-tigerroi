@@ -77,6 +77,36 @@ describe("realtimeRoiRows", () => {
     assert.equal(rows[0].id, "s2");
     assert.equal(rows[0].pic, "Sullivan");
   });
+
+  test("baris dengan spending Rp 0 dan earning Rp 0 disaring keluar walau ada clicks sisa", () => {
+    const mixed = [
+      {
+        id: "s1",
+        date: "2026-11-18",
+        time: "16:00",
+        subDomain: "styling.trayedit.com",
+        pic: "Crissthoper",
+        spending: 0,
+        earning: 0,
+        clicks: 2,
+        metaClicks: 2,
+      },
+      {
+        id: "s2",
+        date: "2026-11-18",
+        time: "16:00",
+        subDomain: "guides.trayedit.com",
+        pic: "Moskov",
+        spending: 50000,
+        earning: 120000,
+        clicks: 50,
+      },
+    ];
+    const rows = realtimeRoiRows(mixed, []);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].id, "s2");
+    assert.equal(rows[0].subDomain, "guides.trayedit.com");
+  });
 });
 
 describe("normalizeRealtimeRoiRow", () => {

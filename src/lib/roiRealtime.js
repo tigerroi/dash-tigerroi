@@ -304,13 +304,9 @@ export function isCampaignOff(row) {
     row.gam_revenue !== undefined ||
     row.gamRevenue !== undefined;
 
-  // Jika secara eksplisit ada metrik keuangan tapi dua-duanya Rp 0 (tidak ada belanja dan tidak ada pendapatan)
+  // Jika secara eksplisit ada metrik keuangan tapi dua-duanya Rp 0 (tidak ada belanja dan tidak ada pendapatan),
+  // anggap campaign off dan jangan masukkan ke laporan ROI (karena tidak ada aktivitas finansial).
   if (hasExplicitFinancialMetric && spend <= 0.01 && earn <= 0.01) {
-    const clicks = Number(row.clicks || row.metaClicks || row.meta_clicks || row.gamClicks || row.gam_clicks || 0);
-    const impressions = Number(row.impressions || row.gamImpressions || row.gam_impressions || 0);
-    if (clicks > 0 || impressions > 0) {
-      return false;
-    }
     return true;
   }
 
