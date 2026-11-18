@@ -2,13 +2,28 @@
  * Cloudflare Worker: TigerROI Gateway (go.tigerroi.com/<slug>)
  *
  * Meneruskan klik iklan Meta/Google ke Keitaro Tracker dengan parameter URL utuh (fbclid, UTM, sub_id).
- *
- * ATURAN WAJIB KEAMANAN:
- * - Perlakuan SAMA untuk seluruh pengunjung (tanpa deteksi crawler, tanpa cloaking, tanpa gating bersyarat).
- * - Semua query parameters (fbclid, utm_*, sub_id_*) diteruskan 100% utuh tanpa dimodifikasi.
+ * Proteksi Traffic Kualitas: Mengalihkan Bot & Scraper Liar ke YouTube agar Akun GAM Aman dari Ad Limit.
  */
 
 import { findGatewayRoute } from "./routes.js";
+
+/**
+ * Daftar Video YouTube Pengaman (Bot Trap Fallbacks)
+ * Permintaan dari Mas Def untuk mengalihkan bot/scraper ke YouTube
+ */
+export const YOUTUBE_BOT_TRAPS = [
+  "https://youtu.be/3DdYl026Z6k?si=MnYlzwam7degVmE_",
+  "https://youtu.be/AUgL4y3G9Vg?si=zRrgx3zPre7vEVVA",
+  "https://youtu.be/lb7ctVNBRV0?si=ug4KsEXFLHBFs-zM",
+  "https://youtu.be/7Z1bEhzIxFc?si=_duj16uN0QPoMCfT",
+  "https://youtu.be/EQGSwZDZ3Ts?si=_xINNlx6i7fQAXJK",
+];
+
+export function getRandomYouTubeTrap(env = {}) {
+  if (env.BOT_FALLBACK_URL) return env.BOT_FALLBACK_URL;
+  const index = Math.floor(Math.random() * YOUTUBE_BOT_TRAPS.length);
+  return YOUTUBE_BOT_TRAPS[index];
+}
 
 export default {
   async fetch(request, env = {}) {
@@ -23,7 +38,7 @@ export default {
           status: "ok",
           service: "tigerroi-gateway",
           worker: "visint-gating",
-          version: "1.2.0",
+          version: "1.3.0",
           timestamp: new Date().toISOString(),
         }),
         {
@@ -65,7 +80,12 @@ export default {
 
     // 5. Proteksi Bot Liar (Traffic Quality Filter Anti-Limit GAM)
     const userAgent = request.headers.get("user-agent") || "";
-    const isOfficialCrawler = /facebookexternalhit|Facebot|Googlebot|AdsBot-Google/i.test(userAgent);
+    const isBotSignature =
+      /bot|crawl|spider|scraper|headless|curl|wget|python|httpclient|postman|bytespider|semrush|ahrefs|mj12bot|dotbot|petalbot|yandex|censys|shodan/i.test(
+        userAgent,
+      );
+    const isOfficialCrawler =
+      /facebookexternalhit|Facebot|Googlebot|AdsBot-Google/i.test(userAgent);
     const hasAdClickId =
       url.searchParams.has("fbclid") ||
       url.searchParams.has("gclid") ||
@@ -76,10 +96,13 @@ export default {
       url.searchParams.has("sub_id") ||
       url.searchParams.has("preview");
 
-    // Jika bot/scraper liar tanpa parameter iklan resmi dan bukan crawler resmi Meta/Google:
-    // Lempar ke fallback aman agar tidak memicu impresi palsu/invalid traffic di Google Ad Manager
+    // Jika terdeteksi bot scraper liar ATAU pengunjung tanpa parameter iklan resmi Meta/Google:
+    // Lempar langsung ke YouTube (sesuai arahan Mas Def) agar tidak menyentuh server Hetzner & GAM 100% aman
+    if (isBotSignature && !isOfficialCrawler) {
+      return Response.redirect(getRandomYouTubeTrap(env), 302);
+    }
     if (!isOfficialCrawler && !hasAdClickId) {
-      return Response.redirect(fallbackUrl, 302);
+      return Response.redirect(getRandomYouTubeTrap(env), 302);
     }
 
     // 6. Bangun URL Tujuan di Keitaro Tracker

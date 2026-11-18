@@ -184,3 +184,21 @@ test("Endpoint /health mengembalikan status 200 OK", async () => {
   assert.equal(data.status, "ok");
   assert.equal(data.service, "tigerroi-gateway");
 });
+
+test("Bot liar atau pengunjung tanpa parameter iklan dilempar ke YouTube", async () => {
+  // 1. Pengunjung tanpa parameter iklan
+  const reqTanpaParam = new Request("https://go.tigerroi.com/eat");
+  const resTanpaParam = await worker.fetch(reqTanpaParam, mockEnv);
+  assert.equal(resTanpaParam.status, 302);
+  const loc1 = resTanpaParam.headers.get("Location");
+  assert.match(loc1, /https:\/\/youtu\.be\//, "Harus redirect ke YouTube");
+
+  // 2. Bot scraper / curl
+  const reqBot = new Request("https://go.tigerroi.com/eat?fbclid=fake_click", {
+    headers: { "User-Agent": "curl/7.88.1" },
+  });
+  const resBot = await worker.fetch(reqBot, mockEnv);
+  assert.equal(resBot.status, 302);
+  const loc2 = resBot.headers.get("Location");
+  assert.match(loc2, /https:\/\/youtu\.be\//, "Bot curl harus dilempar ke YouTube");
+});
