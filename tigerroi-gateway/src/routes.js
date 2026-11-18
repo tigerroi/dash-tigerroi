@@ -85,18 +85,23 @@ export const GATEWAY_ROUTES = {
   xvdv: { site_code: "ihop-menu", keitaro_alias: "XVDV", target_domain: "keto.ihopmenuwithprices.us", description: "IHOP Keto (XVDV)" },
 
   // ============================================================================
-  // 5. FOODSFACT.ORG (5 Subdomain) - Kode: 4SVN, DWDM, TG1D, TX5X, WMYN
+  // 5. FOODSFACT.ORG (5 Subdomain) - Kode Resmi: 8f9fdwdM, 6Sp9wmYn, 3bRStX5X, s6c34SVN, CLHNtg1D
   // ============================================================================
-  "insurance-food": { site_code: "4SVN", keitaro_alias: "4SVN", target_domain: "insurance.foodsfact.org", description: "FoodsFact Insurance" },
-  "4svn": { site_code: "4SVN", keitaro_alias: "4SVN", target_domain: "insurance.foodsfact.org", description: "FoodsFact Insurance (4SVN)" },
-  eat: { site_code: "DWDM", keitaro_alias: "DWDM", target_domain: "eat.foodsfact.org", description: "FoodsFact Eat" },
-  dwdm: { site_code: "DWDM", keitaro_alias: "DWDM", target_domain: "eat.foodsfact.org", description: "FoodsFact Eat (DWDM)" },
-  "ff-guides": { site_code: "TG1D", keitaro_alias: "TG1D", target_domain: "guides.foodsfact.org", description: "FoodsFact Guides" },
-  tg1d: { site_code: "TG1D", keitaro_alias: "TG1D", target_domain: "guides.foodsfact.org", description: "FoodsFact Guides (TG1D)" },
-  "food-finance": { site_code: "TX5X", keitaro_alias: "TX5X", target_domain: "finance.foodsfact.org", description: "FoodsFact Finance" },
-  tx5x: { site_code: "TX5X", keitaro_alias: "TX5X", target_domain: "finance.foodsfact.org", description: "FoodsFact Finance (TX5X)" },
-  property: { site_code: "WMYN", keitaro_alias: "WMYN", target_domain: "property.foodsfact.org", description: "FoodsFact Property" },
-  wmyn: { site_code: "WMYN", keitaro_alias: "WMYN", target_domain: "property.foodsfact.org", description: "FoodsFact Property (WMYN)" },
+  "insurance-food": { site_code: "4SVN", keitaro_alias: "s6c34SVN", target_domain: "insurance.foodsfact.org", description: "FoodsFact Insurance" },
+  "4svn": { site_code: "4SVN", keitaro_alias: "s6c34SVN", target_domain: "insurance.foodsfact.org", description: "FoodsFact Insurance (4SVN)" },
+  s6c34svn: { site_code: "4SVN", keitaro_alias: "s6c34SVN", target_domain: "insurance.foodsfact.org", description: "FoodsFact Insurance (s6c34SVN)" },
+  eat: { site_code: "DWDM", keitaro_alias: "8f9fdwdM", target_domain: "eat.foodsfact.org", description: "FoodsFact Eat" },
+  dwdm: { site_code: "DWDM", keitaro_alias: "8f9fdwdM", target_domain: "eat.foodsfact.org", description: "FoodsFact Eat (DWDM)" },
+  "8f9fdwdm": { site_code: "DWDM", keitaro_alias: "8f9fdwdM", target_domain: "eat.foodsfact.org", description: "FoodsFact Eat (8f9fdwdM)" },
+  "ff-guides": { site_code: "TG1D", keitaro_alias: "CLHNtg1D", target_domain: "guides.foodsfact.org", description: "FoodsFact Guides" },
+  tg1d: { site_code: "TG1D", keitaro_alias: "CLHNtg1D", target_domain: "guides.foodsfact.org", description: "FoodsFact Guides (TG1D)" },
+  clhntg1d: { site_code: "TG1D", keitaro_alias: "CLHNtg1D", target_domain: "guides.foodsfact.org", description: "FoodsFact Guides (CLHNtg1D)" },
+  "food-finance": { site_code: "TX5X", keitaro_alias: "3bRStX5X", target_domain: "finance.foodsfact.org", description: "FoodsFact Finance" },
+  tx5x: { site_code: "TX5X", keitaro_alias: "3bRStX5X", target_domain: "finance.foodsfact.org", description: "FoodsFact Finance (TX5X)" },
+  "3brstx5x": { site_code: "TX5X", keitaro_alias: "3bRStX5X", target_domain: "finance.foodsfact.org", description: "FoodsFact Finance (3bRStX5X)" },
+  property: { site_code: "WMYN", keitaro_alias: "6Sp9wmYn", target_domain: "property.foodsfact.org", description: "FoodsFact Property" },
+  wmyn: { site_code: "WMYN", keitaro_alias: "6Sp9wmYn", target_domain: "property.foodsfact.org", description: "FoodsFact Property (WMYN)" },
+  "6sp9wmyn": { site_code: "WMYN", keitaro_alias: "6Sp9wmYn", target_domain: "property.foodsfact.org", description: "FoodsFact Property (6Sp9wmYn)" },
 
   // ============================================================================
   // 6. CMHHEALTHS.COM (6 Subdomain) - Kode: 7KL2, BZP2, J69X, JS43, TDJ6, YNXM

@@ -202,3 +202,21 @@ test("Bot liar atau pengunjung tanpa parameter iklan dilempar ke YouTube", async
   const loc2 = resBot.headers.get("Location");
   assert.match(loc2, /https:\/\/youtu\.be\//, "Bot curl harus dilempar ke YouTube");
 });
+
+test("Mode A & Mode B Foodsfact: Mengarahkan tepat ke Keitaro dan WordPress", async () => {
+  // Mode A (Sebelum Keitaro): /eat -> Keitaro 8f9fdwdM
+  const reqModeA = new Request("https://go.tigerroi.com/eat?fbclid=meta_click_123");
+  const resModeA = await worker.fetch(reqModeA, mockEnv);
+  assert.equal(resModeA.status, 302);
+  const locA = new URL(resModeA.headers.get("Location"));
+  assert.equal(locA.pathname, "/8f9fdwdM");
+  assert.equal(locA.searchParams.get("city"), "[tech]");
+
+  // Mode B (Setelah Keitaro): /to-wp/eat -> WordPress eat.foodsfact.org
+  const reqModeB = new Request("https://go.tigerroi.com/to-wp/eat?fbclid=meta_click_123");
+  const resModeB = await worker.fetch(reqModeB, mockEnv);
+  assert.equal(resModeB.status, 302);
+  const locB = new URL(resModeB.headers.get("Location"));
+  assert.equal(locB.hostname, "eat.foodsfact.org");
+  assert.equal(locB.searchParams.get("fbclid"), "meta_click_123");
+});

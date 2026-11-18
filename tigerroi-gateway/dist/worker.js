@@ -1,4 +1,5 @@
 // === CLOUDFLARE WORKER: visint-gating (TIGERROI SMART GATEWAY) ===
+// Versi: 1.4.0 (Dukungan Fleksibel: Sebelum Keitaro & Setelah Keitaro + Bot Trap YouTube)
 // Dibuat otomatis untuk disalin langsung ke Editor Cloudflare Workers (visint-gating)
 
 /**
@@ -88,18 +89,23 @@ const GATEWAY_ROUTES = {
   xvdv: { site_code: "ihop-menu", keitaro_alias: "XVDV", target_domain: "keto.ihopmenuwithprices.us", description: "IHOP Keto (XVDV)" },
 
   // ============================================================================
-  // 5. FOODSFACT.ORG (5 Subdomain) - Kode: 4SVN, DWDM, TG1D, TX5X, WMYN
+  // 5. FOODSFACT.ORG (5 Subdomain) - Kode Resmi: 8f9fdwdM, 6Sp9wmYn, 3bRStX5X, s6c34SVN, CLHNtg1D
   // ============================================================================
-  "insurance-food": { site_code: "4SVN", keitaro_alias: "4SVN", target_domain: "insurance.foodsfact.org", description: "FoodsFact Insurance" },
-  "4svn": { site_code: "4SVN", keitaro_alias: "4SVN", target_domain: "insurance.foodsfact.org", description: "FoodsFact Insurance (4SVN)" },
-  eat: { site_code: "DWDM", keitaro_alias: "DWDM", target_domain: "eat.foodsfact.org", description: "FoodsFact Eat" },
-  dwdm: { site_code: "DWDM", keitaro_alias: "DWDM", target_domain: "eat.foodsfact.org", description: "FoodsFact Eat (DWDM)" },
-  "ff-guides": { site_code: "TG1D", keitaro_alias: "TG1D", target_domain: "guides.foodsfact.org", description: "FoodsFact Guides" },
-  tg1d: { site_code: "TG1D", keitaro_alias: "TG1D", target_domain: "guides.foodsfact.org", description: "FoodsFact Guides (TG1D)" },
-  "food-finance": { site_code: "TX5X", keitaro_alias: "TX5X", target_domain: "finance.foodsfact.org", description: "FoodsFact Finance" },
-  tx5x: { site_code: "TX5X", keitaro_alias: "TX5X", target_domain: "finance.foodsfact.org", description: "FoodsFact Finance (TX5X)" },
-  property: { site_code: "WMYN", keitaro_alias: "WMYN", target_domain: "property.foodsfact.org", description: "FoodsFact Property" },
-  wmyn: { site_code: "WMYN", keitaro_alias: "WMYN", target_domain: "property.foodsfact.org", description: "FoodsFact Property (WMYN)" },
+  "insurance-food": { site_code: "4SVN", keitaro_alias: "s6c34SVN", target_domain: "insurance.foodsfact.org", description: "FoodsFact Insurance" },
+  "4svn": { site_code: "4SVN", keitaro_alias: "s6c34SVN", target_domain: "insurance.foodsfact.org", description: "FoodsFact Insurance (4SVN)" },
+  s6c34svn: { site_code: "4SVN", keitaro_alias: "s6c34SVN", target_domain: "insurance.foodsfact.org", description: "FoodsFact Insurance (s6c34SVN)" },
+  eat: { site_code: "DWDM", keitaro_alias: "8f9fdwdM", target_domain: "eat.foodsfact.org", description: "FoodsFact Eat" },
+  dwdm: { site_code: "DWDM", keitaro_alias: "8f9fdwdM", target_domain: "eat.foodsfact.org", description: "FoodsFact Eat (DWDM)" },
+  "8f9fdwdm": { site_code: "DWDM", keitaro_alias: "8f9fdwdM", target_domain: "eat.foodsfact.org", description: "FoodsFact Eat (8f9fdwdM)" },
+  "ff-guides": { site_code: "TG1D", keitaro_alias: "CLHNtg1D", target_domain: "guides.foodsfact.org", description: "FoodsFact Guides" },
+  tg1d: { site_code: "TG1D", keitaro_alias: "CLHNtg1D", target_domain: "guides.foodsfact.org", description: "FoodsFact Guides (TG1D)" },
+  clhntg1d: { site_code: "TG1D", keitaro_alias: "CLHNtg1D", target_domain: "guides.foodsfact.org", description: "FoodsFact Guides (CLHNtg1D)" },
+  "food-finance": { site_code: "TX5X", keitaro_alias: "3bRStX5X", target_domain: "finance.foodsfact.org", description: "FoodsFact Finance" },
+  tx5x: { site_code: "TX5X", keitaro_alias: "3bRStX5X", target_domain: "finance.foodsfact.org", description: "FoodsFact Finance (TX5X)" },
+  "3brstx5x": { site_code: "TX5X", keitaro_alias: "3bRStX5X", target_domain: "finance.foodsfact.org", description: "FoodsFact Finance (3bRStX5X)" },
+  property: { site_code: "WMYN", keitaro_alias: "6Sp9wmYn", target_domain: "property.foodsfact.org", description: "FoodsFact Property" },
+  wmyn: { site_code: "WMYN", keitaro_alias: "6Sp9wmYn", target_domain: "property.foodsfact.org", description: "FoodsFact Property (WMYN)" },
+  "6sp9wmyn": { site_code: "WMYN", keitaro_alias: "6Sp9wmYn", target_domain: "property.foodsfact.org", description: "FoodsFact Property (6Sp9wmYn)" },
 
   // ============================================================================
   // 6. CMHHEALTHS.COM (6 Subdomain) - Kode: 7KL2, BZP2, J69X, JS43, TDJ6, YNXM
@@ -183,11 +189,24 @@ function findGatewayRoute(slug) {
   return GATEWAY_ROUTES[clean] || null;
 }
 
+
+/**
+ * Cloudflare Worker: TigerROI Gateway (go.tigerroi.com/<slug>)
+ *
+ * Mendukung 2 Mode Fleksibel:
+ * - Mode A (SEBELUM Keitaro): /eat ➔ filter bot ➔ Keitaro (https://appscity.tech/8f9fdwdM?city=[tech])
+ * - Mode B (SETELAH Keitaro): /to-wp/eat ➔ filter bot ➔ WordPress (https://eat.foodsfact.org)
+ *
+ * Proteksi Traffic Kualitas: Mengalihkan Bot & Scraper Liar ke YouTube agar Akun GAM Bebas dari Ad Limit.
+ */
+
+
+
 /**
  * Daftar Video YouTube Pengaman (Bot Trap Fallbacks)
  * Permintaan dari Mas Def untuk mengalihkan bot/scraper ke YouTube
  */
-const YOUTUBE_BOT_TRAPS = [
+export const YOUTUBE_BOT_TRAPS = [
   "https://youtu.be/3DdYl026Z6k?si=MnYlzwam7degVmE_",
   "https://youtu.be/AUgL4y3G9Vg?si=zRrgx3zPre7vEVVA",
   "https://youtu.be/lb7ctVNBRV0?si=ug4KsEXFLHBFs-zM",
@@ -195,24 +214,24 @@ const YOUTUBE_BOT_TRAPS = [
   "https://youtu.be/EQGSwZDZ3Ts?si=_xINNlx6i7fQAXJK",
 ];
 
-function getRandomYouTubeTrap(env = {}) {
+export function getRandomYouTubeTrap(env = {}) {
   if (env.BOT_FALLBACK_URL) return env.BOT_FALLBACK_URL;
   const index = Math.floor(Math.random() * YOUTUBE_BOT_TRAPS.length);
   return YOUTUBE_BOT_TRAPS[index];
 }
 
-/**
- * Cloudflare Worker: TigerROI Gateway (go.tigerroi.com/<slug>)
- *
- * Meneruskan klik iklan Meta/Google ke Keitaro Tracker dengan parameter URL utuh (fbclid, UTM, sub_id).
- * Proteksi Traffic Kualitas: Mengalihkan Bot & Scraper Liar ke YouTube agar Akun GAM Aman dari Ad Limit.
- */
-
 export default {
   async fetch(request, env = {}) {
     const url = new URL(request.url);
-    const pathParts = url.pathname.replace(/^\/+|\/+$/g, "").split("/");
-    const slug = pathParts[0] || "";
+    const cleanPath = url.pathname.replace(/^\/+|\/+$/g, "");
+    const pathParts = cleanPath.split("/");
+
+    let isDirectToWp = false;
+    let slug = pathParts[0] || "";
+    if (slug === "to-wp" || slug === "wp") {
+      isDirectToWp = true;
+      slug = pathParts[1] || "";
+    }
 
     // 1. Endpoint Health Check & Status Monitoring
     if (slug === "health" || slug === "_health" || slug === "api/status") {
@@ -221,7 +240,7 @@ export default {
           status: "ok",
           service: "tigerroi-gateway",
           worker: "visint-gating",
-          version: "1.3.0",
+          version: "1.4.0",
           timestamp: new Date().toISOString(),
         }),
         {
@@ -277,6 +296,7 @@ export default {
       url.searchParams.has("ad_id") ||
       url.searchParams.has("custom_ref") ||
       url.searchParams.has("sub_id") ||
+      url.searchParams.has("city") ||
       url.searchParams.has("preview");
 
     // Jika terdeteksi bot scraper liar ATAU pengunjung tanpa parameter iklan resmi Meta/Google:
@@ -288,9 +308,19 @@ export default {
       return Response.redirect(getRandomYouTubeTrap(env), 302);
     }
 
-    // 6. Bangun URL Tujuan di Keitaro Tracker
-    const keitaroBase = (env.KEITARO_BASE_URL || "https://appscity.tech").replace(/\/+$/, "");
-    const targetUrl = new URL(`${keitaroBase}/${route.keitaro_alias}`);
+    // 6. Bangun URL Tujuan: Keitaro (Sebelum) ATAU WordPress Hetzner (Setelah)
+    let targetUrl;
+    if (isDirectToWp) {
+      // Mode B (Visint SETELAH Keitaro): Diteruskan dari Keitaro ke Visint, lalu ke WordPress
+      targetUrl = new URL(`https://${route.target_domain}`);
+    } else {
+      // Mode A (Visint SEBELUM Keitaro): Pengunjung buka Visint, lalu diteruskan ke Keitaro
+      const keitaroBase = (env.KEITARO_BASE_URL || "https://appscity.tech").replace(/\/+$/, "");
+      targetUrl = new URL(`${keitaroBase}/${route.keitaro_alias}`);
+      if (!targetUrl.searchParams.has("city")) {
+        targetUrl.searchParams.set("city", "[tech]");
+      }
+    }
 
     // 7. Teruskan SELURUH Query Parameter asli (fbclid, UTM, dll) secara utuh
     for (const [key, val] of url.searchParams.entries()) {
@@ -305,7 +335,7 @@ export default {
       targetUrl.searchParams.set("sub_id_1", route.site_code);
     }
 
-    // 9. Kirim HTTP 302 Redirect ke Keitaro Tracker
+    // 9. Kirim HTTP 302 Redirect
     return new Response(null, {
       status: 302,
       headers: {
@@ -317,4 +347,3 @@ export default {
     });
   },
 };
-

@@ -1,8 +1,11 @@
 /**
  * Cloudflare Worker: TigerROI Gateway (go.tigerroi.com/<slug>)
  *
- * Meneruskan klik iklan Meta/Google ke Keitaro Tracker dengan parameter URL utuh (fbclid, UTM, sub_id).
- * Proteksi Traffic Kualitas: Mengalihkan Bot & Scraper Liar ke YouTube agar Akun GAM Aman dari Ad Limit.
+ * Mendukung 2 Mode Fleksibel:
+ * - Mode A (SEBELUM Keitaro): /eat ➔ filter bot ➔ Keitaro (https://appscity.tech/8f9fdwdM?city=[tech])
+ * - Mode B (SETELAH Keitaro): /to-wp/eat ➔ filter bot ➔ WordPress (https://eat.foodsfact.org)
+ *
+ * Proteksi Traffic Kualitas: Mengalihkan Bot & Scraper Liar ke YouTube agar Akun GAM Bebas dari Ad Limit.
  */
 
 import { findGatewayRoute } from "./routes.js";
@@ -28,8 +31,15 @@ export function getRandomYouTubeTrap(env = {}) {
 export default {
   async fetch(request, env = {}) {
     const url = new URL(request.url);
-    const pathParts = url.pathname.replace(/^\/+|\/+$/g, "").split("/");
-    const slug = pathParts[0] || "";
+    const cleanPath = url.pathname.replace(/^\/+|\/+$/g, "");
+    const pathParts = cleanPath.split("/");
+
+    let isDirectToWp = false;
+    let slug = pathParts[0] || "";
+    if (slug === "to-wp" || slug === "wp") {
+      isDirectToWp = true;
+      slug = pathParts[1] || "";
+    }
 
     // 1. Endpoint Health Check & Status Monitoring
     if (slug === "health" || slug === "_health" || slug === "api/status") {
@@ -38,7 +48,7 @@ export default {
           status: "ok",
           service: "tigerroi-gateway",
           worker: "visint-gating",
-          version: "1.3.0",
+          version: "1.4.0",
           timestamp: new Date().toISOString(),
         }),
         {
@@ -94,6 +104,7 @@ export default {
       url.searchParams.has("ad_id") ||
       url.searchParams.has("custom_ref") ||
       url.searchParams.has("sub_id") ||
+      url.searchParams.has("city") ||
       url.searchParams.has("preview");
 
     // Jika terdeteksi bot scraper liar ATAU pengunjung tanpa parameter iklan resmi Meta/Google:
@@ -105,9 +116,19 @@ export default {
       return Response.redirect(getRandomYouTubeTrap(env), 302);
     }
 
-    // 6. Bangun URL Tujuan di Keitaro Tracker
-    const keitaroBase = (env.KEITARO_BASE_URL || "https://appscity.tech").replace(/\/+$/, "");
-    const targetUrl = new URL(`${keitaroBase}/${route.keitaro_alias}`);
+    // 6. Bangun URL Tujuan: Keitaro (Sebelum) ATAU WordPress Hetzner (Setelah)
+    let targetUrl;
+    if (isDirectToWp) {
+      // Mode B (Visint SETELAH Keitaro): Diteruskan dari Keitaro ke Visint, lalu ke WordPress
+      targetUrl = new URL(`https://${route.target_domain}`);
+    } else {
+      // Mode A (Visint SEBELUM Keitaro): Pengunjung buka Visint, lalu diteruskan ke Keitaro
+      const keitaroBase = (env.KEITARO_BASE_URL || "https://appscity.tech").replace(/\/+$/, "");
+      targetUrl = new URL(`${keitaroBase}/${route.keitaro_alias}`);
+      if (!targetUrl.searchParams.has("city")) {
+        targetUrl.searchParams.set("city", "[tech]");
+      }
+    }
 
     // 7. Teruskan SELURUH Query Parameter asli (fbclid, UTM, dll) secara utuh
     for (const [key, val] of url.searchParams.entries()) {
@@ -122,7 +143,7 @@ export default {
       targetUrl.searchParams.set("sub_id_1", route.site_code);
     }
 
-    // 9. Kirim HTTP 302 Redirect ke Keitaro Tracker
+    // 9. Kirim HTTP 302 Redirect
     return new Response(null, {
       status: 302,
       headers: {
