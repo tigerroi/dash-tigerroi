@@ -186,12 +186,57 @@ export function formatGamAccountPayload(values = {}) {
   return payload;
 }
 
+export function formatSubdomainPayload(values = {}) {
+  const raw = toSnakeCasePayload(values);
+  const payload = { ...raw };
+
+  delete payload.id;
+  delete payload.created_at;
+
+  // 1. Pastikan nama subdomain bersih (lowercase dan trim)
+  if (payload.name) {
+    payload.name = String(payload.name).trim().toLowerCase();
+  }
+
+  // 2. Bersihkan parent_domain
+  if (payload.parent_domain) {
+    payload.parent_domain = String(payload.parent_domain).trim();
+  }
+
+  // 3. Pastikan site_code SELALU TERISI agar tidak melanggar NOT NULL constraint di PostgreSQL
+  if (!payload.site_code || String(payload.site_code).trim() === "") {
+    const codes = String(payload.campaign_codes || "")
+      .split(",")
+      .map((c) => c.trim())
+      .filter(Boolean);
+    if (codes.length > 0) {
+      payload.site_code = codes[0];
+    } else if (payload.name) {
+      const parts = String(payload.name).split(".").filter(Boolean);
+      payload.site_code = parts.length > 1 ? parts[0] : payload.name;
+    } else if (payload.parent_domain) {
+      payload.site_code = String(payload.parent_domain).replace(/^https?:\/\//, "").split(".")[0];
+    } else {
+      payload.site_code = "site";
+    }
+  }
+
+  if (!payload.status) {
+    payload.status = "Active";
+  }
+
+  return payload;
+}
+
 /**
  * Menyiapkan payload agar cocok dengan skema tabel PostgreSQL Supabase
  */
 function prepareResourcePayload(key, values) {
   if (key === "gamAccounts") {
     return formatGamAccountPayload(values);
+  }
+  if (key === "subDomains" || key === "subdomains") {
+    return formatSubdomainPayload(values);
   }
   if (key === "adAccounts") {
     return formatAdAccountPayload(values);
