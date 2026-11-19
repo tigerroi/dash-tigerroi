@@ -16,6 +16,8 @@ export const GAM_DEFAULT_TIMEZONES = {
   "23342288461": "GMT+6",
   "velocitytv.com.pk": "GMT+5",
   "23360577147": "GMT+5",
+  "foodsfact.org": "America/Denver",
+  "21869641910": "America/Denver",
 };
 
 /**

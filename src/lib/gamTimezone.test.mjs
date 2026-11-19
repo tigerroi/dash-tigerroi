@@ -31,5 +31,7 @@ test("GAM_DEFAULT_TIMEZONES memuat domain-domain resmi", () => {
   assert.equal(GAM_DEFAULT_TIMEZONES["23355757170"], "GMT-5");
   assert.equal(GAM_DEFAULT_TIMEZONES["workmoney24.com"], "GMT+6");
   assert.equal(GAM_DEFAULT_TIMEZONES["velocitytv.com.pk"], "GMT+5");
+  assert.equal(GAM_DEFAULT_TIMEZONES["foodsfact.org"], "America/Denver");
+  assert.equal(GAM_DEFAULT_TIMEZONES["21869641910"], "America/Denver");
 });
 

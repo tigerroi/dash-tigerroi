@@ -1,3 +1,5 @@
+import { toWibDateTime } from "./timezone-cutoff.js";
+
 /**
  * Helper pencatatan snapshot ROI per eksekusi sinkronisasi GitHub Actions.
  * Menyimpan titik data kumulatif pada jam eksekusi tersebut ke tabel `roi_snapshots`,
@@ -218,11 +220,12 @@ export async function recordHourlyGamSnapshots(supabase, hourlyGamRows, subdomai
     if (st.site_code) siteMap.set(st.site_code.toLowerCase().trim(), st);
   }
 
-  // Kelompokkan data per date + site_code + subdomain + hour
+  // Kelompokkan data per date + site_code + subdomain + hour (dikonversi ke WIB jika dari zona waktu lain)
   const hourlyGroup = new Map();
   for (const row of hourlyGamRows) {
-    const d = row.date;
-    const h = String(row.hour || "00").padStart(2, "0");
+    const wib = toWibDateTime(row.date, row.hour, row.networkTimeZone);
+    const d = wib.date;
+    const h = wib.hour;
     const site = (row.siteCode || "").toLowerCase().trim();
     const sub = (row.subdomainName || "").toLowerCase().trim();
     const key = `${d}__${site}__${sub}`;
@@ -247,7 +250,7 @@ export async function recordHourlyGamSnapshots(supabase, hourlyGamRows, subdomai
   }
 
   // Ambil snapshot yang sudah ada di database untuk tanggal tersebut agar data spending Meta tidak tertimpa Rp 0
-  const dates = [...new Set(hourlyGamRows.map((r) => r.date).filter(Boolean))];
+  const dates = [...new Set(Array.from(hourlyGroup.values()).map((g) => g.date).filter(Boolean))];
   const { data: existingSnaps } = await supabase
     .from("roi_snapshots")
     .select("*")

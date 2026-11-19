@@ -91,7 +91,7 @@ const GAM_PRESET_TIMEZONES = {
   "ziperto.org": "America/New_York",
   "velocitytv.com.pk": "Asia/Karachi",
   "workmoney24.com": "GMT+6",
-  "foodsfact.org": "America/New_York",
+  "foodsfact.org": "America/Denver",
   "23350466753": "GMT+1",
   "23344333667": "GMT+6",
   "23367555867": "GMT+5",
@@ -101,7 +101,7 @@ const GAM_PRESET_TIMEZONES = {
   "23355757170": "America/New_York",
   "23360577147": "Asia/Karachi",
   "23342288461": "GMT+6",
-  "21869641910": "America/New_York",
+  "21869641910": "America/Denver",
 };
 
 function formatIsoDate(d) {
@@ -684,6 +684,7 @@ export async function runSyncGam() {
               ...hRow,
               siteCode: mapped.siteCode,
               subdomainName: mapped.subdomainName,
+              networkTimeZone,
             });
           }
         } catch (hErr) {
