@@ -11,6 +11,7 @@ import {
 } from "./gam-client.js";
 import { evaluateGamPolicyStatus } from "./gam-policy-helper.js";
 import { recordHourlyGamSnapshots, recordRoiSnapshot } from "./snapshot-helper.js";
+import { toWibDateTime } from "./timezone-cutoff.js";
 
 /**
  * Job Sinkronisasi Google Ad Manager (GAM) ke Supabase TigerROI
@@ -447,6 +448,34 @@ export async function runSyncGam() {
       );
 
       try {
+        // Tentukan zona waktu GAM untuk network ini (prioritas: setelan database -> preset domain -> Google API)
+        const domainKey = String(net.domain || "").toLowerCase().trim();
+        const codeKey = String(net.networkCode || "").trim();
+        const existingAcc = (gamAccountsList || []).find(
+          (a) =>
+            String(a.network_code || "").trim() === codeKey ||
+            String(a.name || "").toLowerCase().trim() === domainKey,
+        );
+        let networkTimeZone =
+          existingAcc?.report_time_zone ||
+          GAM_PRESET_TIMEZONES[domainKey] ||
+          GAM_PRESET_TIMEZONES[codeKey];
+
+        if (!networkTimeZone) {
+          try {
+            const netInfo = await getGamNetwork(net.networkCode, accessToken);
+            if (netInfo?.timeZone) {
+              networkTimeZone = netInfo.timeZone;
+              console.log(`    Zona Waktu Network GAM: ${networkTimeZone}`);
+            }
+          } catch (tzErr) {
+            console.warn(`    ⚠️ Gagal membaca zona waktu GAM (${net.domain}): ${tzErr.message}`);
+          }
+        }
+        if (!networkTimeZone) networkTimeZone = "GMT+0";
+
+        const isNonWib = networkTimeZone && networkTimeZone !== "Asia/Jakarta" && networkTimeZone !== "GMT+7";
+
         const rows = await fetchGamDailyRevenue(net.networkCode, accessToken, dateRange);
         console.log(`    Ditemukan ${rows.length} baris unit iklan.`);
 
@@ -498,32 +527,6 @@ export async function runSyncGam() {
             current.metadata.network_codes.push(net.networkCode);
           }
         }
-
-        // Tentukan zona waktu GAM untuk network ini (prioritas: setelan database -> preset domain -> Google API)
-        const domainKey = String(net.domain || "").toLowerCase().trim();
-        const codeKey = String(net.networkCode || "").trim();
-        const existingAcc = (gamAccountsList || []).find(
-          (a) =>
-            String(a.network_code || "").trim() === codeKey ||
-            String(a.name || "").toLowerCase().trim() === domainKey,
-        );
-        let networkTimeZone =
-          existingAcc?.report_time_zone ||
-          GAM_PRESET_TIMEZONES[domainKey] ||
-          GAM_PRESET_TIMEZONES[codeKey];
-
-        if (!networkTimeZone) {
-          try {
-            const netInfo = await getGamNetwork(net.networkCode, accessToken);
-            if (netInfo?.timeZone) {
-              networkTimeZone = netInfo.timeZone;
-              console.log(`    Zona Waktu Network GAM: ${networkTimeZone}`);
-            }
-          } catch (tzErr) {
-            console.warn(`    ⚠️ Gagal membaca zona waktu GAM (${net.domain}): ${tzErr.message}`);
-          }
-        }
-        if (!networkTimeZone) networkTimeZone = "GMT+0";
 
         // Hitung waktu lokal saat ini di zona waktu GAM tersebut
         const now = new Date();
@@ -671,8 +674,9 @@ export async function runSyncGam() {
 
         // 5c. Tarik Laporan Pendapatan per jam (Hourly Revenue) dari GAM untuk riwayat seharian
         console.log(`    --> Menarik Laporan Pendapatan per jam (Hourly Revenue)...`);
+        let hourlyRevRows = [];
         try {
-          const hourlyRevRows = await fetchGamHourlyRevenue(net.networkCode, accessToken, dateRange);
+          hourlyRevRows = await fetchGamHourlyRevenue(net.networkCode, accessToken, dateRange);
           console.log(`    Ditemukan ${hourlyRevRows.length} baris pendapatan per jam.`);
           for (const hRow of hourlyRevRows) {
             const mapped = mapGamRowToSite(hRow, net.defaultSiteCode, subdomains, sites, net.isShared);
@@ -689,6 +693,63 @@ export async function runSyncGam() {
           }
         } catch (hErr) {
           console.warn(`    ⚠️ Peringatan Hourly Revenue (${net.domain}): ${hErr.message}`);
+        }
+
+        // Jika network berada di zona waktu non-WIB (seperti America/Denver) dan data per jam berhasil ditarik:
+        // Gunakan pemetaan per jam ke tanggal WIB untuk dailyMap agar pendapatan hari berjalan (WIB)
+        // tidak kosong akibat perbedaan siklus pergantian hari GAM.
+        if (isNonWib && hourlyRevRows.length > 0) {
+          // Bersihkan data harian mentah network ini yang tadi dimasukkan dengan tanggal network
+          for (const [key, val] of dailyMap.entries()) {
+            if (val.metadata?.network_codes?.includes(net.networkCode)) {
+              if (val.metadata.network_codes.length === 1) {
+                dailyMap.delete(key);
+              } else {
+                val.metadata.network_codes = val.metadata.network_codes.filter((c) => c !== net.networkCode);
+              }
+            }
+          }
+
+          // Masukkan kembali data per jam yang tanggalnya sudah dikonversi presisi ke tanggal WIB
+          for (const hRow of hourlyRevRows) {
+            const mapped = mapGamRowToSite(hRow, net.defaultSiteCode, subdomains, sites, net.isShared);
+            if (net.isShared && !mapped.matched) continue;
+
+            const wib = toWibDateTime(formatIsoDate(hRow.date), hRow.hour, networkTimeZone);
+            const wibDate = wib.date;
+            const siteCode = mapped.siteCode;
+            const subName = (mapped.subdomainName || "").toLowerCase().trim();
+            const aggKey = `${wibDate}__${siteCode}__${subName}`;
+
+            if (!dailyMap.has(aggKey)) {
+              dailyMap.set(aggKey, {
+                date: wibDate,
+                site_code: siteCode,
+                subdomain: subName,
+                source: "gam",
+                revenue: 0,
+                spend: 0,
+                impressions: 0,
+                clicks: 0,
+                metadata: {
+                  adx_revenue: 0,
+                  adsense_revenue: 0,
+                  network_codes: [net.networkCode],
+                },
+              });
+            }
+
+            const current = dailyMap.get(aggKey);
+            current.revenue += hRow.totalRevenue;
+            current.impressions += hRow.impressions;
+            current.clicks += hRow.clicks;
+            current.metadata.adx_revenue += hRow.adxRevenue;
+            current.metadata.adsense_revenue += hRow.adsenseRevenue;
+            if (!current.metadata.network_codes.includes(net.networkCode)) {
+              current.metadata.network_codes.push(net.networkCode);
+            }
+          }
+          console.log(`    ✅ Berhasil menyelaraskan pendapatan ${net.domain} ke tanggal WIB.`);
         }
       } catch (netErr) {
         const msg = `Network ${net.domain} (${net.networkCode}): ${netErr.message}`;
