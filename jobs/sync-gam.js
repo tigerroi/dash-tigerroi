@@ -171,7 +171,7 @@ function loadServiceAccountCredentials() {
 }
 
 // Pencocokan baris GAM (siteName / URL / adUnitName) ke subdomain & site_code
-function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList, isShared = false) {
+function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList, isShared = false, networkDomain = "") {
   const host = String(row.siteName || "")
     .trim()
     .toLowerCase()
@@ -179,9 +179,24 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList, isShar
     .replace(/\/.*$/, "");
   const unit = String(row.adUnitName || "").toLowerCase();
 
-  // 1. Prioritas 1: Cocokkan host URL langsung ke 17 subdomain resmi
+  const netDomainClean = (networkDomain || "").toLowerCase().trim().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+
+  // Saring daftar subdomain agar HANYA mencakup subdomain milik network domain ini
+  const scopedSubs = (subdomainsList || []).filter((sub) => {
+    if (!sub.name) return false;
+    if (!netDomainClean) return true;
+    const parentClean = (sub.parent_domain || "").toLowerCase().trim().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+    return (
+      parentClean === netDomainClean ||
+      sub.name.toLowerCase().endsWith(`.${netDomainClean}`) ||
+      sub.name.toLowerCase() === netDomainClean ||
+      sub.site_code === defaultSiteCode
+    );
+  });
+
+  // 1. Prioritas 1: Cocokkan host URL langsung ke subdomain resmi
   if (host) {
-    for (const sub of subdomainsList || []) {
+    for (const sub of scopedSubs) {
       if (!sub.name) continue;
       const subName = sub.name.toLowerCase();
       // Cocokkan apakah host persis, berawalan nama subdomain, atau mengandung nama subdomain
@@ -202,8 +217,8 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList, isShar
   }
 
   // 1b. Khusus Domain Tunggal Berbasis Path / URL Slug (misal: velocitytv.com.pk/news/ atau /finance/):
-  // Jika adUnitName atau siteName memuat path landing page
-  for (const sub of subdomainsList || []) {
+  // Jika adUnitName atau siteName memuat path landing page (HANYA dicek ke subdomain milik network ini)
+  for (const sub of scopedSubs) {
     if (!sub.name) continue;
     const subName = sub.name.toLowerCase();
     const slug = subName.split(".")[0]; // "news", "dollar", "finance", "insurance"
@@ -241,7 +256,7 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList, isShar
     { key: "guides", siteCode: "TG1D", subName: "guides.foodsfact.org" },
   ];
 
-  if (isShared || host.includes("foodsfact") || unit.includes("foodsfact")) {
+  if (isShared || host.includes("foodsfact") || unit.includes("foodsfact") || netDomainClean === "foodsfact.org") {
     for (const a of FOODSFACT_SHARED_ALIASES) {
       if (unit.includes(a.key) || host.includes(a.key)) {
         return {
@@ -254,7 +269,7 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList, isShar
   }
 
   // 2. Prioritas 2: Cocokkan nama unit iklan ke subdomain (FQDN, slug, site_code, atau campaign_codes)
-  for (const sub of subdomainsList || []) {
+  for (const sub of scopedSubs) {
     if (!sub.name) continue;
     const subName = sub.name.toLowerCase();
     const slug = subName.split(".")[0];
@@ -334,7 +349,7 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList, isShar
     if (!s.site_code) continue;
     if (unit.includes(s.site_code.toLowerCase())) {
       // Cari subdomain default untuk site ini
-      const matchingSubs = (subdomainsList || []).filter((sub) => sub.site_code === s.site_code);
+      const matchingSubs = scopedSubs.filter((sub) => sub.site_code === s.site_code);
       const suffix = s.site_code.split("-").pop();
       const defaultSub = matchingSubs.find((sub) => sub.name.toLowerCase().startsWith(suffix)) || matchingSubs[0];
       return {
@@ -357,7 +372,7 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList, isShar
   }
 
   // 4. Fallback ke default site code network tersebut (hanya untuk non-shared domain)
-  const matchingSubs = (subdomainsList || []).filter((sub) => sub.site_code === defaultSiteCode);
+  const matchingSubs = scopedSubs.filter((sub) => sub.site_code === defaultSiteCode);
   const suffix = (defaultSiteCode || "").split("-").pop();
   const defaultSub = matchingSubs.find((sub) => sub.name === suffix) || matchingSubs[0];
 
@@ -550,7 +565,7 @@ export async function runSyncGam() {
         let netLatestDate = "";
 
         for (const row of rows) {
-          const mapped = mapGamRowToSite(row, net.defaultSiteCode, subdomains, sites, net.isShared);
+          const mapped = mapGamRowToSite(row, net.defaultSiteCode, subdomains, sites, net.isShared, net.domain);
           // Jika shared domain dan bukan salah satu subdomain resmi TigerROI, abaikan baris ini!
           if (net.isShared && !mapped.matched) {
             continue;
@@ -692,7 +707,7 @@ export async function runSyncGam() {
           const fillRateRows = await fetchGamHourlyFillRate(net.networkCode, accessToken, dateRange);
           console.log(`    Ditemukan ${fillRateRows.length} baris rasio penayangan per jam.`);
           for (const fRow of fillRateRows) {
-            const mapped = mapGamRowToSite({ siteName: fRow.siteName }, net.defaultSiteCode, subdomains, sites, net.isShared);
+            const mapped = mapGamRowToSite({ siteName: fRow.siteName }, net.defaultSiteCode, subdomains, sites, net.isShared, net.domain);
             if (net.isShared && !mapped.matched) {
               continue;
             }
@@ -751,7 +766,7 @@ export async function runSyncGam() {
           hourlyRevRows = await fetchGamHourlyRevenue(net.networkCode, accessToken, hourlyDateRange);
           console.log(`    Ditemukan ${hourlyRevRows.length} baris pendapatan per jam.`);
           for (const hRow of hourlyRevRows) {
-            const mapped = mapGamRowToSite(hRow, net.defaultSiteCode, subdomains, sites, net.isShared);
+            const mapped = mapGamRowToSite(hRow, net.defaultSiteCode, subdomains, sites, net.isShared, net.domain);
             if (net.isShared && !mapped.matched) {
               continue;
             }
@@ -771,9 +786,17 @@ export async function runSyncGam() {
         // Gunakan pemetaan per jam ke tanggal WIB untuk dailyMap agar pendapatan hari berjalan (WIB)
         // tidak kosong akibat perbedaan siklus pergantian hari GAM.
         if (isNonWib && hourlyRevRows.length > 0) {
-          // Bersihkan data harian mentah network ini yang tadi dimasukkan dengan tanggal network
+          // Kumpulkan tanggal-tanggal WIB yang tercakup dalam laporan hourly (biasanya 2-3 hari terakhir)
+          const hourlyDatesCovered = new Set();
+          for (const hRow of hourlyRevRows) {
+            const wib = toWibDateTime(formatIsoDate(hRow.date), hRow.hour, networkTimeZone);
+            hourlyDatesCovered.add(wib.date);
+          }
+
+          // HANYA bersihkan data dailyMap untuk tanggal-tanggal yang tercakup oleh hourly (hari ini & kemarin).
+          // Tanggal lampau (hari 1 s/d 16) dari awal bulan TETAP AMAN dan tidak terhapus!
           for (const [key, val] of dailyMap.entries()) {
-            if (val.metadata?.network_codes?.includes(net.networkCode)) {
+            if (hourlyDatesCovered.has(val.date) && val.metadata?.network_codes?.includes(net.networkCode)) {
               if (val.metadata.network_codes.length === 1) {
                 dailyMap.delete(key);
               } else {
@@ -784,7 +807,7 @@ export async function runSyncGam() {
 
           // Masukkan kembali data per jam yang tanggalnya sudah dikonversi presisi ke tanggal WIB
           for (const hRow of hourlyRevRows) {
-            const mapped = mapGamRowToSite(hRow, net.defaultSiteCode, subdomains, sites, net.isShared);
+            const mapped = mapGamRowToSite(hRow, net.defaultSiteCode, subdomains, sites, net.isShared, net.domain);
             if (net.isShared && !mapped.matched) continue;
 
             const wib = toWibDateTime(formatIsoDate(hRow.date), hRow.hour, networkTimeZone);
