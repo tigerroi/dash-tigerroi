@@ -737,10 +737,15 @@ export async function runSyncGam() {
         }
 
         // 5c. Tarik Laporan Pendapatan per jam (Hourly Revenue) dari GAM untuk riwayat seharian
+        // Rentang per jam dibatasi 2 hari terakhir (kemarin & hari ini) agar diterima Google Ad Manager (maks 3 hari untuk HOUR)
         console.log(`    --> Menarik Laporan Pendapatan per jam (Hourly Revenue)...`);
         let hourlyRevRows = [];
+        const hourlyDateRange = {
+          startDate: getJakartaDate(2),
+          endDate: getJakartaDate(0),
+        };
         try {
-          hourlyRevRows = await fetchGamHourlyRevenue(net.networkCode, accessToken, dateRange);
+          hourlyRevRows = await fetchGamHourlyRevenue(net.networkCode, accessToken, hourlyDateRange);
           console.log(`    Ditemukan ${hourlyRevRows.length} baris pendapatan per jam.`);
           for (const hRow of hourlyRevRows) {
             const mapped = mapGamRowToSite(hRow, net.defaultSiteCode, subdomains, sites, net.isShared);

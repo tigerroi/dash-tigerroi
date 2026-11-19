@@ -113,7 +113,6 @@ export async function fetchGamDailyRevenue(networkCode, accessToken, dateRange) 
         "CLICKS",
         "AD_EXCHANGE_REVENUE",
         "ADSENSE_REVENUE",
-        "AD_SERVER_REVENUE",
       ],
       currencyCode: "IDR",
       dateRange: {
@@ -260,7 +259,7 @@ export async function fetchGamDailyRevenue(networkCode, accessToken, dateRange) 
     const clicks = parseNum(mValues[1]);
     const adxRevenue = parseNum(mValues[2]);
     const adsenseRevenue = parseNum(mValues[3]);
-    const adServerRevenue = parseNum(mValues[4]);
+    const adServerRevenue = 0;
 
     rows.push({
       date: dateStr,
@@ -448,7 +447,6 @@ export async function fetchGamHourlyRevenue(networkCode, accessToken, dateRange)
         "CLICKS",
         "AD_EXCHANGE_REVENUE",
         "ADSENSE_REVENUE",
-        "AD_SERVER_REVENUE",
       ],
       currencyCode: "IDR",
       dateRange: {
@@ -585,7 +583,7 @@ export async function fetchGamHourlyRevenue(networkCode, accessToken, dateRange)
     const clicks = parseNum(mValues[1]);
     const adxRevenue = parseNum(mValues[2]);
     const adsenseRevenue = parseNum(mValues[3]);
-    const adServerRevenue = parseNum(mValues[4]);
+    const adServerRevenue = 0;
 
     rows.push({
       date: dateStr,
@@ -619,7 +617,6 @@ export async function fetchGamCountryRevenue(networkCode, accessToken, dateRange
         "CLICKS",
         "AD_EXCHANGE_REVENUE",
         "ADSENSE_REVENUE",
-        "AD_SERVER_REVENUE",
       ],
       currencyCode: "IDR",
       dateRange: {
@@ -752,7 +749,7 @@ export async function fetchGamCountryRevenue(networkCode, accessToken, dateRange
     const clicks = parseNum(mValues[1]);
     const adxRevenue = parseNum(mValues[2]);
     const adsenseRevenue = parseNum(mValues[3]);
-    const adServerRevenue = parseNum(mValues[4]);
+    const adServerRevenue = 0;
 
     rows.push({
       date: dateStr,
