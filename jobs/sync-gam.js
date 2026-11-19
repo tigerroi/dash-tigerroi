@@ -216,11 +216,55 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList, isShar
     }
   }
 
-  // 2. Prioritas 2: Cocokkan nama unit iklan ke subdomain (FQDN maupun slug depannya)
+  // 1c. Khusus Shared Domain FoodsFact (foodsfact.org):
+  // Cocokkan langsung ke 5 subdomain resmi berdasarkan alias Keitaro, site_code, atau slug
+  const FOODSFACT_SHARED_ALIASES = [
+    { key: "dwdm", siteCode: "DWDM", subName: "eat.foodsfact.org" },
+    { key: "8f9fdwdm", siteCode: "DWDM", subName: "eat.foodsfact.org" },
+    { key: "wdm", siteCode: "DWDM", subName: "eat.foodsfact.org" },
+    { key: "eat", siteCode: "DWDM", subName: "eat.foodsfact.org" },
+
+    { key: "wmyn", siteCode: "WMYN", subName: "property.foodsfact.org" },
+    { key: "6sp9wmyn", siteCode: "WMYN", subName: "property.foodsfact.org" },
+    { key: "property", siteCode: "WMYN", subName: "property.foodsfact.org" },
+
+    { key: "tx5x", siteCode: "TX5X", subName: "finance.foodsfact.org" },
+    { key: "3brstx5x", siteCode: "TX5X", subName: "finance.foodsfact.org" },
+    { key: "finance", siteCode: "TX5X", subName: "finance.foodsfact.org" },
+
+    { key: "4svn", siteCode: "4SVN", subName: "insurance.foodsfact.org" },
+    { key: "s6c34svn", siteCode: "4SVN", subName: "insurance.foodsfact.org" },
+    { key: "insurance", siteCode: "4SVN", subName: "insurance.foodsfact.org" },
+
+    { key: "tg1d", siteCode: "TG1D", subName: "guides.foodsfact.org" },
+    { key: "clhntg1d", siteCode: "TG1D", subName: "guides.foodsfact.org" },
+    { key: "guides", siteCode: "TG1D", subName: "guides.foodsfact.org" },
+  ];
+
+  if (isShared || host.includes("foodsfact") || unit.includes("foodsfact")) {
+    for (const a of FOODSFACT_SHARED_ALIASES) {
+      if (unit.includes(a.key) || host.includes(a.key)) {
+        return {
+          siteCode: a.siteCode,
+          subdomainName: a.subName,
+          matched: true,
+        };
+      }
+    }
+  }
+
+  // 2. Prioritas 2: Cocokkan nama unit iklan ke subdomain (FQDN, slug, site_code, atau campaign_codes)
   for (const sub of subdomainsList || []) {
     if (!sub.name) continue;
     const subName = sub.name.toLowerCase();
     const slug = subName.split(".")[0];
+    const sCode = (sub.site_code || "").toLowerCase();
+    const cCodes = String(sub.campaign_codes || "")
+      .split(/[^a-zA-Z0-9]+/)
+      .map((c) => c.trim().toLowerCase())
+      .filter(Boolean);
+
+    // Cek kecocokan FQDN atau slug di unit
     const regex = new RegExp(`(^|[^a-z0-9])(${subName}|${slug})([^a-z0-9]|$)`, "i");
     if (regex.test(unit)) {
       return {
@@ -228,6 +272,26 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList, isShar
         subdomainName: sub.name,
         matched: true,
       };
+    }
+
+    // Cek kecocokan site_code di unit
+    if (sCode && (unit.includes(sCode) || unit === sCode)) {
+      return {
+        siteCode: sub.site_code,
+        subdomainName: sub.name,
+        matched: true,
+      };
+    }
+
+    // Cek kecocokan campaign_codes di unit
+    for (const code of cCodes) {
+      if (unit.includes(code) || unit === code) {
+        return {
+          siteCode: sub.site_code,
+          subdomainName: sub.name,
+          matched: true,
+        };
+      }
     }
 
     // Variasi penamaan unit iklan singkat di GAM:
