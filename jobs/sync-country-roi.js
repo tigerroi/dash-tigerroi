@@ -423,10 +423,11 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
   const dateToday = getJakartaDate(0);
   const currentMonthStart = dateToday.slice(0, 7) + "-01";
 
-  // Jika tidak ada argumen, batasi default sync rutin ke bulan berjalan agar tidak menimpa bulan lampau
+  // Jika tidak ada argumen, default sync rutin selalu mencakup awal bulan berjalan agar data harian tidak terpotong
   if (!start) {
-    const daysBack = Number(process.env.DAYS_BACK || 7);
-    let calculatedStart = getJakartaDate(daysBack);
+    let calculatedStart = process.env.DAYS_BACK && Number(process.env.DAYS_BACK) > 0
+      ? getJakartaDate(Number(process.env.DAYS_BACK))
+      : currentMonthStart;
     if (!process.env.ALLOW_PAST_MONTHS && calculatedStart < currentMonthStart) {
       calculatedStart = currentMonthStart;
     }
