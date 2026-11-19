@@ -488,10 +488,12 @@ export async function runSyncGam() {
 
     const dateToday = getJakartaDate(0);
     const currentMonthStart = dateToday.slice(0, 7) + "-01";
+    const daysBack = process.env.DAYS_BACK && Number(process.env.DAYS_BACK) > 0
+      ? Number(process.env.DAYS_BACK)
+      : Math.max(1, Math.ceil((Date.now() - new Date(currentMonthStart).getTime()) / (24 * 60 * 60 * 1000)));
+
     // Untuk bulan berjalan, selalu tarik sejak tanggal 1 bulan ini agar tidak ada tanggal yang tertinggal/hilang
-    let dateSince = process.env.DAYS_BACK && Number(process.env.DAYS_BACK) > 0
-      ? getJakartaDate(Number(process.env.DAYS_BACK))
-      : currentMonthStart;
+    let dateSince = getJakartaDate(daysBack);
     if (!process.env.ALLOW_PAST_MONTHS && dateSince < currentMonthStart) {
       dateSince = currentMonthStart;
     }

@@ -198,16 +198,17 @@ export async function runSyncMeta() {
 
     const dateToday = getJakartaDate(0);
     const currentMonthStart = dateToday.slice(0, 7) + "-01";
-    // Untuk bulan berjalan, selalu tarik sejak tanggal 1 bulan ini agar tidak ada tanggal yang tertinggal/hilang
-    let dateSince = process.env.DAYS_BACK && Number(process.env.DAYS_BACK) > 0
-      ? getJakartaDate(Number(process.env.DAYS_BACK))
-      : currentMonthStart;
+    const daysBack = process.env.DAYS_BACK && Number(process.env.DAYS_BACK) > 0
+      ? Number(process.env.DAYS_BACK)
+      : Math.max(1, Math.ceil((Date.now() - new Date(currentMonthStart).getTime()) / (24 * 60 * 60 * 1000)));
+
+    let dateSince = getJakartaDate(daysBack);
     if (!process.env.ALLOW_PAST_MONTHS && dateSince < currentMonthStart) {
       dateSince = currentMonthStart;
     }
     const dateRange = { since: dateSince, until: dateToday };
     console.log(
-      `Rentang Penarikan Meta Ads: ${dateRange.since} s/d ${dateRange.until} (batas bulan: ${currentMonthStart})...`,
+      `Rentang Penarikan Meta Ads: ${dateRange.since} s/d ${dateRange.until} (${daysBack} hari ke belakang, batas bulan: ${currentMonthStart})...`,
     );
 
     let totalSyncedRows = 0;
