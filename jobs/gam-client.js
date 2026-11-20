@@ -215,64 +215,71 @@ export async function fetchGamDailyRevenue(networkCode, accessToken, dateRange) 
     throw new Error("Timeout menunggu kompilasi laporan Google Ad Manager (melebihi 3 menit).");
   }
 
-  // 4. Ambil baris hasil laporan
-  const rowsUrl = `${GAM_BASE}/${resultName}:fetchRows`;
-  const rowsRes = await fetch(rowsUrl, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-
-  const resultData = await rowsRes.json();
-  if (!rowsRes.ok) {
-    throw new Error(
-      `GAM Fetch Rows Error: ${resultData.error?.message || JSON.stringify(resultData)}`,
-    );
-  }
-
+  // 4. Ambil baris hasil laporan (dengan paginasi penuh agar data tidak terpotong pada batas 1000 baris)
   const formatIso = (d) => {
     const s = String(d || "").replace(/\D/g, "");
     return s.length === 8 ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}` : String(d);
   };
 
   const rows = [];
-  for (const r of resultData.rows || []) {
-    const dValues = (r.dimensionValues || []).map((v) =>
-      v?.stringValue != null ? v.stringValue : String(v?.intValue ?? v?.value ?? ""),
-    );
-    const mValues = r.metricValueGroups?.[0]?.primaryValues || r.metricValues || [];
-
-    const dateStr = formatIso(dValues[0] || "");
-    const siteName = dValues[1] || "";
-    const adUnitName = dValues[2] || "";
-
-    const parseNum = (v) =>
-      Number(
-        v?.doubleValue != null
-          ? v.doubleValue
-          : v?.intValue != null
-            ? v.intValue
-            : v?.integerValue != null
-              ? v.integerValue
-              : (v?.value ?? 0),
-      );
-
-    const impressions = parseNum(mValues[0]);
-    const clicks = parseNum(mValues[1]);
-    const adxRevenue = parseNum(mValues[2]);
-    const adsenseRevenue = parseNum(mValues[3]);
-    const adServerRevenue = 0;
-
-    rows.push({
-      date: dateStr,
-      siteName,
-      adUnitName,
-      impressions,
-      clicks,
-      adxRevenue,
-      adsenseRevenue,
-      adServerRevenue,
-      totalRevenue: adxRevenue + adsenseRevenue + adServerRevenue,
+  let pageToken = "";
+  do {
+    const rowsUrl = pageToken
+      ? `${GAM_BASE}/${resultName}:fetchRows?pageToken=${encodeURIComponent(pageToken)}`
+      : `${GAM_BASE}/${resultName}:fetchRows`;
+    const rowsRes = await fetch(rowsUrl, {
+      headers: { Authorization: `Bearer ${accessToken}` },
     });
-  }
+
+    const resultData = await rowsRes.json();
+    if (!rowsRes.ok) {
+      throw new Error(
+        `GAM Fetch Rows Error: ${resultData.error?.message || JSON.stringify(resultData)}`,
+      );
+    }
+
+    for (const r of resultData.rows || []) {
+      const dValues = (r.dimensionValues || []).map((v) =>
+        v?.stringValue != null ? v.stringValue : String(v?.intValue ?? v?.value ?? ""),
+      );
+      const mValues = r.metricValueGroups?.[0]?.primaryValues || r.metricValues || [];
+
+      const dateStr = formatIso(dValues[0] || "");
+      const siteName = dValues[1] || "";
+      const adUnitName = dValues[2] || "";
+
+      const parseNum = (v) =>
+        Number(
+          v?.doubleValue != null
+            ? v.doubleValue
+            : v?.intValue != null
+              ? v.intValue
+              : v?.integerValue != null
+                ? v.integerValue
+                : (v?.value ?? 0),
+        );
+
+      const impressions = parseNum(mValues[0]);
+      const clicks = parseNum(mValues[1]);
+      const adxRevenue = parseNum(mValues[2]);
+      const adsenseRevenue = parseNum(mValues[3]);
+      const adServerRevenue = 0;
+
+      rows.push({
+        date: dateStr,
+        siteName,
+        adUnitName,
+        impressions,
+        clicks,
+        adxRevenue,
+        adsenseRevenue,
+        adServerRevenue,
+        totalRevenue: adxRevenue + adsenseRevenue + adServerRevenue,
+      });
+    }
+
+    pageToken = resultData.nextPageToken || "";
+  } while (pageToken);
 
   return rows;
 }
@@ -377,18 +384,6 @@ export async function fetchGamHourlyFillRate(networkCode, accessToken, dateRange
     throw new Error("Timeout menunggu kompilasi laporan Fill Rate GAM.");
   }
 
-  const rowsUrl = `${GAM_BASE}/${resultName}:fetchRows`;
-  const rowsRes = await fetch(rowsUrl, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-
-  const resultData = await rowsRes.json();
-  if (!rowsRes.ok) {
-    throw new Error(
-      `GAM Fetch Fill Rate Rows Error: ${resultData.error?.message || JSON.stringify(resultData)}`,
-    );
-  }
-
   const parseNum = (v) =>
     Number(
       v?.doubleValue != null
@@ -406,27 +401,46 @@ export async function fetchGamHourlyFillRate(networkCode, accessToken, dateRange
   };
 
   const rows = [];
-  for (const r of resultData.rows || []) {
-    const dValues = (r.dimensionValues || []).map((v) =>
-      v?.stringValue != null ? v.stringValue : String(v?.intValue ?? v?.value ?? ""),
-    );
-    const mValues = r.metricValueGroups?.[0]?.primaryValues || r.metricValues || [];
-
-    const dateStr = formatIso(dValues[0] || "");
-    const hourStr = String(dValues[1] || "").padStart(2, "0");
-    const siteName = dValues[2] || "";
-
-    const requests = parseNum(mValues[0]);
-    const impressions = parseNum(mValues[1]);
-
-    rows.push({
-      date: dateStr,
-      hour: hourStr,
-      siteName,
-      requests,
-      impressions,
+  let pageToken = "";
+  do {
+    const rowsUrl = pageToken
+      ? `${GAM_BASE}/${resultName}:fetchRows?pageToken=${encodeURIComponent(pageToken)}`
+      : `${GAM_BASE}/${resultName}:fetchRows`;
+    const rowsRes = await fetch(rowsUrl, {
+      headers: { Authorization: `Bearer ${accessToken}` },
     });
-  }
+
+    const resultData = await rowsRes.json();
+    if (!rowsRes.ok) {
+      throw new Error(
+        `GAM Fetch Fill Rate Rows Error: ${resultData.error?.message || JSON.stringify(resultData)}`,
+      );
+    }
+
+    for (const r of resultData.rows || []) {
+      const dValues = (r.dimensionValues || []).map((v) =>
+        v?.stringValue != null ? v.stringValue : String(v?.intValue ?? v?.value ?? ""),
+      );
+      const mValues = r.metricValueGroups?.[0]?.primaryValues || r.metricValues || [];
+
+      const dateStr = formatIso(dValues[0] || "");
+      const hourStr = String(dValues[1] || "").padStart(2, "0");
+      const siteName = dValues[2] || "";
+
+      const requests = parseNum(mValues[0]);
+      const impressions = parseNum(mValues[1]);
+
+      rows.push({
+        date: dateStr,
+        hour: hourStr,
+        siteName,
+        requests,
+        impressions,
+      });
+    }
+
+    pageToken = resultData.nextPageToken || "";
+  } while (pageToken);
 
   return rows;
 }
@@ -541,16 +555,7 @@ export async function fetchGamHourlyRevenue(networkCode, accessToken, dateRange)
     throw new Error("Timeout menunggu laporan GAM Hourly Revenue.");
   }
 
-  // Ambil baris
-  const rowsUrl = `${GAM_BASE}/${resultName}:fetchRows`;
-  const rowsRes = await fetch(rowsUrl, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  const resultData = await rowsRes.json();
-  if (!rowsRes.ok) {
-    throw new Error(`GAM Fetch Hourly Rows Error: ${resultData.error?.message || JSON.stringify(resultData)}`);
-  }
-
+  // Ambil baris (dengan paginasi penuh agar tidak terputus di 1000 baris)
   const parseNum = (v) =>
     Number(
       v?.doubleValue != null
@@ -568,37 +573,53 @@ export async function fetchGamHourlyRevenue(networkCode, accessToken, dateRange)
   };
 
   const rows = [];
-  for (const r of resultData.rows || []) {
-    const dValues = (r.dimensionValues || []).map((v) =>
-      v?.stringValue != null ? v.stringValue : String(v?.intValue ?? v?.value ?? ""),
-    );
-    const mValues = r.metricValueGroups?.[0]?.primaryValues || r.metricValues || [];
-
-    const dateStr = formatIso(dValues[0] || "");
-    const hourStr = String(dValues[1] || "").padStart(2, "0");
-    const siteName = dValues[2] || "";
-    const adUnitName = hasAdUnit ? dValues[3] || "" : "";
-
-    const impressions = parseNum(mValues[0]);
-    const clicks = parseNum(mValues[1]);
-    const adxRevenue = parseNum(mValues[2]);
-    const adsenseRevenue = parseNum(mValues[3]);
-    const adServerRevenue = 0;
-
-    rows.push({
-      date: dateStr,
-      hour: hourStr,
-      time: `${hourStr}:00`,
-      siteName,
-      adUnitName,
-      impressions,
-      clicks,
-      adxRevenue,
-      adsenseRevenue,
-      adServerRevenue,
-      totalRevenue: adxRevenue + adsenseRevenue + adServerRevenue,
+  let pageToken = "";
+  do {
+    const rowsUrl = pageToken
+      ? `${GAM_BASE}/${resultName}:fetchRows?pageToken=${encodeURIComponent(pageToken)}`
+      : `${GAM_BASE}/${resultName}:fetchRows`;
+    const rowsRes = await fetch(rowsUrl, {
+      headers: { Authorization: `Bearer ${accessToken}` },
     });
-  }
+    const resultData = await rowsRes.json();
+    if (!rowsRes.ok) {
+      throw new Error(`GAM Fetch Hourly Rows Error: ${resultData.error?.message || JSON.stringify(resultData)}`);
+    }
+
+    for (const r of resultData.rows || []) {
+      const dValues = (r.dimensionValues || []).map((v) =>
+        v?.stringValue != null ? v.stringValue : String(v?.intValue ?? v?.value ?? ""),
+      );
+      const mValues = r.metricValueGroups?.[0]?.primaryValues || r.metricValues || [];
+
+      const dateStr = formatIso(dValues[0] || "");
+      const hourStr = String(dValues[1] || "").padStart(2, "0");
+      const siteName = dValues[2] || "";
+      const adUnitName = hasAdUnit ? dValues[3] || "" : "";
+
+      const impressions = parseNum(mValues[0]);
+      const clicks = parseNum(mValues[1]);
+      const adxRevenue = parseNum(mValues[2]);
+      const adsenseRevenue = parseNum(mValues[3]);
+      const adServerRevenue = 0;
+
+      rows.push({
+        date: dateStr,
+        hour: hourStr,
+        time: `${hourStr}:00`,
+        siteName,
+        adUnitName,
+        impressions,
+        clicks,
+        adxRevenue,
+        adsenseRevenue,
+        adServerRevenue,
+        totalRevenue: adxRevenue + adsenseRevenue + adServerRevenue,
+      });
+    }
+
+    pageToken = resultData.nextPageToken || "";
+  } while (pageToken);
 
   return rows;
 }
