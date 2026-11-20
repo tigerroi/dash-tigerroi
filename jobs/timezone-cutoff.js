@@ -136,38 +136,17 @@ export function getWibCutoffHour(tzGam) {
 }
 
 /**
- * Menentukan tanggal alokasi spending Meta hari ini berdasarkan jam eksekusi WIB saat ini.
- * Jika jam sekarang di WIB belum mencapai jam cut-off GAM domain tersebut,
- * maka spending hari ini dimasukkan ke hari sebelumnya (T-1).
- * Begitu jam cut-off tercapai atau terlewati, spending hari ini masuk ke hari ini (T).
+ * Menentukan tanggal alokasi spending Meta hari ini.
+ * Selalu pertahankan tanggal kalender transaksi (WIB) tanpa menggeser mundur ke hari kemarin (T-1).
+ * Dengan demikian, spending Meta Ads hari ini langsung selaras dengan earning GAM (yang sudah
+ * dikonversi ke WIB per jam lewat toWibDateTime), sehingga ROI realtime di dashboard
+ * dapat dipantau langsung sejak 00:00 WIB tanpa tertahan siklus pergantian hari Denver/server luar.
  *
  * @param {string} dateStr Tanggal spending dari Meta (YYYY-MM-DD)
- * @param {string} dateToday Tanggal hari ini di WIB (YYYY-MM-DD)
- * @param {number} currentHourWib Jam saat ini di WIB (0 s/d 23)
- * @param {string} tzGam Zona waktu GAM domain (misal "GMT+5", "GMT-3", "America/Denver")
- * @returns {string} Tanggal target yang selaras dengan siklus GAM
+ * @returns {string} Tanggal target yang selaras dengan kalender WIB
  */
-export function resolveGamTargetDate(dateStr, dateToday, currentHourWib, tzGam) {
-  // Hanya sesuaikan tanggal hari ini (hari berjalan)
-  if (dateStr !== dateToday) {
-    return dateStr;
-  }
-
-  const cutoffHourWib = getWibCutoffHour(tzGam);
-  const offsetGam = getGamTimezoneOffset(tzGam);
-
-  if (offsetGam < 7) {
-    // GAM lebih lambat dari WIB
-    // Jika jam sekarang di WIB belum mencapai jam cut-off pergantian hari GAM:
-    if (currentHourWib < cutoffHourWib) {
-      // Masukkan ke hari kemarin (T-1)
-      const d = new Date(dateToday + "T12:00:00Z");
-      d.setUTCDate(d.getUTCDate() - 1);
-      return d.toISOString().slice(0, 10);
-    }
-  }
-
-  return dateToday;
+export function resolveGamTargetDate(dateStr) {
+  return dateStr;
 }
 
 /**

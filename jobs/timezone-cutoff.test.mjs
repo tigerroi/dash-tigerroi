@@ -30,35 +30,11 @@ describe("timezone-cutoff", () => {
     assert.equal(getGamTimezoneForSubdomain("eat.foodsfact.org"), "America/Denver");
   });
 
-  test("resolveGamTargetDate: alokasikan ke T-1 jika jam sekarang belum capai cutoff", () => {
-    // GMT+5 (cut-off 02:00 WIB)
-    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 0, "GMT+5"), "2026-11-07");
-    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 1, "GMT+5"), "2026-11-07");
-    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 2, "GMT+5"), "2026-11-08");
-    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 7, "GMT+5"), "2026-11-08");
-
-    // GMT+6 (cut-off 01:00 WIB)
-    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 0, "GMT+6"), "2026-11-07");
-    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 1, "GMT+6"), "2026-11-08");
-    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 7, "GMT+6"), "2026-11-08");
-
-    // GMT+1 (cut-off 06:00 WIB)
-    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 5, "GMT+1"), "2026-11-07");
-    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 6, "GMT+1"), "2026-11-08");
-    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 7, "GMT+1"), "2026-11-08");
-
-    // GMT-3 (cut-off 10:00 WIB)
-    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 7, "GMT-3"), "2026-11-07");
-    assert.equal(resolveGamTargetDate("2026-11-08", "2026-11-08", 10, "GMT-3"), "2026-11-08");
-
-    // America/Denver (cut-off 14:00 WIB)
-    assert.equal(resolveGamTargetDate("2026-11-19", "2026-11-19", 9, "America/Denver"), "2026-11-18");
-    assert.equal(resolveGamTargetDate("2026-11-19", "2026-11-19", 13, "America/Denver"), "2026-11-18");
-    assert.equal(resolveGamTargetDate("2026-11-19", "2026-11-19", 14, "America/Denver"), "2026-11-19");
-    assert.equal(resolveGamTargetDate("2026-11-19", "2026-11-19", 18, "America/Denver"), "2026-11-19");
-
-    // Tanggal lampau tidak diubah
-    assert.equal(resolveGamTargetDate("2026-11-07", "2026-11-08", 0, "GMT+5"), "2026-11-07");
+  test("resolveGamTargetDate: selalu mempertahankan tanggal kalender WIB hari berjalan", () => {
+    // Tanggal transaksi hari berjalan tetap sesuai tanggal aslinya tanpa diundur ke T-1
+    assert.equal(resolveGamTargetDate("2026-11-20"), "2026-11-20");
+    assert.equal(resolveGamTargetDate("2026-11-19"), "2026-11-19");
+    assert.equal(resolveGamTargetDate("2026-11-08"), "2026-11-08");
   });
 
   test("toWibDateTime: mengonversi jam Denver ke WIB secara akurat", () => {
