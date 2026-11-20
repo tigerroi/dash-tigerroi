@@ -226,7 +226,7 @@ export async function recordHourlyGamSnapshots(supabase, hourlyGamRows, subdomai
     const wib = toWibDateTime(row.date, row.hour, row.networkTimeZone);
     const d = wib.date;
     const h = wib.hour;
-    const site = (row.siteCode || "").toLowerCase().trim();
+    const site = String(row.siteCode || "").trim().toUpperCase();
     const sub = (row.subdomainName || "").toLowerCase().trim();
     const key = `${d}__${site}__${sub}`;
 
@@ -259,6 +259,7 @@ export async function recordHourlyGamSnapshots(supabase, hourlyGamRows, subdomai
   const existingMap = new Map();
   for (const s of existingSnaps || []) {
     existingMap.set(s.id, s);
+    if (s.id) existingMap.set(s.id.toLowerCase(), s);
     const sub = (s.sub_domain || "").toLowerCase().trim();
     const timeNorm = (s.time || "").slice(0, 5);
     existingMap.set(`${s.date}__${timeNorm}__${sub}`, s);
@@ -288,7 +289,9 @@ export async function recordHourlyGamSnapshots(supabase, hourlyGamRows, subdomai
 
       const timeStr = `${h}:00`;
       const snapshotId = `${group.date}T${h}-00__${group.site_code}__${group.sub_domain || "root"}`;
-      const existing = existingMap.get(snapshotId) || existingMap.get(`${group.date}__${timeStr}__${group.sub_domain}`);
+      const existing = existingMap.get(snapshotId) || 
+                       existingMap.get(snapshotId.toLowerCase()) || 
+                       existingMap.get(`${group.date}__${timeStr}__${group.sub_domain}`);
 
       // Pertahankan spending Meta yang sudah dicatat sebelumnya pada jam tersebut
       const spending = existing ? Number(existing.spending || existing.meta_spend || 0) : 0;

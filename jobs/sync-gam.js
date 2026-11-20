@@ -135,6 +135,22 @@ function getJakartaDate(daysAgo = 0) {
   return formatter.format(d);
 }
 
+// Format tanggal YYYY-MM-DD berdasarkan zona waktu spesifik network GAM
+function getNetworkDate(daysAgo = 0, timeZone = "Asia/Jakarta") {
+  const d = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+  try {
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timeZone || "Asia/Jakarta",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    return formatter.format(d);
+  } catch {
+    return getJakartaDate(daysAgo);
+  }
+}
+
 // Mengambil kredensial Service Account dari env atau file lokal
 function loadServiceAccountCredentials() {
   const clientEmail = process.env.GAM_CLIENT_EMAIL;
@@ -558,7 +574,16 @@ export async function runSyncGam() {
 
         const isNonWib = networkTimeZone && networkTimeZone !== "Asia/Jakarta" && networkTimeZone !== "GMT+7";
 
-        const rows = await fetchGamDailyRevenue(net.networkCode, accessToken, dateRange);
+        // Pastikan tanggal akhir (endDate) tidak melebihi hari ini di zona waktu network tersebut
+        // agar Google Ad Manager tidak menolak permintaan dengan error 'Date cannot be in the future'
+        const netToday = getNetworkDate(0, networkTimeZone);
+        const netEndDate = dateRange.endDate > netToday ? netToday : dateRange.endDate;
+        const netStartDate = dateRange.startDate > netEndDate ? netEndDate : dateRange.startDate;
+        const netDateRange = { startDate: netStartDate, endDate: netEndDate };
+
+        console.log(`    Rentang penarikan network (${networkTimeZone}): ${netDateRange.startDate} s/d ${netDateRange.endDate} (Hari ini di network: ${netToday})`);
+
+        const rows = await fetchGamDailyRevenue(net.networkCode, accessToken, netDateRange);
         console.log(`    Ditemukan ${rows.length} baris unit iklan.`);
 
         let netTotalRev = 0;
@@ -755,13 +780,16 @@ export async function runSyncGam() {
         }
 
         // 5c. Tarik Laporan Pendapatan per jam (Hourly Revenue) dari GAM untuk riwayat seharian
-        // Rentang per jam dibatasi 2 hari terakhir (kemarin & hari ini) agar diterima Google Ad Manager (maks 3 hari untuk HOUR)
+        // Rentang per jam dibatasi 2 hari terakhir di zona waktu network tersebut
         console.log(`    --> Menarik Laporan Pendapatan per jam (Hourly Revenue)...`);
         let hourlyRevRows = [];
+        const netHourlyStart = getNetworkDate(2, networkTimeZone);
+        const netHourlyEnd = netToday;
         const hourlyDateRange = {
-          startDate: getJakartaDate(2),
-          endDate: getJakartaDate(0),
+          startDate: netHourlyStart,
+          endDate: netHourlyEnd,
         };
+        console.log(`    Rentang per jam (${networkTimeZone}): ${hourlyDateRange.startDate} s/d ${hourlyDateRange.endDate}`);
         try {
           hourlyRevRows = await fetchGamHourlyRevenue(net.networkCode, accessToken, hourlyDateRange);
           console.log(`    Ditemukan ${hourlyRevRows.length} baris pendapatan per jam.`);
