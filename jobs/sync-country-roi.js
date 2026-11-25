@@ -72,7 +72,7 @@ const GAM_FX_RATES = {
 };
 
 // Pencocokan baris GAM (siteName / URL / adUnitName) ke subdomain & site_code
-function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList, isShared = false) {
+function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList, isShared = false, networkDomain = "") {
   const host = String(row.siteName || "")
     .trim()
     .toLowerCase()
@@ -80,9 +80,24 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList, isShar
     .replace(/\/.*$/, "");
   const unit = String(row.adUnitName || "").toLowerCase();
 
+  const netDomainClean = (networkDomain || "").toLowerCase().trim().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+
+  // Saring daftar subdomain agar HANYA mencakup subdomain milik network domain ini
+  const scopedSubs = (subdomainsList || []).filter((sub) => {
+    if (!sub.name) return false;
+    if (!netDomainClean) return true;
+    const parentClean = (sub.parent_domain || "").toLowerCase().trim().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+    return (
+      parentClean === netDomainClean ||
+      sub.name.toLowerCase().endsWith(`.${netDomainClean}`) ||
+      sub.name.toLowerCase() === netDomainClean ||
+      sub.site_code === defaultSiteCode
+    );
+  });
+
   // 1. Prioritas 1: Cocokkan host URL langsung ke 17 subdomain resmi
   if (host) {
-    for (const sub of subdomainsList || []) {
+    for (const sub of scopedSubs) {
       if (!sub.name) continue;
       const subName = sub.name.toLowerCase();
       if (
@@ -102,7 +117,7 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList, isShar
   }
 
   // 1b. Khusus Domain Tunggal Berbasis Path / URL Slug (misal: velocitytv.com.pk/news/ atau /finance/):
-  for (const sub of subdomainsList || []) {
+  for (const sub of scopedSubs) {
     if (!sub.name) continue;
     const subName = sub.name.toLowerCase();
     const slug = subName.split(".")[0];
@@ -152,7 +167,7 @@ function mapGamRowToSite(row, defaultSiteCode, subdomainsList, sitesList, isShar
   }
 
   // 2. Prioritas 2: Cocokkan nama unit iklan ke subdomain
-  for (const sub of subdomainsList || []) {
+  for (const sub of scopedSubs) {
     if (!sub.name) continue;
     const subName = sub.name.toLowerCase();
     const slug = subName.split(".")[0];
@@ -638,6 +653,7 @@ export async function runSyncCountryRoi(startDate = null, endDate = null) {
                 subdomains,
                 sites,
                 net.isShared,
+                net.domain,
               );
 
               // Jika shared domain dan bukan salah satu 5 subdomain resmi TigerROI, abaikan baris ini!

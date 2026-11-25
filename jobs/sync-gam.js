@@ -572,7 +572,8 @@ export async function runSyncGam() {
         }
         if (!networkTimeZone) networkTimeZone = "GMT+0";
 
-        const isNonWib = networkTimeZone && networkTimeZone !== "Asia/Jakarta" && networkTimeZone !== "GMT+7";
+        // Khusus uniqueinfo24.com: diselaraskan 100% mengikuti tanggal kalender GAM UI (tanpa pergeseran jam 23:00 ke 00:00 WIB)
+        const isNonWib = networkTimeZone && networkTimeZone !== "Asia/Jakarta" && networkTimeZone !== "GMT+7" && net.domain !== "uniqueinfo24.com";
 
         // Pastikan tanggal akhir (endDate) tidak melebihi hari ini di zona waktu network tersebut
         // agar Google Ad Manager tidak menolak permintaan dengan error 'Date cannot be in the future'
@@ -804,6 +805,8 @@ export async function runSyncGam() {
               siteCode: mapped.siteCode,
               subdomainName: mapped.subdomainName,
               networkTimeZone,
+              networkDomain: net.domain,
+              keepGamDate: net.domain === "uniqueinfo24.com",
             });
           }
         } catch (hErr) {

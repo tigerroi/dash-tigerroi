@@ -223,9 +223,17 @@ export async function recordHourlyGamSnapshots(supabase, hourlyGamRows, subdomai
   // Kelompokkan data per date + site_code + subdomain + hour (dikonversi ke WIB jika dari zona waktu lain)
   const hourlyGroup = new Map();
   for (const row of hourlyGamRows) {
-    const wib = toWibDateTime(row.date, row.hour, row.networkTimeZone);
-    const d = wib.date;
-    const h = wib.hour;
+    let d, h;
+    const isNativeDate = row.keepGamDate || row.networkDomain === "uniqueinfo24.com" || (row.subdomainName && row.subdomainName.includes("uniqueinfo24.com"));
+    if (isNativeDate) {
+      d = String(row.date || "").slice(0, 10);
+      const wib = toWibDateTime(row.date, row.hour, row.networkTimeZone);
+      h = wib.hour;
+    } else {
+      const wib = toWibDateTime(row.date, row.hour, row.networkTimeZone);
+      d = wib.date;
+      h = wib.hour;
+    }
     const site = String(row.siteCode || "").trim().toUpperCase();
     const sub = (row.subdomainName || "").toLowerCase().trim();
     const key = `${d}__${site}__${sub}`;
