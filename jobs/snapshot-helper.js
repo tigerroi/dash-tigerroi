@@ -58,25 +58,26 @@ export async function recordRoiSnapshot(supabase, targetDate) {
     return;
   }
 
-  // 2. Ambil snapshot sebelumnya pada hari yang sama untuk menghitung fluktuasi
+  // 2. Ambil snapshot TEPAT 1 jam sebelum waktu saat ini untuk menghitung fluktuasi ROI yang akurat
+  //    Harus filter hanya tanggal yang sama agar jam malam hari kemarin tidak masuk ke perbandingan hari ini
+  const prevHour = String(Number(currentTimeWib.split(":")[0]) - 1).padStart(2, "0");
+  const prevTimeWib = `${prevHour}:00`;
   const { data: prevSnapshots, error: prevErr } = await supabase
     .from("roi_snapshots")
     .select("sub_domain, site_code, spending, earning, roi, time")
     .eq("date", dateToRecord)
-    .lt("time", currentTimeWib)
-    .order("time", { ascending: false });
+    .eq("time", prevTimeWib);
 
   if (prevErr) {
     console.warn(`⚠️ [SNAPSHOT] Peringatan: Gagal membaca riwayat snapshot sebelumnya: ${prevErr.message}`);
   }
 
-  // Petakan snapshot sebelumnya per subdomain
+  // Petakan snapshot 1 jam sebelumnya per subdomain (hanya 1 baris per subdomain, jam tepat sebelumnya)
   const prevMap = new Map();
   for (const prev of prevSnapshots || []) {
-    const key = `${prev.site_code}__${prev.sub_domain || ""}`;
-    if (!prevMap.has(key)) {
-      prevMap.set(key, prev);
-    }
+    // Key menyertakan tanggal agar tidak tertukar dengan hari kemarin
+    const key = `${dateToRecord}__${prev.site_code}__${prev.sub_domain || ""}`;
+    prevMap.set(key, prev);
   }
 
   const ROOT_DOMAINS = new Set([
@@ -118,7 +119,7 @@ export async function recordRoiSnapshot(supabase, targetDate) {
     const safeTimeKey = currentTimeWib.replace(":", "-");
     const snapshotId = `${dateToRecord}T${safeTimeKey}__${site}__${sub || "root"}`;
 
-    const prev = prevMap.get(`${site}__${sub}`);
+    const prev = prevMap.get(`${dateToRecord}__${site}__${sub}`);
     const spending = Number(row.spending || row.meta_spend || 0);
     const earning = Number(row.earning || row.gam_revenue || 0);
     const roi = Number(row.roi || 0);
@@ -287,6 +288,8 @@ export async function recordHourlyGamSnapshots(supabase, hourlyGamRows, subdomai
     let cumulativeRev = 0;
     let cumulativeImp = 0;
     let cumulativeClicks = 0;
+    // Lacak ROI jam sebelumnya untuk menghitung fluk_roi per jam yang benar
+    let prevHourRoi = null;
 
     for (const h of sortedHours) {
       const hData = group.hours.get(h);
@@ -307,12 +310,14 @@ export async function recordHourlyGamSnapshots(supabase, hourlyGamRows, subdomai
       
       // Lewati hanya jika spending 0 dan earning 0 (sama sekali tidak ada aktivitas spend maupun earning)
       if (spending <= 0.01 && earning <= 0.01) {
+        prevHourRoi = null;
         continue;
       }
 
       // Jangan catat snapshot jika tidak ada PIC (sesuai instruksi: baris tanpa PIC jangan dimasukkan)
       const finalPic = existing?.pic && existing.pic !== "-" ? existing.pic : pic;
       if (!finalPic || finalPic === "-" || finalPic.toLowerCase().includes("belum") || finalPic.toLowerCase() === "unassigned") {
+        prevHourRoi = null;
         continue;
       }
 
@@ -324,6 +329,22 @@ export async function recordHourlyGamSnapshots(supabase, hourlyGamRows, subdomai
 
       const profit = Math.round(earning - totalSpending);
       const roi = totalSpending > 0 ? Math.round(((earning - totalSpending) / totalSpending) * 10000) / 100 : 0;
+
+      // Hitung fluk_roi = selisih ROI jam ini dengan jam tepat sebelumnya (bukan nilai lama yang dibekukan)
+      // prevHourRoi null berarti ini jam pertama hari ini → fluk_roi = 0
+      const flukRoi = prevHourRoi !== null ? Math.round((roi - prevHourRoi) * 100) / 100 : 0;
+      prevHourRoi = roi;
+
+      // fluk_spend = selisih spending jam ini dengan jam tepat sebelumnya
+      // Ambil spending jam sebelumnya dari existingMap jika ada
+      const prevH = sortedHours[sortedHours.indexOf(h) - 1];
+      let flukSpend = 0;
+      if (prevH !== undefined) {
+        const prevSnapshotId = `${group.date}T${prevH}-00__${group.site_code}__${group.sub_domain || "root"}`;
+        const prevExisting = existingMap.get(prevSnapshotId) || existingMap.get(prevSnapshotId.toLowerCase());
+        const prevSpending = prevExisting ? Number(prevExisting.spending || prevExisting.meta_spend || 0) : 0;
+        flukSpend = Math.round((spending - prevSpending) * 100) / 100;
+      }
 
       const ctr = cumulativeImp > 0 ? Math.round((cumulativeClicks / cumulativeImp) * 10000) / 100 : 0;
       const cpc = cumulativeClicks > 0 ? Math.round((earning / cumulativeClicks) * 100) / 100 : 0;
@@ -358,9 +379,9 @@ export async function recordHourlyGamSnapshots(supabase, hourlyGamRows, subdomai
         ecpm,
         currency: "IDR",
         fx_rate: 1.0,
-        fluk_spend: existing?.fluk_spend || 0,
-        fluk_earn: hourRev, // Pendapatan pada 1 jam tersebut
-        fluk_roi: existing?.fluk_roi || 0,
+        fluk_spend: flukSpend,
+        fluk_earn: hourRev, // Pendapatan pada 1 jam tersebut (delta earning)
+        fluk_roi: flukRoi, // Selisih ROI jam ini vs jam tepat sebelumnya
         created_at: existing?.created_at || new Date().toISOString(),
       });
     }
