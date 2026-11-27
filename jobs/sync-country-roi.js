@@ -280,6 +280,7 @@ const GAM_NETWORKS = [
   { domain: "cmhhealths.com", networkCode: "23350466753", defaultSiteCode: "cmhhealths" },
   { domain: "uniqueinfo24.com", networkCode: "23342288590", defaultSiteCode: "uniqueinfo24" },
   { domain: "ziperto.org", networkCode: "23355757170", defaultSiteCode: "ziperto" },
+  { domain: "velocitytv.com.pk", networkCode: "23360577147", defaultSiteCode: "velocitytv", isShared: true },
   { domain: "foodsfact.org", networkCode: "21869641910", defaultSiteCode: "foodsfact", isShared: true },
 ];
 

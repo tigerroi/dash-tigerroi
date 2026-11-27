@@ -62,8 +62,8 @@ const GAM_NETWORKS = [
   { domain: "uniqueinfo24.com", networkCode: "23342288590", defaultSiteCode: "uniqueinfo24" },
   { domain: "ziperto.org", networkCode: "23355757170", defaultSiteCode: "ziperto" },
   { domain: "workmoney24.com", networkCode: "23342288461", defaultSiteCode: "workmoney24" },
-  { domain: "velocitytv.com.pk", networkCode: "23360577147", defaultSiteCode: "velocitytv" },
-  // foodsfact.org adalah shared domain (hanya 5 subdomain resmi yang disinkronkan ke TigerROI)
+  // velocitytv.com.pk dan foodsfact.org adalah shared domain (hanya subdomain resmi TigerROI yang disinkronkan)
+  { domain: "velocitytv.com.pk", networkCode: "23360577147", defaultSiteCode: "velocitytv", isShared: true },
   { domain: "foodsfact.org", networkCode: "21869641910", defaultSiteCode: "foodsfact", isShared: true },
 ];
 
